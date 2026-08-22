@@ -254,7 +254,7 @@ export const DemoSection = () => (
         controls
         preload="metadata"
         playsInline
-        poster="/images/store/video_thumbnail.jpg"
+        poster="/video_thumbnail.png"
         className="aspect-video w-full bg-black object-contain lg:min-h-[500px]"
         aria-label="Big Wicks fireworks product demonstration"
       >
