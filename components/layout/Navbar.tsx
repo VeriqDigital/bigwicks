@@ -2,14 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
 import { navigation, primaryCta, siteConfig } from "@/config/site";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const pathname = usePathname();
 
   useEffect(() => {
     if (!isMenuOpen) return;
@@ -56,19 +54,15 @@ const Navbar = () => {
         </Link>
 
         <div className="hidden items-center gap-6 lg:flex xl:gap-8">
-          {navigation.map((item) => {
-            const isActive = item.href === "/" && pathname === "/";
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                aria-current={isActive ? "page" : undefined}
-                className={`py-3 text-xs font-bold uppercase tracking-[0.1em] transition-colors ${isActive ? "text-[#ff6872]" : "text-[#f2f2ef] hover:text-[#ff6872]"}`}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
+          {navigation.map((item) => (
+            <Link
+              key={item.label}
+              href={item.href}
+              className="py-3 text-xs font-bold uppercase tracking-[0.1em] text-[#f2f2ef] transition-colors hover:text-[#ff6872]"
+            >
+              {item.label}
+            </Link>
+          ))}
           <Button href={primaryCta.href} newTab>
             {primaryCta.label}
           </Button>
@@ -117,7 +111,7 @@ const Navbar = () => {
                 key={item.label}
                 href={item.href}
                 onClick={() => setIsMenuOpen(false)}
-                className={`border-b border-[#3a3a3f] px-4 py-4 text-sm font-bold uppercase tracking-[0.1em] hover:bg-[#242428] hover:text-[#ff6872] ${item.href === "/" && pathname === "/" ? "text-[#ff6872]" : ""}`}
+                className="border-b border-[#3a3a3f] px-4 py-4 text-sm font-bold uppercase tracking-[0.1em] hover:bg-[#242428] hover:text-[#ff6872]"
               >
                 {item.label}
               </Link>

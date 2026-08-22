@@ -3,20 +3,19 @@ import Button from "@/components/ui/Button";
 import { siteConfig } from "@/config/site";
 
 const Hero = () => (
-  <section className="relative isolate min-h-[680px] overflow-hidden bg-[#151517] sm:min-h-[740px] lg:min-h-[780px]">
+  <section className="relative isolate min-h-[680px] overflow-hidden bg-[#151517] sm:min-h-[740px] lg:min-h-[860px] xl:min-h-[900px]">
     <Image
       src="/images/store/big-wicks-storefront-front.jpg"
       alt="The Big Wicks Fireworks storefront in La Porte, Indiana"
       fill
-      className="-z-30 object-cover object-[center_38%] sm:object-[center_40%] lg:object-[center_44%]"
+      className="-z-30 object-cover object-[center_38%] sm:object-[center_34%] lg:object-[center_26%] xl:object-[center_24%]"
       sizes="100vw"
       preload
       quality={100}
     />
-    <div className="absolute inset-0 -z-20 bg-black/10" />
-    <div className="absolute inset-0 -z-20 bg-[linear-gradient(90deg,rgba(14,14,16,0.82)_0%,rgba(14,14,16,0.62)_38%,rgba(14,14,16,0.18)_70%,rgba(14,14,16,0.03)_100%)]" />
+    <div className="absolute inset-0 -z-20 bg-[linear-gradient(90deg,rgba(14,14,16,0.84)_0%,rgba(14,14,16,0.67)_42%,rgba(14,14,16,0.36)_100%)] lg:bg-[linear-gradient(90deg,rgba(14,14,16,0.86)_0%,rgba(14,14,16,0.7)_28%,rgba(14,14,16,0.24)_48%,rgba(14,14,16,0.05)_64%,transparent_78%)]" />
 
-    <div className="mx-auto flex min-h-[680px] w-full max-w-(--container-width) items-center px-6 py-16 sm:min-h-[740px] lg:min-h-[780px]">
+    <div className="mx-auto flex min-h-[680px] w-full max-w-(--container-width) items-center px-6 py-16 sm:min-h-[740px] lg:min-h-[860px] xl:min-h-[900px]">
       <div className="max-w-[760px]">
         <p className="mb-6 text-sm font-bold text-white/90">
           Big Wicks Fireworks · La Porte, Indiana

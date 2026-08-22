@@ -44,6 +44,7 @@ export const navigation: NavItem[] = [
   { label: "Deals", href: "/#deals" },
   { label: "About", href: "/#about" },
   { label: "Visit Us", href: "/#visit" },
+  { label: "Contact", href: "/contact" },
 ];
 
 export const footerLinks: NavItem[] = [
