@@ -61,8 +61,8 @@ const CategorySection = () => (
 
     <p className="mt-7 max-w-3xl border-l-4 border-(--red) pl-4 text-sm leading-6 text-[#66635f]">
       Photography shows real Big Wicks shelves and displays. Images are not tied
-      to live inventory; product listings, prices, and stock status remain part
-      of the future catalog.
+      to live inventory; call or visit to confirm current products, prices, and
+      availability.
     </p>
   </div>
 );

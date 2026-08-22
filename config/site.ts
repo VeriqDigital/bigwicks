@@ -22,6 +22,8 @@ export const siteConfig = {
   contact: {
     phone: "(219) 380-5149",
     phoneHref: "tel:+12193805149",
+    email: "bigwicksfireworks@gmail.com",
+    emailHref: "mailto:bigwicksfireworks@gmail.com",
     addressLine1: "10351 IN-39",
     city: "La Porte",
     state: "IN",
@@ -33,6 +35,16 @@ export const siteConfig = {
     mapEmbedUrl:
       "https://www.google.com/maps?q=10351+IN-39%2C+La+Porte%2C+IN+46350&output=embed",
   },
+  socialLinks: [
+    {
+      label: "Facebook",
+      href: "https://www.facebook.com/profile.php?id=100094070160648",
+    },
+    {
+      label: "Instagram",
+      href: "https://www.instagram.com/bigwicksfireworks/",
+    },
+  ],
   hours: businessHours,
 } as const;
 

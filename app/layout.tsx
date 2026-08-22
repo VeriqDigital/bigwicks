@@ -54,6 +54,8 @@ const localBusinessJsonLd = {
   name: siteConfig.name,
   description: siteConfig.description,
   telephone: siteConfig.contact.phone,
+  email: siteConfig.contact.email,
+  sameAs: siteConfig.socialLinks.map(({ href }) => href),
   address: {
     "@type": "PostalAddress",
     streetAddress: siteConfig.contact.addressLine1,

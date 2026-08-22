@@ -70,11 +70,36 @@ export default function ContactPage() {
                   >
                     {siteConfig.contact.phone}
                   </a>
+                  <a
+                    href={siteConfig.contact.emailHref}
+                    className="mt-2 block break-all font-semibold text-[#343431] hover:text-(--red-hover)"
+                  >
+                    {siteConfig.contact.email}
+                  </a>
                 </address>
 
                 <div className="mt-7 flex flex-col gap-3 sm:flex-row lg:flex-col xl:flex-row">
                   <Button href={siteConfig.contact.mapUrl} newTab>Get Directions</Button>
                   <Button href={siteConfig.contact.phoneHref} variant="dark">Call The Store</Button>
+                </div>
+
+                <div className="mt-7 border-t border-[#e3e3df] pt-6">
+                  <h3 className="text-xs font-extrabold uppercase tracking-[0.14em] text-(--red)">
+                    Follow Big Wicks
+                  </h3>
+                  <div className="mt-4 flex flex-wrap gap-x-6 gap-y-3">
+                    {siteConfig.socialLinks.map(({ label, href }) => (
+                      <a
+                        key={label}
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-bold text-[#171719] hover:text-(--red-hover)"
+                      >
+                        {label} <span aria-hidden="true">↗</span>
+                      </a>
+                    ))}
+                  </div>
                 </div>
               </div>
 

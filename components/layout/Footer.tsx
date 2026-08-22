@@ -5,7 +5,7 @@ import { footerLinks, siteConfig } from "@/config/site";
 const Footer = () => (
   <footer className="w-full border-t border-[#303034] bg-[#151517] text-white">
     <div className="mx-auto w-full max-w-(--container-width) px-6 py-16 lg:py-20">
-      <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-[1.15fr_0.65fr_0.85fr_0.85fr]">
+      <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-[1.15fr_0.65fr_0.85fr_0.6fr_0.85fr] lg:gap-8">
         <div>
           <div className="relative h-28 w-full max-w-[330px]">
             <Image
@@ -61,6 +61,12 @@ const Footer = () => (
               {siteConfig.contact.phone}
             </a>
             <a
+              href={siteConfig.contact.emailHref}
+              className="mt-2 block break-all text-sm font-semibold text-white hover:text-[#ff6872]"
+            >
+              {siteConfig.contact.email}
+            </a>
+            <a
               href={siteConfig.contact.mapUrl}
               target="_blank"
               rel="noopener noreferrer"
@@ -70,6 +76,26 @@ const Footer = () => (
             </a>
           </address>
         </div>
+
+        <nav aria-label="Social media">
+          <h2 className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#ff5963]">
+            Follow
+          </h2>
+          <ul className="mt-6 space-y-4 text-sm font-semibold text-[#c0c0bc]">
+            {siteConfig.socialLinks.map(({ label, href }) => (
+              <li key={label}>
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transition hover:text-[#ff6872]"
+                >
+                  {label} <span aria-hidden="true">↗</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
 
         <div>
           <h2 className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#ff5963]">

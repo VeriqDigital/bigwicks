@@ -21,10 +21,10 @@ const featureSlots = [
     href: siteConfig.contact.phoneHref,
   },
   {
-    eyebrow: "Catalog preview",
+    eyebrow: "In-store selection",
     title: "New & seasonal",
     description:
-      "This space is ready for new arrivals and seasonal highlights once live product data is connected.",
+      "Call or visit to ask what is new and available for the season.",
     action: "Explore categories",
     href: "/#shop",
   },
@@ -249,26 +249,19 @@ export const WhyChooseSection = () => (
 
 export const DemoSection = () => (
   <div className="grid gap-12 lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
-    <figure className="relative min-h-[580px] overflow-hidden rounded-[7px] border border-[#3a3a3f] bg-[#18181b] lg:min-h-[650px]">
-      <Image
-        src="/images/store/big-wicks-checkout-demo-tv.jpg"
-        alt="Large in-store television above the Big Wicks checkout and fireworks display"
-        fill
-        className="object-cover object-[center_25%]"
-        sizes="(max-width: 1024px) 100vw, 55vw"
-      />
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#0b0b0d] via-[#0b0b0d]/80 to-transparent p-7 pt-32">
-        <figcaption className="flex items-center gap-3 text-xs font-extrabold uppercase tracking-[0.12em] text-white">
-          <span
-            className="flex size-9 items-center justify-center rounded-[3px] bg-(--red) text-white"
-            aria-hidden="true"
-          >
-            ▶
-          </span>{" "}
-          In-store video demonstration area
-        </figcaption>
-      </div>
-    </figure>
+    <div className="overflow-hidden rounded-[7px] border border-[#3a3a3f] bg-black">
+      <video
+        controls
+        preload="metadata"
+        playsInline
+        poster="/images/store/video_thumbnail.jpg"
+        className="aspect-video w-full bg-black object-contain lg:min-h-[500px]"
+        aria-label="Big Wicks fireworks product demonstration"
+      >
+        <source src="/product_demo.mp4" type="video/mp4" />
+        Your browser does not support HTML5 video.
+      </video>
+    </div>
 
     <div>
       <p className="text-sm font-extrabold uppercase tracking-[0.1em] text-[#ff5a65]">
@@ -278,24 +271,14 @@ export const DemoSection = () => (
         Know what you&apos;re bringing home
       </h2>
       <p className="mt-7 text-lg leading-8 text-[#d0d0cd]">
-        A package can only tell you so much. Big Wicks has used the large
-        in-store TV to help customers see how particular fireworks look when
-        fired.
+        See a real firework in action before you plan your show. This video
+        gives you a clear look at the effect, timing, and overall feel.
       </p>
       <p className="mt-5 leading-7 text-[#aaa9a5]">
-        Ask our team whether a demonstration is available for the item
-        you&apos;re considering. This does not imply that every product
-        currently has a video.
+        Have questions about how different products compare? Our team can
+        explain what to expect and help you put together the right mix for your
+        celebration.
       </p>
-      <div className="mt-7 rounded-[7px] border border-[#3a3a3f] bg-[#202024] p-5">
-        <p className="text-xs font-extrabold uppercase tracking-[0.17em] text-(--red)">
-          Future catalog ready
-        </p>
-        <p className="mt-2 text-sm leading-6 text-[#c2c2bf]">
-          The product-page architecture can add verified demo videos later
-          without changing this in-store promise.
-        </p>
-      </div>
       <div className="mt-8">
         <Button href={siteConfig.contact.phoneHref} variant="secondary">
           Ask The Team
