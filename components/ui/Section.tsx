@@ -8,13 +8,16 @@ type SectionProps = {
 
 const Section = ({ children, id, tone = "dark" }: SectionProps) => {
   const toneClasses = {
-    dark: "border-[#2d2d2d] bg-[#171717] text-white",
-    black: "border-[#2d2d2d] bg-[#111111] text-white",
-    light: "border-[#dedbd4] bg-[#f4f1ea] text-[#171717]",
+    dark: "border-[#2d2d31] bg-[#19191c] text-white",
+    black: "border-[#2d2d31] bg-[#151517] text-white",
+    light: "border-[#deded9] bg-(--background) text-[#171719]",
   };
 
   return (
-    <section id={id} className={`border-t py-20 md:py-28 ${toneClasses[tone]}`}>
+    <section
+      id={id}
+      className={`border-t py-20 md:py-28 lg:py-32 ${toneClasses[tone]}`}
+    >
       <Container>{children}</Container>
     </section>
   );

@@ -1,18 +1,33 @@
 const trustItems = [
-  "Reliable delivery",
-  "Experienced drivers",
-  "Commercial freight",
-  "Regional transportation",
-  "Licensed & insured",
+  ["Huge Selection", "From novelties to finales"],
+  ["Strong Value", "Deals that make the trip count"],
+  ["Helpful Staff", "Guidance for the show you want"],
+  ["Near New Buffalo", "Just 3 miles south of downtown"],
 ] as const;
 
 const TrustStrip = () => (
-  <section aria-label="S&B Express service highlights" className="border-b border-[#393939] bg-[#202020]">
-    <div className="mx-auto grid max-w-(--container-width) grid-cols-2 px-4 sm:px-6 lg:grid-cols-5">
-      {trustItems.map((item) => (
-        <div key={item} className="flex min-h-24 items-center gap-3 border-b border-r border-[#393939] px-3 py-5 last:col-span-2 lg:last:col-span-1 lg:border-b-0">
-          <span className="flex size-8 shrink-0 items-center justify-center border border-(--accent) text-lg font-bold text-(--accent)" aria-hidden="true">✓</span>
-          <p className="font-heading text-sm font-black uppercase leading-5 tracking-[0.06em] text-white">{item}</p>
+  <section
+    aria-label="Why customers choose Big Wicks"
+    className="border-b border-[#d5d5d0] bg-[#f5f5f2] text-[#171719]"
+  >
+    <div className="mx-auto grid max-w-(--container-width) border-l border-[#d5d5d0] sm:grid-cols-2 lg:grid-cols-4">
+      {trustItems.map(([title, detail], index) => (
+        <div
+          key={title}
+          className="flex min-h-28 items-center gap-4 border-b border-r border-[#d5d5d0] px-6 py-5 last:border-b-0 lg:border-b-0"
+        >
+          <span
+            className="font-heading text-xl font-bold text-(--red)"
+            aria-hidden="true"
+          >
+            0{index + 1}
+          </span>
+          <div>
+            <p className="font-heading text-lg font-bold uppercase tracking-[0.03em]">
+              {title}
+            </p>
+            <p className="mt-1 text-sm text-[#69625c]">{detail}</p>
+          </div>
         </div>
       ))}
     </div>

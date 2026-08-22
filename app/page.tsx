@@ -1,10 +1,14 @@
 import FAQ from "@/components/sections/FAQ";
 import Hero from "@/components/sections/Hero";
 import LocationSection from "@/components/sections/LocationSection";
-import ServicesSection from "@/components/sections/ServicesSection";
+import CategorySection from "@/components/sections/CategorySection";
 import ContactCtaSection from "@/components/sections/ContactCtaSection";
 import TrustStrip from "@/components/sections/TrustStrip";
-import { AboutSection, FleetShowcase, IndustriesSection, TestimonialsSection, WhyChooseSection } from "@/components/sections/ContentSections";
+import AboutSection from "@/components/sections/AboutSection";
+import DealsSection from "@/components/sections/DealsSection";
+import DemoSection from "@/components/sections/DemoSection";
+import SelectionShowcase from "@/components/sections/SelectionShowcase";
+import WhyChooseSection from "@/components/sections/WhyChooseSection";
 import Section from "@/components/ui/Section";
 
 export default function Home() {
@@ -12,15 +16,33 @@ export default function Home() {
     <>
       <Hero />
       <TrustStrip />
-      <Section id="services" tone="dark"><ServicesSection /></Section>
-      <Section id="fleet" tone="black"><FleetShowcase /></Section>
-      <Section id="industries" tone="light"><IndustriesSection /></Section>
-      <Section id="about" tone="dark"><AboutSection /></Section>
-      <Section id="why-us" tone="black"><WhyChooseSection /></Section>
-      <Section id="testimonials" tone="light"><TestimonialsSection /></Section>
-      <Section id="location" tone="dark"><LocationSection /></Section>
-      <Section id="faq" tone="black"><FAQ /></Section>
-      <Section id="quote" tone="dark"><ContactCtaSection /></Section>
+      <Section id="shop" tone="light">
+        <CategorySection />
+      </Section>
+      <Section id="deals" tone="light">
+        <DealsSection />
+      </Section>
+      <Section id="about" tone="black">
+        <AboutSection />
+      </Section>
+      <Section tone="light">
+        <SelectionShowcase />
+      </Section>
+      <Section id="why-big-wicks" tone="light">
+        <WhyChooseSection />
+      </Section>
+      <Section id="demos" tone="dark">
+        <DemoSection />
+      </Section>
+      <Section id="visit" tone="light">
+        <LocationSection />
+      </Section>
+      <Section id="faq" tone="light">
+        <FAQ />
+      </Section>
+      <Section tone="light">
+        <ContactCtaSection />
+      </Section>
     </>
   );
 }

@@ -1,77 +1,51 @@
-"use client";
-
 import Image from "next/image";
-import LeadModal from "@/components/layout/LeadModal";
-import useLeadModal from "@/components/layout/useLeadModal";
 import Button from "@/components/ui/Button";
-import Container from "@/components/ui/Container";
-import { primaryCta, siteConfig } from "@/config/site";
+import { siteConfig } from "@/config/site";
 
-const Hero = () => {
-  const modal = useLeadModal();
+const Hero = () => (
+  <section className="relative isolate min-h-[680px] overflow-hidden bg-[#151517] sm:min-h-[740px] lg:min-h-[860px] xl:min-h-[900px]">
+    <Image
+      src="/images/store/big-wicks-storefront-front.jpg"
+      alt="The Big Wicks Fireworks storefront in La Porte, Indiana"
+      fill
+      className="-z-30 object-cover object-[center_38%] sm:object-[center_34%] lg:object-[center_26%] xl:object-[center_24%]"
+      sizes="100vw"
+      preload
+      quality={90}
+    />
+    <div className="absolute inset-0 -z-20 bg-[linear-gradient(90deg,rgba(14,14,16,0.84)_0%,rgba(14,14,16,0.67)_42%,rgba(14,14,16,0.36)_100%)] lg:bg-[linear-gradient(90deg,rgba(14,14,16,0.86)_0%,rgba(14,14,16,0.7)_28%,rgba(14,14,16,0.24)_48%,rgba(14,14,16,0.05)_64%,transparent_78%)]" />
 
-  return (
-    <section className="bg-[#111111]">
-      <div className="grid border-b border-[#303030] lg:min-h-[650px] lg:grid-cols-[0.92fr_1.08fr]">
-        <Container className="industrial-grid flex items-center py-16 sm:py-20 lg:py-24">
-          <div className="max-w-2xl lg:ml-auto lg:pr-14">
-            <p className="mb-5 flex items-center gap-3 font-heading text-sm font-bold uppercase tracking-[0.22em] text-(--accent)">
-              <span className="h-0.5 w-10 bg-(--accent)" />
-              Chicagoland freight &amp; Midwest logistics
-            </p>
-            <h1 className="font-heading text-5xl font-black uppercase leading-[0.92] tracking-[-0.025em] text-white sm:text-6xl lg:text-[5.25rem]">
-              Freight delivered.
-              <span className="mt-2 block text-(--accent)">Promises kept.</span>
-            </h1>
-            <p className="mt-7 max-w-xl text-lg leading-8 text-[#c2c2c2]">
-              Dependable freight transportation backed by experienced drivers,
-              reliable scheduling, and straight answers from pickup to delivery.
-            </p>
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <Button onClick={() => modal.openModal(primaryCta.modal)}>
-                {primaryCta.label}
-              </Button>
-              <Button href={siteConfig.contact.phoneHref} variant="secondary">
-                Call now
-              </Button>
-            </div>
-            <p className="mt-6 text-sm font-semibold uppercase tracking-[0.14em] text-[#8e8e8e]">
-              Commercial freight <span className="px-2 text-(--accent)">/</span>
-              Midwest reach <span className="px-2 text-(--accent)">/</span>
-              Direct communication
-            </p>
-          </div>
-        </Container>
-
-        <div className="relative min-h-[420px] overflow-hidden border-t border-[#303030] bg-[#161616] lg:min-h-full lg:border-l lg:border-t-0">
-          <Image
-            src="/pexels-hitesh-sarain-40372344-28264496.jpg"
-            alt="Commercial semi truck traveling on an open regional highway"
-            fill
-            className="object-cover object-center"
-            sizes="(max-width: 1024px) 100vw, 55vw"
-            preload
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-transparent" />
-          <div className="absolute bottom-0 left-0 border-l-4 border-(--accent) bg-black/85 px-6 py-5 backdrop-blur-sm sm:bottom-8 sm:left-8">
-            <p className="font-heading text-2xl font-black uppercase text-white">Built for the long haul</p>
-            <p className="mt-1 text-sm text-[#c7c7c7]">Safe. Professional. On schedule.</p>
-          </div>
+    <div className="mx-auto flex min-h-[680px] w-full max-w-(--container-width) items-center px-6 py-16 sm:min-h-[740px] lg:min-h-[860px] xl:min-h-[900px]">
+      <div className="max-w-[760px]">
+        <p className="mb-6 text-sm font-bold text-white/90">
+          Big Wicks Fireworks · La Porte, Indiana
+        </p>
+        <h1 className="text-balance font-heading text-[3.6rem] font-bold uppercase leading-[0.84] tracking-[-0.035em] text-white sm:text-7xl md:text-8xl lg:text-[6.7rem]">
+          Skip the rest.
+          <span className="mt-2 block text-[#ff5963]">Shop with the best.</span>
+        </h1>
+        <div className="mt-7 flex max-w-2xl gap-4">
+          <span className="w-1 shrink-0 bg-(--red)" aria-hidden="true" />
+          <p className="text-lg leading-8 text-white/90 sm:text-xl">
+            A huge in-store selection for family fun, backyard celebrations, and
+            finale-worthy nights brought to you by friendly people who can help
+            you choose.
+          </p>
+        </div>
+        <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+          <Button href="/#shop">Shop Fireworks</Button>
+          <Button href={siteConfig.contact.mapUrl} newTab variant="secondary">
+            Visit The Store
+          </Button>
+        </div>
+        <div className="mt-10 flex flex-wrap gap-x-7 gap-y-3 border-t border-white/25 pt-5 text-xs font-bold uppercase tracking-[0.08em] text-white/80">
+          <span>Open 7 days</span>
+          <span>3 miles south of New Buffalo</span>
+          <span>Helpful staff</span>
         </div>
       </div>
-
-      {modal.activeModal && (
-        <LeadModal
-          activeModal={modal.activeModal}
-          hasSubmitted={modal.hasSubmitted}
-          isSubmitting={modal.isSubmitting}
-          onClose={modal.closeModal}
-          onSubmit={modal.handleFormSubmit}
-          submitError={modal.submitError}
-        />
-      )}
-    </section>
-  );
-};
+    </div>
+  </section>
+);
 
 export default Hero;
