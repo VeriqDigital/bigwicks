@@ -6,18 +6,18 @@ const LocationSection = () => (
   <div>
     <div className="grid gap-12 lg:grid-cols-[0.82fr_1.18fr] lg:items-center">
       <div>
-        <p className="text-xs font-extrabold uppercase tracking-[0.24em] text-[#a92128]">Visit Big Wicks</p>
+        <p className="text-sm font-extrabold uppercase tracking-[0.1em] text-(--red)">Visit Big Wicks</p>
         <h2 className="text-balance mt-4 font-heading text-5xl font-bold uppercase leading-[0.9] text-[#171411] md:text-6xl">This is where you need to go</h2>
         <p className="mt-6 max-w-xl text-lg leading-8 text-[#5f5852]">Find us right on IN-39 in La Porte, about 3 miles south of downtown New Buffalo, Michigan.</p>
 
-        <address className="mt-8 rounded-[7px] border border-[#c9c2b7] bg-[#faf8f2] p-6 not-italic shadow-[0_12px_30px_rgba(33,27,22,0.06)]">
+        <address className="mt-8 rounded-[7px] border border-[#d5d5d0] bg-white p-6 not-italic">
           <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#a92128]">Big Wicks Fireworks LLC</p>
           <p className="mt-4 text-xl font-bold leading-7 text-[#171411]">{siteConfig.contact.addressLine1}<br />{siteConfig.contact.city}, {siteConfig.contact.state} {siteConfig.contact.postalCode}</p>
           <a href={siteConfig.contact.phoneHref} className="mt-4 block text-xl font-bold text-[#a92128] hover:text-(--red-hover)">{siteConfig.contact.phone}</a>
         </address>
 
         <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-          <Button href={siteConfig.contact.mapUrl} newTab>Get Directions</Button>
+          <Button href={siteConfig.contact.mapUrl} newTab variant="yellow">Get Directions</Button>
           <Button href={siteConfig.contact.phoneHref} variant="dark">Call The Store</Button>
         </div>
       </div>
@@ -31,18 +31,18 @@ const LocationSection = () => (
     </div>
 
     <div className="mt-12 grid overflow-hidden rounded-[7px] border border-[#bdb6ab] bg-white lg:grid-cols-[0.62fr_1.38fr]">
-      <div className="bg-[#191614] p-7 text-white sm:p-9">
-        <div className="flex h-1 w-20"><span className="w-1/3 bg-(--red)" /><span className="flex-1 bg-(--accent)" /></div>
+      <div className="bg-[#19191c] p-7 text-white sm:p-9">
+        <div className="flex h-1 w-20"><span className="w-4/5 bg-(--red)" /><span className="flex-1 bg-(--accent)" /></div>
         <h3 className="mt-6 font-heading text-3xl font-bold uppercase">Current listed hours</h3>
         <dl className="mt-6 space-y-3 text-sm">
           {siteConfig.hours.map(({ day, hours }) => (
-            <div key={day} className="flex justify-between gap-5 border-b border-[#3a332e] pb-3 last:border-0">
-              <dt className="text-[#a9a099]">{day}</dt>
+            <div key={day} className="flex justify-between gap-5 border-b border-[#3a3a3f] pb-3 last:border-0">
+              <dt className="text-[#aaa9a5]">{day}</dt>
               <dd className="font-bold text-white">{hours}</dd>
             </div>
           ))}
         </dl>
-        <p className="mt-5 text-xs leading-5 text-[#817870]">Hours may change seasonally. Call ahead to confirm before a long trip.</p>
+        <p className="mt-5 text-xs leading-5 text-[#92928f]">Hours may change seasonally. Call ahead to confirm before a long trip.</p>
       </div>
       <div className="min-h-[500px] bg-[#dedbd4]">
         <iframe src={siteConfig.contact.mapEmbedUrl} title="Map showing Big Wicks Fireworks in La Porte, Indiana" width="100%" height="100%" loading="lazy" className="min-h-[500px] border-0" referrerPolicy="no-referrer-when-downgrade" />

@@ -58,7 +58,7 @@ export const fireworksCategories = [
 ] as const;
 
 export const customerPriorities = [
-  { label: "Selection", title: "A selection worth the drive", description: "Shoppers consistently point to the range—from family-friendly novelties to bigger finale-ready choices." },
-  { label: "Guidance", title: "Real help, not guesswork", description: "Friendly, knowledgeable staff help match products to the kind of experience each customer wants." },
-  { label: "Value", title: "Beyond the giant-chain experience", description: "Customers come for strong prices and value-focused offers, then return for the personal service." },
+  { title: "Huge selection", description: "Shoppers consistently point to the range—from family-friendly novelties to bigger finale-ready choices." },
+  { title: "People who know fireworks", description: "Friendly, knowledgeable staff help match products to the kind of experience each customer wants." },
+  { title: "Better than the big-chain experience", description: "Customers come for strong prices and value-focused offers, then return for the personal service." },
 ] as const;

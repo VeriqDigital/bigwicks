@@ -12,15 +12,15 @@ export default function Home() {
     <>
       <Hero />
       <TrustStrip />
-      <Section id="shop" tone="dark"><CategorySection /></Section>
-      <Section id="deals" tone="light"><DealsSection /></Section>
+      <Section id="shop" tone="light"><CategorySection /></Section>
+      <Section id="deals" tone="promo"><DealsSection /></Section>
       <Section id="about" tone="black"><AboutSection /></Section>
-      <Section tone="dark"><SelectionShowcase /></Section>
+      <Section tone="white"><SelectionShowcase /></Section>
       <Section id="why-big-wicks" tone="light"><WhyChooseSection /></Section>
-      <Section id="demos" tone="black"><DemoSection /></Section>
-      <Section id="visit" tone="light"><LocationSection /></Section>
-      <Section id="faq" tone="black"><FAQ /></Section>
-      <Section tone="dark"><ContactCtaSection /></Section>
+      <Section id="demos" tone="dark"><DemoSection /></Section>
+      <Section id="visit" tone="white"><LocationSection /></Section>
+      <Section id="faq" tone="light"><FAQ /></Section>
+      <Section tone="white"><ContactCtaSection /></Section>
     </>
   );
 }

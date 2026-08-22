@@ -19,8 +19,8 @@ const Navbar = () => {
   }, [isMenuOpen]);
 
   return (
-    <header className="sticky inset-x-0 top-0 z-50 bg-[#100e0d]/97 shadow-[0_12px_35px_rgba(0,0,0,0.48)] backdrop-blur-xl">
-      <div className="border-b border-[#37312d] bg-[#211d1a]">
+    <header className="sticky inset-x-0 top-0 z-50 bg-[#111113]/97 shadow-[0_10px_28px_rgba(0,0,0,0.34)] backdrop-blur-xl">
+      <div className="border-b border-[#343438] bg-[#1d1d20]">
         <div className="mx-auto flex h-8 max-w-(--container-width) items-center justify-between gap-4 px-4 text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#d2cdc5] sm:px-6 sm:text-[0.68rem]">
           <p className="truncate">{siteConfig.announcement.message}</p>
           <Link href={siteConfig.announcement.href} className="hidden shrink-0 text-(--accent) underline decoration-(--red) decoration-2 underline-offset-4 hover:text-(--accent-hover) sm:block">{siteConfig.announcement.actionLabel}</Link>
@@ -28,10 +28,11 @@ const Navbar = () => {
       </div>
 
       <nav className="relative mx-auto flex h-[82px] max-w-(--container-width) items-center justify-between px-4 sm:px-6 lg:h-[96px]" aria-label="Main navigation">
-        <Link href="/" className="relative block h-16 w-[180px] shrink-0 border-l-4 border-l-(--red) border-b-4 border-b-(--accent) bg-[#f3f0e8] shadow-[6px_6px_0_rgba(0,0,0,0.25)] sm:w-[202px] lg:h-[78px] lg:w-[236px]" aria-label="Big Wicks Fireworks home">
+        <Link href="/" className="relative block h-16 w-[180px] shrink-0 border-l-4 border-l-(--red) border-b-4 border-b-(--red) bg-[#f5f5f2] shadow-[4px_4px_0_rgba(0,0,0,0.22)] sm:w-[202px] lg:h-[78px] lg:w-[236px]" aria-label="Big Wicks Fireworks home">
           <span className="absolute inset-1.5 block">
             <Image src="/images/brand/big-wicks-logo.jpg" alt="Big Wicks Fireworks" fill className="object-contain" sizes="(max-width: 1024px) 202px, 236px" preload />
           </span>
+          <span className="absolute right-0 top-0 h-2 w-8 bg-(--accent)" aria-hidden="true" />
         </Link>
 
         <div className="hidden items-center gap-6 lg:flex xl:gap-8">
@@ -39,10 +40,10 @@ const Navbar = () => {
             const isShop = item.label === "Shop Fireworks";
             const isDeals = item.label === "Deals";
             return (
-              <Link key={item.label} href={item.href} className={`group relative py-3 text-xs font-bold uppercase tracking-[0.12em] transition-colors ${isShop ? "text-(--accent)" : "text-[#e4dfd8] hover:text-white"}`}>
-                {isDeals && <span className="mr-2 inline-block size-1.5 bg-(--red) align-middle" aria-hidden="true" />}
+              <Link key={item.label} href={item.href} className={`group relative py-3 text-xs font-bold uppercase tracking-[0.12em] transition-colors ${isShop ? "text-[#ff5963]" : "text-[#f2f2ef] hover:text-white"}`}>
+                {isDeals && <span className="mr-2 inline-block size-1.5 bg-(--accent) align-middle" aria-hidden="true" />}
                 {item.label}
-                <span className={`absolute inset-x-0 bottom-1 h-0.5 origin-left transition-transform ${isShop ? "scale-x-100 bg-(--accent)" : "scale-x-0 bg-(--red) group-hover:scale-x-100"}`} aria-hidden="true" />
+                <span className={`absolute inset-x-0 bottom-1 h-0.5 origin-left bg-(--red) transition-transform ${isShop ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"}`} aria-hidden="true" />
               </Link>
             );
           })}
@@ -66,16 +67,16 @@ const Navbar = () => {
             </span>
           </button>
         </div>
-        <div className="absolute inset-x-0 bottom-0 flex h-1" aria-hidden="true"><span className="w-1/4 bg-(--red)" /><span className="flex-1 bg-(--accent)" /></div>
+        <div className="absolute inset-x-0 bottom-0 flex h-1" aria-hidden="true"><span className="flex-1 bg-(--red)" /><span className="w-[12%] bg-(--accent)" /></div>
       </nav>
 
       {isMenuOpen && (
-        <div id="mobile-navigation-menu" className="border-t border-[#3a332e] bg-[#151210] p-3 text-white lg:hidden">
+        <div id="mobile-navigation-menu" className="border-t border-[#3a3a3f] bg-[#151517] p-3 text-white lg:hidden">
           <div className="grid">
             {navigation.map((item) => (
-              <Link key={item.label} href={item.href} onClick={() => setIsMenuOpen(false)} className="border-b border-[#3a332e] px-4 py-4 text-sm font-bold uppercase tracking-[0.12em] hover:bg-[#211d1a] hover:text-(--accent)">{item.label}</Link>
+              <Link key={item.label} href={item.href} onClick={() => setIsMenuOpen(false)} className="border-b border-[#3a3a3f] px-4 py-4 text-sm font-bold uppercase tracking-[0.12em] hover:bg-[#242428] hover:text-[#ff5a65]">{item.label}</Link>
             ))}
-            <a href={primaryCta.href} target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)} className="mt-3 rounded-[3px] bg-(--accent) px-4 py-4 text-center text-xs font-extrabold uppercase tracking-[0.14em] text-[#15120f] shadow-[3px_3px_0_var(--red)]">{primaryCta.label}</a>
+            <a href={primaryCta.href} target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)} className="mt-3 rounded-[3px] bg-(--red) px-4 py-4 text-center text-xs font-extrabold uppercase tracking-[0.14em] text-white">{primaryCta.label}</a>
           </div>
         </div>
       )}

@@ -1,25 +1,25 @@
 @import "tailwindcss";
 
 :root {
-  --background: #11100f;
-  --surface: #1a1715;
-  --surface-deep: #0c0b0a;
-  --surface-raised: #211d1a;
-  --surface-hover: #29231f;
-  --foreground: #f7f3e9;
-  --muted: #b7afa6;
-  --primary: #ffd426;
-  --primary-hover: #ffe45d;
-  --accent: #ffd426;
-  --accent-hover: #ffe45d;
-  --red: #cf3034;
-  --red-hover: #e13d42;
-  --red-dark: #861f25;
-  --ember: #cf3034;
-  --ember-dark: #861f25;
-  --silver: #d5d3cd;
-  --light: #f1eee6;
-  --border: #3a342f;
+  --background: #f3f3f0;
+  --surface: #ffffff;
+  --surface-deep: #111113;
+  --surface-raised: #f8f8f5;
+  --surface-hover: #efefeb;
+  --foreground: #171719;
+  --muted: #625f5b;
+  --primary: #d62935;
+  --primary-hover: #b91f29;
+  --accent: #ffdc24;
+  --accent-hover: #ffe75a;
+  --red: #d62935;
+  --red-hover: #b91f29;
+  --red-dark: #8f1720;
+  --ember: #d62935;
+  --ember-dark: #8f1720;
+  --silver: #d9dadd;
+  --light: #f3f3f0;
+  --border: #d5d5d0;
   --container-width: 1280px;
   --radius-sm: 3px;
   --radius-md: 7px;
@@ -55,27 +55,7 @@ a, button { -webkit-tap-highlight-color: transparent; }
   outline-offset: 3px;
 }
 
-::selection { background: var(--accent); color: #11100f; }
-
-.brand-burst {
-  background-image: repeating-conic-gradient(
-    from 8deg at 82% 30%,
-    rgba(255, 212, 38, 0.065) 0deg,
-    rgba(255, 212, 38, 0.065) 0.7deg,
-    transparent 0.7deg,
-    transparent 8deg
-  );
-}
-
-.retail-stripe {
-  background-image: repeating-linear-gradient(
-    -45deg,
-    rgba(207, 48, 52, 0.11) 0,
-    rgba(207, 48, 52, 0.11) 8px,
-    transparent 8px,
-    transparent 16px
-  );
-}
+::selection { background: var(--accent); color: #171719; }
 
 .text-balance { text-wrap: balance; }
 

@@ -2,7 +2,7 @@ import Link from "next/link";
 
 type ButtonProps = {
   children: React.ReactNode;
-  variant?: "primary" | "secondary" | "dark";
+  variant?: "primary" | "yellow" | "secondary" | "dark" | "white" | "black";
   href?: string;
   newTab?: boolean;
   onClick?: () => void;
@@ -22,11 +22,17 @@ const Button = ({
 
   const variantClasses = {
     primary:
-      "border-(--accent) bg-(--accent) text-[#15120f] shadow-[3px_3px_0_var(--red)] hover:-translate-y-0.5 hover:border-(--accent-hover) hover:bg-(--accent-hover)",
+      "border-(--red) bg-(--red) text-white hover:-translate-y-0.5 hover:border-(--red-hover) hover:bg-(--red-hover)",
+    yellow:
+      "border-(--accent) bg-(--accent) text-[#171719] hover:-translate-y-0.5 hover:border-(--accent-hover) hover:bg-(--accent-hover)",
     secondary:
-      "border-white/55 bg-black/10 text-white hover:border-(--accent) hover:bg-(--accent) hover:text-[#15120f]",
+      "border-white/65 bg-transparent text-white hover:border-white hover:bg-white hover:text-[#171719]",
     dark:
-      "border-[#24201d] bg-transparent text-[#171411] hover:border-(--red) hover:bg-(--red) hover:text-white",
+      "border-[#242426] bg-transparent text-[#171719] hover:border-(--red) hover:bg-(--red) hover:text-white",
+    white:
+      "border-white bg-white text-(--red) hover:-translate-y-0.5 hover:bg-[#f4f4f1]",
+    black:
+      "border-[#171719] bg-[#171719] text-white hover:-translate-y-0.5 hover:border-[#303034] hover:bg-[#303034]",
   };
 
   if (href) {

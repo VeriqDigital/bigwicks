@@ -15,7 +15,6 @@ const Hero = () => (
     />
     <div className="absolute inset-0 -z-20 bg-[linear-gradient(90deg,rgba(10,9,8,0.98)_0%,rgba(10,9,8,0.93)_32%,rgba(10,9,8,0.55)_62%,rgba(10,9,8,0.16)_100%)]" />
     <div className="absolute inset-0 -z-20 bg-[linear-gradient(0deg,rgba(10,9,8,0.86)_0%,transparent_48%,rgba(10,9,8,0.22)_100%)]" />
-    <div className="brand-burst absolute inset-0 -z-10 opacity-55" aria-hidden="true" />
 
     <div className="mx-auto flex min-h-[680px] w-full max-w-(--container-width) items-center px-6 py-16 sm:min-h-[740px] lg:min-h-[780px]">
       <div className="max-w-[760px]">
@@ -35,10 +34,10 @@ const Hero = () => (
           <Button href="/#shop">Shop Fireworks</Button>
           <Button href={siteConfig.contact.mapUrl} newTab variant="secondary">Visit The Store</Button>
         </div>
-        <div className="mt-10 flex flex-wrap gap-x-7 gap-y-3 border-t border-white/20 pt-5 text-xs font-bold uppercase tracking-[0.13em] text-[#c9c2ba]">
-          <span><b className="mr-2 text-(--accent)">01</b> Open 7 days</span>
-          <span><b className="mr-2 text-(--accent)">02</b> 3 miles south of New Buffalo</span>
-          <span><b className="mr-2 text-(--accent)">03</b> Helpful staff</span>
+        <div className="mt-10 flex flex-wrap gap-x-7 gap-y-3 border-t border-white/20 pt-5 text-xs font-bold uppercase tracking-[0.1em] text-[#d4d4d0]">
+          <span><b className="mr-2 inline-block size-1.5 bg-(--red) align-middle" />Open 7 days</span>
+          <span><b className="mr-2 inline-block size-1.5 bg-(--red) align-middle" />3 miles south of New Buffalo</span>
+          <span><b className="mr-2 inline-block size-1.5 bg-(--red) align-middle" />Helpful staff</span>
         </div>
       </div>
     </div>
