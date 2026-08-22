@@ -2,7 +2,7 @@ import Link from "next/link";
 
 type ButtonProps = {
   children: React.ReactNode;
-  variant?: "primary" | "secondary" | "dark" | "white" | "black";
+  variant?: "primary" | "secondary" | "dark";
   href?: string;
   newTab?: boolean;
   onClick?: () => void;
@@ -26,10 +26,6 @@ const Button = ({
     secondary:
       "border-white/65 bg-transparent text-white hover:border-white hover:bg-white hover:text-[#171719]",
     dark: "border-[#242426] bg-transparent text-[#171719] hover:border-(--red) hover:bg-(--red) hover:text-white",
-    white:
-      "border-white bg-white text-[#171719] hover:border-(--red) hover:text-(--red)",
-    black:
-      "border-[#171719] bg-[#171719] text-white hover:border-[#303034] hover:bg-[#303034]",
   };
 
   if (href) {

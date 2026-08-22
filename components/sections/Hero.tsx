@@ -11,7 +11,7 @@ const Hero = () => (
       className="-z-30 object-cover object-[center_38%] sm:object-[center_34%] lg:object-[center_26%] xl:object-[center_24%]"
       sizes="100vw"
       preload
-      quality={100}
+      quality={90}
     />
     <div className="absolute inset-0 -z-20 bg-[linear-gradient(90deg,rgba(14,14,16,0.84)_0%,rgba(14,14,16,0.67)_42%,rgba(14,14,16,0.36)_100%)] lg:bg-[linear-gradient(90deg,rgba(14,14,16,0.86)_0%,rgba(14,14,16,0.7)_28%,rgba(14,14,16,0.24)_48%,rgba(14,14,16,0.05)_64%,transparent_78%)]" />
 

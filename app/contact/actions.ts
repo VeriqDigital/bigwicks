@@ -1,6 +1,5 @@
 "use server";
 
-import { headers } from "next/headers";
 import {
   contactSubjects,
   type ContactField,
@@ -8,35 +7,9 @@ import {
 } from "./contact-form-state";
 import { siteConfig } from "@/config/site";
 
-const rateLimitWindowMs = 10 * 60 * 1000;
-const maxSubmissionsPerWindow = 5;
-const submissionWindows = new Map<string, { count: number; startedAt: number }>();
-
 const getString = (formData: FormData, name: string) => {
   const value = formData.get(name);
   return typeof value === "string" ? value.trim() : "";
-};
-
-const checkRateLimit = (key: string) => {
-  const now = Date.now();
-
-  if (submissionWindows.size > 500) {
-    for (const [entryKey, entry] of submissionWindows) {
-      if (now - entry.startedAt > rateLimitWindowMs) submissionWindows.delete(entryKey);
-    }
-  }
-
-  const current = submissionWindows.get(key);
-
-  if (!current || now - current.startedAt > rateLimitWindowMs) {
-    submissionWindows.set(key, { count: 1, startedAt: now });
-    return true;
-  }
-
-  if (current.count >= maxSubmissionsPerWindow) return false;
-
-  current.count += 1;
-  return true;
 };
 
 export async function submitContactForm(
@@ -85,18 +58,6 @@ export async function submitContactForm(
       status: "error",
       message: "Please correct the highlighted fields and try again.",
       fieldErrors,
-    };
-  }
-
-  const requestHeaders = await headers();
-  const forwardedFor = requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const clientAddress = forwardedFor || requestHeaders.get("x-real-ip") || "unknown";
-  const rateLimitKey = `${clientAddress.slice(0, 100)}:${email.toLowerCase()}`;
-
-  if (!checkRateLimit(rateLimitKey)) {
-    return {
-      status: "error",
-      message: "Too many messages were submitted recently. Please wait a few minutes or call the store.",
     };
   }
 

@@ -9,7 +9,7 @@ export const fireworksCategories = [
   {
     title: "200 Gram Cakes",
     description: "Versatile favorites for adding variety, color, and pace.",
-    image: "/200gcakes.jpg",
+    image: "/images/categories/200-gram-cakes.jpg",
     alt: "Shelves of 200 gram fireworks cakes displayed inside Big Wicks",
     position: "center 52%",
   },
@@ -23,14 +23,14 @@ export const fireworksCategories = [
   {
     title: "Fountains",
     description: "Ground-based effects with plenty of color and sparkle.",
-    image: "/fountains.jpg",
+    image: "/images/categories/fountains.jpg",
     alt: "Shelves of colorful fountain fireworks inside Big Wicks",
     position: "center 56%",
   },
   {
     title: "Firecrackers",
     description: "Classic choices in a wide range of pack sizes and styles.",
-    image: "/firecrackers.jpg",
+    image: "/images/categories/firecrackers.jpg",
     alt: "Stacks of red firecracker packs displayed inside Big Wicks",
     position: "center 68%",
   },
@@ -44,7 +44,7 @@ export const fireworksCategories = [
   {
     title: "Novelties",
     description: "Approachable picks for family celebrations and backyard fun.",
-    image: "/novelties.jpg",
+    image: "/images/categories/novelties.jpg",
     alt: "Colorful novelty fireworks and family-friendly items on Big Wicks shelves",
     position: "center 54%",
   },
