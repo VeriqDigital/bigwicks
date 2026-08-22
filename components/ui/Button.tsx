@@ -2,7 +2,7 @@ import Link from "next/link";
 
 type ButtonProps = {
   children: React.ReactNode;
-  variant?: "primary" | "yellow" | "secondary" | "dark" | "white" | "black";
+  variant?: "primary" | "secondary" | "dark" | "white" | "black";
   href?: string;
   newTab?: boolean;
   onClick?: () => void;
@@ -18,21 +18,18 @@ const Button = ({
   type = "button",
 }: ButtonProps) => {
   const baseClasses =
-    "inline-flex cursor-pointer items-center justify-center rounded-[3px] border-2 px-6 py-3.5 text-xs font-extrabold uppercase tracking-[0.14em] transition-all duration-200 focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-(--accent)";
+    "inline-flex cursor-pointer items-center justify-center rounded-[3px] border-2 px-6 py-3.5 text-xs font-extrabold uppercase tracking-[0.12em] transition-colors duration-200 focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-(--red)";
 
   const variantClasses = {
     primary:
-      "border-(--red) bg-(--red) text-white hover:-translate-y-0.5 hover:border-(--red-hover) hover:bg-(--red-hover)",
-    yellow:
-      "border-(--accent) bg-(--accent) text-[#171719] hover:-translate-y-0.5 hover:border-(--accent-hover) hover:bg-(--accent-hover)",
+      "border-(--red) bg-(--red) text-white hover:border-(--red-hover) hover:bg-(--red-hover)",
     secondary:
       "border-white/65 bg-transparent text-white hover:border-white hover:bg-white hover:text-[#171719]",
-    dark:
-      "border-[#242426] bg-transparent text-[#171719] hover:border-(--red) hover:bg-(--red) hover:text-white",
+    dark: "border-[#242426] bg-transparent text-[#171719] hover:border-(--red) hover:bg-(--red) hover:text-white",
     white:
-      "border-white bg-white text-(--red) hover:-translate-y-0.5 hover:bg-[#f4f4f1]",
+      "border-white bg-white text-[#171719] hover:border-(--red) hover:text-(--red)",
     black:
-      "border-[#171719] bg-[#171719] text-white hover:-translate-y-0.5 hover:border-[#303034] hover:bg-[#303034]",
+      "border-[#171719] bg-[#171719] text-white hover:border-[#303034] hover:bg-[#303034]",
   };
 
   if (href) {
