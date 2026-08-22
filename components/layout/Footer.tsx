@@ -102,7 +102,7 @@ const Footer = () => (
             rel="noopener noreferrer"
             className="text-[#c4c4c0] hover:text-[#ff6872]"
           >
-            Veriq Digital
+            Veriq
           </Link>
         </p>
       </div>
