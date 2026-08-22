@@ -1,22 +1,30 @@
 @import "tailwindcss";
 
 :root {
-  --background: #111111;
-  --surface: #171717;
-  --surface-deep: #111111;
-  --surface-hover: #222222;
-  --foreground: #ffffff;
-  --muted: #a5a5a5;
-  --primary: #c9a227;
-  --primary-hover: #ddb83e;
-  --accent: #c9a227;
-  --accent-hover: #ddb83e;
-  --border: #313131;
+  --background: #11100f;
+  --surface: #1a1715;
+  --surface-deep: #0c0b0a;
+  --surface-raised: #211d1a;
+  --surface-hover: #29231f;
+  --foreground: #f7f3e9;
+  --muted: #b7afa6;
+  --primary: #ffd426;
+  --primary-hover: #ffe45d;
+  --accent: #ffd426;
+  --accent-hover: #ffe45d;
+  --red: #cf3034;
+  --red-hover: #e13d42;
+  --red-dark: #861f25;
+  --ember: #cf3034;
+  --ember-dark: #861f25;
+  --silver: #d5d3cd;
+  --light: #f1eee6;
+  --border: #3a342f;
   --container-width: 1280px;
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 18px;
-  --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.4);
+  --radius-sm: 3px;
+  --radius-md: 7px;
+  --radius-lg: 12px;
+  --shadow-lg: 0 24px 70px rgba(0, 0, 0, 0.38);
 }
 
 @theme inline {
@@ -24,13 +32,12 @@
   --font-heading: var(--font-roboto-condensed);
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 html {
   background-color: var(--background);
   scroll-behavior: smooth;
+  scroll-padding-top: 8rem;
 }
 
 body {
@@ -41,18 +48,38 @@ body {
   overflow-x: hidden;
 }
 
+a, button { -webkit-tap-highlight-color: transparent; }
+
 :focus-visible {
-  outline: 3px solid currentColor;
+  outline: 3px solid var(--accent);
   outline-offset: 3px;
 }
 
-::selection {
-  background: var(--accent);
-  color: #111111;
+::selection { background: var(--accent); color: #11100f; }
+
+.brand-burst {
+  background-image: repeating-conic-gradient(
+    from 8deg at 82% 30%,
+    rgba(255, 212, 38, 0.065) 0deg,
+    rgba(255, 212, 38, 0.065) 0.7deg,
+    transparent 0.7deg,
+    transparent 8deg
+  );
 }
 
-.industrial-grid {
-  background-image: linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
-  background-size: 44px 44px;
+.retail-stripe {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(207, 48, 52, 0.11) 0,
+    rgba(207, 48, 52, 0.11) 8px,
+    transparent 8px,
+    transparent 16px
+  );
+}
+
+.text-balance { text-wrap: balance; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
 }

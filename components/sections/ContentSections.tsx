@@ -1,125 +1,138 @@
-"use client";
-
 import Image from "next/image";
 import Button from "@/components/ui/Button";
-import LeadModal from "@/components/layout/LeadModal";
-import useLeadModal from "@/components/layout/useLeadModal";
-import { primaryCta } from "@/config/site";
+import { customerPriorities } from "@/data/fireworks";
+import { siteConfig } from "@/config/site";
 
-export const FleetShowcase = () => (
+const featureSlots = [
+  { eyebrow: "Current value", title: "In-store deals", description: "Promotions can change quickly. Stop in or call for verified current specials and discounts.", action: "Get directions", href: siteConfig.contact.mapUrl },
+  { eyebrow: "Team favorites", title: "Staff picks", description: "Tell us the effect and experience you want. Our team can point you toward standout choices in the store.", action: "Call the store", href: siteConfig.contact.phoneHref },
+  { eyebrow: "Catalog preview", title: "New & seasonal", description: "This space is ready for new arrivals and seasonal highlights once live product data is connected.", action: "Explore categories", href: "/#shop" },
+] as const;
+
+export const DealsSection = () => (
   <div>
-    <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-      <div className="max-w-3xl">
-        <p className="text-sm font-bold uppercase tracking-[0.3em] text-(--accent)">On the road. On the job.</p>
-        <h2 className="mt-4 font-heading text-4xl font-black uppercase leading-[0.95] text-white md:text-6xl">Equipment ready for real work</h2>
+    <div className="flex max-w-5xl flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <p className="text-xs font-extrabold uppercase tracking-[0.24em] text-[#a92128]">Deals & featured picks</p>
+        <h2 className="text-balance mt-4 font-heading text-5xl font-bold uppercase leading-[0.9] text-[#171411] md:text-6xl">More spark for your spend</h2>
       </div>
-      <p className="max-w-md leading-7 text-[#aaa]">Commercial equipment, attentive drivers, and disciplined loading practices keep freight moving safely through every stage.</p>
+      <p className="max-w-md leading-7 text-[#5f5852]">Big Wicks is known for value-focused offers, including BOGO deals. Current offer details are confirmed in store rather than guessed online.</p>
     </div>
-    <div className="mt-12 grid gap-4 md:grid-cols-12 md:grid-rows-2">
-      <figure className="relative min-h-[440px] overflow-hidden md:col-span-8 md:row-span-2">
-        <Image src="/pexels-quintingellar-6563903.jpg" alt="Semi truck and trailer crossing a desert highway" fill className="object-cover" sizes="(max-width: 768px) 100vw, 66vw" />
-        <figcaption className="absolute bottom-0 left-0 border-l-4 border-(--accent) bg-black/85 px-5 py-3 font-heading text-sm font-bold uppercase tracking-[0.18em]">Regional transportation</figcaption>
-      </figure>
-      <figure className="relative min-h-52 overflow-hidden md:col-span-4">
-        <Image src="/pexels-elevate-1267329.jpg" alt="Forklift loading commercial freight at a dock" fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
-      </figure>
-      <figure className="relative min-h-52 overflow-hidden md:col-span-4">
-        <Image src="/pexels-duaenam-kosonglima-424968847-37154110.jpg" alt="Truck and freight container at a commercial yard" fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
-      </figure>
-    </div>
-  </div>
-);
 
-const industries = ["Manufacturing", "Construction", "Retail distribution", "Agriculture", "Industrial", "Commercial suppliers"];
-
-export const IndustriesSection = () => (
-  <div className="grid gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
-    <div>
-      <p className="text-sm font-bold uppercase tracking-[0.3em] text-[#8c6f14]">Industries served</p>
-      <h2 className="mt-4 font-heading text-4xl font-black uppercase leading-[0.95] text-[#171717] md:text-6xl">Built around your operation</h2>
-      <p className="mt-6 max-w-xl text-lg leading-8 text-[#565656]">Different freight comes with different pressures. S&B Express plans around your schedule, your dock, and the realities of your supply chain.</p>
-    </div>
-    <div className="grid gap-px bg-[#c8c2b5] sm:grid-cols-2">
-      {industries.map((industry, index) => (
-        <div key={industry} className="group flex min-h-28 items-center gap-5 bg-[#faf8f3] p-6 transition hover:bg-[#111111]">
-          <span className="font-heading text-sm font-black text-[#9b7b19]">{String(index + 1).padStart(2, "0")}</span>
-          <h3 className="font-heading text-xl font-black uppercase text-[#202020] group-hover:text-white">{industry}</h3>
-        </div>
-      ))}
-    </div>
-  </div>
-);
-
-export const AboutSection = () => (
-  <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
-    <div className="relative min-h-[520px] overflow-hidden border border-[#373737]">
-      <Image src="/pexels-giovanni-spoletini-311699-14206821.jpg" alt="Commercial truck ready for agricultural freight service" fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/70 to-transparent p-8 pt-28">
-        <p className="font-heading text-3xl font-black uppercase text-white">Midwest grit. Professional standards.</p>
-      </div>
-    </div>
-    <div className="lg:pl-8">
-      <p className="text-sm font-bold uppercase tracking-[0.3em] text-(--accent)">About S&amp;B Express</p>
-      <h2 className="mt-4 font-heading text-4xl font-black uppercase leading-[0.95] text-white md:text-6xl">Transportation built on trust</h2>
-      <p className="mt-7 text-lg leading-8 text-[#b2b2b2]">A freight partner should do what it says it will do. That means showing up prepared, communicating when plans change, handling every load with care, and respecting the businesses on both ends of the route.</p>
-      <p className="mt-5 text-lg leading-8 text-[#b2b2b2]">S&B Express is built around those fundamentals. We focus on safe transportation, dependable schedules, and long-term working relationships—not empty promises.</p>
-      <div className="mt-8"><Button href="/about" variant="secondary">Our company</Button></div>
-    </div>
-  </div>
-);
-
-const strengths = [
-  ["Reliable scheduling", "Pickup and delivery plans built around real operating timelines."],
-  ["Professional drivers", "Experienced people who represent your freight and our company well."],
-  ["Safe transportation", "Careful handling, responsible driving, and disciplined operating practices."],
-  ["Responsive communication", "Direct updates and practical answers when timing matters."],
-  ["Commercial experience", "A working understanding of docks, jobsites, suppliers, and deadlines."],
-  ["Customer focused", "Transportation decisions made with your operation in mind."],
-];
-
-export const WhyChooseSection = () => (
-  <div>
-    <div className="max-w-4xl">
-      <p className="text-sm font-bold uppercase tracking-[0.3em] text-(--accent)">Why S&amp;B Express</p>
-      <h2 className="mt-4 font-heading text-4xl font-black uppercase leading-[0.95] text-white md:text-6xl">No shortcuts. No runaround.</h2>
-    </div>
-    <div className="mt-12 grid gap-px bg-[#3a3a3a] md:grid-cols-2 lg:grid-cols-3">
-      {strengths.map(([title, description], index) => (
-        <article key={title} className="min-h-56 bg-[#1f1f1f] p-7">
-          <div className="flex size-11 items-center justify-center border border-(--accent) font-heading text-sm font-black text-(--accent)">{String(index + 1).padStart(2, "0")}</div>
-          <h3 className="mt-6 font-heading text-xl font-black uppercase text-white">{title}</h3>
-          <p className="mt-3 leading-7 text-[#aaa]">{description}</p>
+    <div className="mt-12 grid gap-5 lg:grid-cols-3">
+      {featureSlots.map((slot, index) => (
+        <article key={slot.title} className="relative flex min-h-80 flex-col overflow-hidden rounded-[7px] border border-[#c9c2b7] bg-[#faf8f2] p-7 shadow-[0_14px_35px_rgba(33,27,22,0.07)] sm:p-8">
+          <span className="absolute inset-x-0 top-0 flex h-1" aria-hidden="true"><span className="w-1/3 bg-(--red)" /><span className="flex-1 bg-(--accent)" /></span>
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#a92128]">{slot.eyebrow}</p>
+            <span className="flex size-10 items-center justify-center rounded-[3px] bg-(--accent) font-heading text-lg font-bold text-[#171411]">0{index + 1}</span>
+          </div>
+          <h3 className="mt-8 font-heading text-3xl font-bold uppercase leading-none text-[#171411]">{slot.title}</h3>
+          <p className="mt-4 flex-1 leading-7 text-[#5f5852]">{slot.description}</p>
+          <a href={slot.href} className="group mt-7 flex items-center justify-between border-t border-[#d7d1c7] pt-5 text-xs font-extrabold uppercase tracking-[0.13em] text-[#171411]">
+            {slot.action}<span className="text-xl text-[#a92128] transition-transform group-hover:translate-x-1" aria-hidden="true">→</span>
+          </a>
         </article>
       ))}
     </div>
   </div>
 );
 
-const testimonials = [
-  ["Operations Manager", "Midwest Manufacturer", "S&B keeps us informed and stays ahead of the details. Our pickups are organized, our team knows what to expect, and the freight arrives when promised."],
-  ["Purchasing Director", "Commercial Supplier", "We needed a carrier that could handle a recurring regional lane without constant follow-up. S&B has been dependable and easy to work with."],
-  ["Project Coordinator", "Construction Company", "Jobsites do not leave much room for missed windows. Their driver communication and scheduling have made material deliveries much easier to manage."],
-];
-
-export const TestimonialsSection = () => (
-  <div>
-    <div className="max-w-3xl">
-      <p className="text-sm font-bold uppercase tracking-[0.3em] text-[#8c6f14]">Customer feedback</p>
-      <h2 className="mt-4 font-heading text-4xl font-black uppercase leading-[0.95] text-[#171717] md:text-6xl">Trusted where it counts</h2>
+export const AboutSection = () => (
+  <div className="grid gap-12 lg:grid-cols-[1.22fr_0.78fr] lg:items-center">
+    <div className="relative min-h-[420px] overflow-hidden rounded-[7px] border border-[#453c35] bg-[#211d1a] sm:min-h-[520px] lg:min-h-[590px]">
+      <Image src="/images/store/big-wicks-storefront-night.jpg" alt="Big Wicks Fireworks storefront illuminated at night in La Porte, Indiana" fill className="object-cover object-center" sizes="(max-width: 1024px) 100vw, 62vw" />
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#0b0a09] via-[#0b0a09]/70 to-transparent p-7 pt-36 sm:p-9 sm:pt-40">
+        <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-(--accent)">A real local store on IN-39</p>
+        <p className="mt-2 max-w-xl font-heading text-3xl font-bold uppercase leading-none text-white sm:text-4xl">Three miles south of downtown New Buffalo</p>
+      </div>
+      <div className="absolute left-0 top-8 h-16 w-1.5 bg-(--red)" aria-hidden="true" />
     </div>
+
+    <div>
+      <p className="text-xs font-extrabold uppercase tracking-[0.24em] text-(--accent)">About Big Wicks</p>
+      <h2 className="text-balance mt-4 font-heading text-5xl font-bold uppercase leading-[0.9] text-white md:text-6xl">The local alternative to the giant chains</h2>
+      <p className="mt-7 text-lg leading-8 text-[#c1b9b1]">Big Wicks is one of Indiana&apos;s newer retail fireworks destinations, located in La Porte just 3 miles south of downtown New Buffalo. Inside, you&apos;ll find an organized store, a broad selection, and people ready to help.</p>
+      <p className="mt-5 leading-7 text-[#a69e97]">Whether you&apos;re planning a family celebration or looking for something with more impact, the goal is simple: make it easier to leave with fireworks you&apos;re excited to light.</p>
+      <div className="mt-8"><Button href={siteConfig.contact.mapUrl} newTab variant="secondary">Plan Your Visit</Button></div>
+    </div>
+  </div>
+);
+
+export const SelectionShowcase = () => (
+  <div>
+    <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+      <div className="max-w-4xl">
+        <p className="text-xs font-extrabold uppercase tracking-[0.24em] text-(--accent)">Proof of selection</p>
+        <h2 className="text-balance mt-4 font-heading text-5xl font-bold uppercase leading-[0.9] text-white md:text-7xl">That place is loaded</h2>
+      </div>
+      <p className="max-w-md leading-7 text-[#b9b1aa]">Bright shelves, long aisles, and options for different kinds of celebrations. The variety is easier to understand when you see the real store.</p>
+    </div>
+
+    <div className="mt-12 grid gap-5 lg:grid-cols-[1.35fr_0.65fr]">
+      <figure className="relative min-h-[390px] overflow-hidden rounded-[7px] border border-[#463d36] sm:min-h-[520px] lg:min-h-[640px]">
+        <Image src="/images/store/big-wicks-interior-overview.jpg" alt="Wide elevated view across the fully stocked Big Wicks Fireworks store" fill className="object-cover object-center" sizes="(max-width: 1024px) 100vw, 68vw" />
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-7 pt-28">
+          <figcaption className="max-w-xl font-heading text-2xl font-bold uppercase text-white sm:text-3xl">A full store built around choice</figcaption>
+        </div>
+      </figure>
+      <figure className="relative min-h-[480px] overflow-hidden rounded-[7px] border border-[#463d36] lg:min-h-[640px]">
+        <Image src="/images/store/big-wicks-interior-aisle-cakes.jpg" alt="A colorful aisle stacked high with fireworks inside Big Wicks" fill className="object-cover object-[center_48%]" sizes="(max-width: 1024px) 100vw, 32vw" />
+        <div className="absolute inset-x-0 top-0 flex h-1.5" aria-hidden="true"><span className="w-1/3 bg-(--red)" /><span className="flex-1 bg-(--accent)" /></div>
+        <div className="absolute inset-x-0 bottom-0 bg-[#15120f]/92 p-6 backdrop-blur-sm">
+          <figcaption className="text-sm font-bold leading-6 text-[#eee9e2]">Real shelves. Real variety. Helpful people nearby when you want to compare.</figcaption>
+        </div>
+      </figure>
+    </div>
+  </div>
+);
+
+export const WhyChooseSection = () => (
+  <div>
+    <div className="grid gap-8 lg:grid-cols-[1fr_0.65fr] lg:items-end">
+      <div>
+        <p className="text-xs font-extrabold uppercase tracking-[0.24em] text-[#a92128]">Customer feedback themes</p>
+        <h2 className="text-balance mt-4 font-heading text-5xl font-bold uppercase leading-[0.9] text-[#171411] md:text-6xl">Why shoppers make the drive</h2>
+      </div>
+      <p className="leading-7 text-[#655e58]">A clear pattern across customer feedback: more choice, useful guidance, and a personal experience that feels different from a giant chain.</p>
+    </div>
+
     <div className="mt-12 grid gap-5 lg:grid-cols-3">
-      {testimonials.map(([name, company, quote]) => (
-        <figure key={company} className="flex min-h-72 flex-col border-t-4 border-[#c9a227] bg-white p-7 shadow-[0_18px_50px_rgba(0,0,0,0.08)]">
-          <span className="font-heading text-5xl leading-none text-[#c9a227]">“</span>
-          <blockquote className="mt-3 flex-1 text-lg leading-8 text-[#393939]">{quote}</blockquote>
-          <figcaption className="mt-7 border-t border-[#ddd7ca] pt-5"><p className="font-heading font-black uppercase text-[#171717]">{name}</p><p className="mt-1 text-sm text-[#6b6b6b]">{company}</p></figcaption>
-        </figure>
+      {customerPriorities.map((item, index) => (
+        <article key={item.title} className="relative min-h-72 overflow-hidden rounded-[7px] border border-[#cbc4b9] bg-[#faf8f2] p-7 shadow-[0_14px_35px_rgba(33,27,22,0.06)] sm:p-8">
+          <span className="absolute right-0 top-0 h-20 w-1.5 bg-(--red)" aria-hidden="true" />
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#a92128]">{item.label}</span>
+            <span className="font-heading text-3xl font-bold text-[#d0c9bf]">0{index + 1}</span>
+          </div>
+          <div className="mt-7 h-1 w-12 bg-(--accent)" aria-hidden="true" />
+          <h3 className="mt-6 font-heading text-2xl font-bold uppercase leading-none text-[#171411]">{item.title}</h3>
+          <p className="mt-4 leading-7 text-[#625b55]">{item.description}</p>
+        </article>
       ))}
     </div>
   </div>
 );
 
-export const QuoteButton = () => {
-  const modal = useLeadModal();
-  return <>{<Button onClick={() => modal.openModal(primaryCta.modal)}>{primaryCta.label}</Button>}{modal.activeModal && <LeadModal activeModal={modal.activeModal} hasSubmitted={modal.hasSubmitted} isSubmitting={modal.isSubmitting} onClose={modal.closeModal} onSubmit={modal.handleFormSubmit} submitError={modal.submitError} />}</>;
-};
+export const DemoSection = () => (
+  <div className="grid gap-12 lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
+    <figure className="relative min-h-[580px] overflow-hidden rounded-[7px] border border-[#453c35] bg-[#211d1a] lg:min-h-[650px]">
+      <Image src="/images/store/big-wicks-checkout-demo-tv.jpg" alt="Large in-store television above the Big Wicks checkout and fireworks display" fill className="object-cover object-[center_25%]" sizes="(max-width: 1024px) 100vw, 55vw" />
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#0b0a09] via-[#0b0a09]/80 to-transparent p-7 pt-32">
+        <figcaption className="flex items-center gap-3 text-xs font-extrabold uppercase tracking-[0.16em] text-white"><span className="flex size-9 items-center justify-center rounded-[3px] bg-(--red) text-(--accent)" aria-hidden="true">▶</span> In-store video demonstration area</figcaption>
+      </div>
+    </figure>
+
+    <div>
+      <p className="text-xs font-extrabold uppercase tracking-[0.24em] text-(--accent)">See the effect</p>
+      <h2 className="text-balance mt-4 font-heading text-5xl font-bold uppercase leading-[0.9] text-white md:text-6xl">Know what you&apos;re bringing home</h2>
+      <p className="mt-7 text-lg leading-8 text-[#c1b9b1]">A package can only tell you so much. Big Wicks has used the large in-store TV to help customers see how particular fireworks look when fired.</p>
+      <p className="mt-5 leading-7 text-[#a69e97]">Ask our team whether a demonstration is available for the item you&apos;re considering. This does not imply that every product currently has a video.</p>
+      <div className="mt-7 rounded-[7px] border border-[#433a34] bg-[#1d1917] p-5">
+        <p className="text-xs font-extrabold uppercase tracking-[0.17em] text-(--red)">Future catalog ready</p>
+        <p className="mt-2 text-sm leading-6 text-[#bdb5ad]">The product-page architecture can add verified demo videos later without changing this in-store promise.</p>
+      </div>
+      <div className="mt-8"><Button href={siteConfig.contact.phoneHref} variant="secondary">Ask The Team</Button></div>
+    </div>
+  </div>
+);

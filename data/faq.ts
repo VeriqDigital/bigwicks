@@ -1,32 +1,9 @@
+import { siteConfig } from "@/config/site";
+
 export const faqs = [
-  {
-    question: "What areas do you serve?",
-    answer:
-      "S&B Express is based in the Chicagoland area and serves customers throughout the Midwest. Share your origin and destination for lane availability.",
-  },
-  {
-    question: "What types of freight do you haul?",
-    answer:
-      "We support commercial freight including palletized goods, manufacturing materials, construction supplies, retail inventory, and agricultural products. Specific requirements are reviewed before scheduling.",
-  },
-  {
-    question: "How do I request a quote?",
-    answer:
-      "Send the pickup and delivery locations, freight type, estimated weight or dimensions, timing, and any special handling requirements through the quote form or by phone.",
-  },
-  {
-    question: "Do you offer dedicated routes?",
-    answer:
-      "Yes. Dedicated freight service can be arranged for businesses with regular lanes, steady volume, or recurring delivery schedules.",
-  },
-  {
-    question: "Are your drivers insured?",
-    answer:
-      "S&B Express is presented as a licensed and insured commercial carrier. Coverage and shipment-specific documentation can be confirmed during the quoting process.",
-  },
-  {
-    question: "Can I schedule recurring transportation?",
-    answer:
-      "Yes. We can coordinate repeat pickups, scheduled deliveries, and dedicated capacity for businesses that need dependable ongoing transportation.",
-  },
-];
+  { question: "Where is Big Wicks located?", answer: `Find us at ${siteConfig.contact.address}, right on IN-39. Use the directions link below to open the route in Google Maps.` },
+  { question: "How far are you from New Buffalo?", answer: "Big Wicks is about 3 miles south of downtown New Buffalo, Michigan, making us a quick stop across the Indiana state line." },
+  { question: "What kinds of fireworks do you carry?", answer: "Our selection spans novelties, fountains, firecrackers, Roman candles, artillery shells, cakes, assortments, kits, and finale-ready options. Selection can change, so call or visit for current availability." },
+  { question: "Can your staff help me choose?", answer: "Yes. Tell our team the kind of celebration, effects, and experience you have in mind, and they can help you compare options in the store." },
+  { question: "Can I see what a firework looks like before buying?", answer: "Big Wicks has used in-store video demonstrations to help shoppers understand different effects. Ask the team whether a demo is available for the item you are considering." },
+] as const;

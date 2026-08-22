@@ -1,22 +1,13 @@
-# S&B Express Website Concept
+# Big Wicks Fireworks
 
-A responsive trucking and logistics website concept created by Veriq Digital.
-The interface uses local photography, a black-and-gold industrial design system,
-and non-submitting quote/contact form previews.
+Marketing website for Big Wicks Fireworks LLC in La Porte, Indiana.
 
-## Local development
+## Development
 
 ```bash
-npm install
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+The first rebrand pass includes the homepage, store information, category-ready frontend structure, responsive navigation, and SEO metadata. Product catalog, inventory, checkout, and live promotion data are intentionally out of scope.
 
-## Quality checks
-
-```bash
-npm run lint
-npx tsc --noEmit
-npm run build
-```
+Set `NEXT_PUBLIC_SITE_URL` to the production origin at deployment so social sharing image URLs resolve to the live domain.
