@@ -21,14 +21,15 @@ const Hero = () => (
           Big Wicks Fireworks · La Porte, Indiana
         </p>
         <h1 className="text-balance font-heading text-[3.6rem] font-bold uppercase leading-[0.84] tracking-[-0.035em] text-white sm:text-7xl md:text-8xl lg:text-[6.7rem]">
-          Go bigger.
-          <span className="mt-2 block text-[#ff5963]">Burn brighter.</span>
+          Skip the rest.
+          <span className="mt-2 block text-[#ff5963]">Shop with the best.</span>
         </h1>
         <div className="mt-7 flex max-w-2xl gap-4">
           <span className="w-1 shrink-0 bg-(--red)" aria-hidden="true" />
           <p className="text-lg leading-8 text-white/90 sm:text-xl">
             A huge in-store selection for family fun, backyard celebrations, and
-            finale-worthy nights—plus friendly people who can help you choose.
+            finale-worthy nights brought to you by friendly people who can help
+            you choose.
           </p>
         </div>
         <div className="mt-9 flex flex-col gap-3 sm:flex-row">

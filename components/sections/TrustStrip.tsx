@@ -10,7 +10,7 @@ const TrustStrip = () => (
     aria-label="Why customers choose Big Wicks"
     className="border-b border-[#d5d5d0] bg-[#f5f5f2] text-[#171719]"
   >
-    <div className="mx-auto grid max-w-(--container-width) sm:grid-cols-2 lg:grid-cols-4">
+    <div className="mx-auto grid max-w-(--container-width) border-l border-[#d5d5d0] sm:grid-cols-2 lg:grid-cols-4">
       {trustItems.map(([title, detail], index) => (
         <div
           key={title}

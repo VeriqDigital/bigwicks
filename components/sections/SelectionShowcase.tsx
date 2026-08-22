@@ -8,13 +8,15 @@ const SelectionShowcase = () => (
           Proof of selection
         </p>
         <h2 className="text-balance mt-4 font-heading text-5xl font-bold uppercase leading-[0.9] text-[#171719] md:text-7xl">
-          That place is loaded
+          We have it all
         </h2>
       </div>
       <p className="max-w-md leading-7 text-[#625f5b]">
         Bright shelves, long aisles, and options for different kinds of
-        celebrations. The variety is easier to understand when you see the real
-        store.
+        celebrations. We carry everythin! From well known brands like Winda,
+        Miracle, Brothers, and World-Class Fireworks to our own Big Wicks brand,
+        we have a huge selection of fireworks for all ages and experience
+        levels.
       </p>
     </div>
 

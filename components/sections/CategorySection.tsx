@@ -14,8 +14,9 @@ const CategorySection = () => (
         </h2>
       </div>
       <p className="max-w-md leading-7 text-[#5f5d59]">
-        Start with the effect you have in mind, then let our team help you
-        compare the selection available in store.
+        Come in with a plan or let our friendly staff help you find the perfect
+        fireworks for your celebration. We have a huge selection of fireworks
+        for all ages and experience levels, from beginner to experienced.
       </p>
     </div>
 

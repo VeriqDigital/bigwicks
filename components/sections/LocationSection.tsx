@@ -10,11 +10,11 @@ const LocationSection = () => (
           Visit Big Wicks
         </p>
         <h2 className="text-balance mt-4 font-heading text-5xl font-bold uppercase leading-[0.9] text-[#171411] md:text-6xl">
-          This is where you need to go
+          Where to find us
         </h2>
         <p className="mt-6 max-w-xl text-lg leading-8 text-[#5f5852]">
-          Find us right on IN-39 in La Porte, about 3 miles south of downtown
-          New Buffalo, Michigan.
+          We are right on IN-39 in La Porte, about 3 miles south of downtown New
+          Buffalo, Michigan.
         </p>
 
         <address className="mt-8 rounded-[7px] border border-[#d5d5d0] bg-white p-6 not-italic">
