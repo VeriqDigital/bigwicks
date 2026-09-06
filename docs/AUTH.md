@@ -84,7 +84,7 @@ production denial-of-service protection. Limiter storage failures deny login.
 
 ## Local setup
 
-Use Node 22.12+ or Node 24 LTS, npm, and a local PostgreSQL database. This change was
+Use Node 24 LTS, npm, and a local PostgreSQL database. This change was
 verified with Node 24.20.0. On PowerShell with script execution disabled, use
 `npm.cmd` and `npx.cmd` in place of `npm` and `npx`.
 
