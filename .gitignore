@@ -40,3 +40,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Generated database client and isolated integration-test artifacts
+/generated/prisma/
+/.test-runtime/
+/test-results/
+/playwright-report/
+
+.vercel
+.env*

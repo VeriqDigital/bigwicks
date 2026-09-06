@@ -1,0 +1,55 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  CUSTOMER
+}
+
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique @db.VarChar(254)
+  passwordHash   String
+  role           Role      @default(CUSTOMER)
+  active         Boolean   @default(false)
+  sessionVersion Int       @default(0)
+  customer       Customer?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Customer {
+  id             String      @id @default(cuid())
+  userId         String      @unique
+  user           User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  companyName    String      @db.VarChar(200)
+  customerNumber String?     @unique @db.VarChar(100)
+  pricingTierId  String
+  pricingTier    PricingTier @relation(fields: [pricingTierId], references: [id], onDelete: Restrict)
+  active         Boolean     @default(false)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([pricingTierId])
+}
+
+model PricingTier {
+  id        String     @id @default(cuid())
+  name      String     @unique @db.VarChar(100)
+  customers Customer[]
+}
+
+model LoginRateLimit {
+  key       String   @id @db.VarChar(64)
+  attempts  Int
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}
