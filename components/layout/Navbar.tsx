@@ -53,11 +53,12 @@ const Navbar = () => {
           </span>
         </Link>
 
-        <div className="hidden items-center gap-6 lg:flex xl:gap-8">
+        <div className="hidden items-center gap-6 xl:flex xl:gap-8">
           {navigation.map((item) => (
             <Link
               key={item.label}
               href={item.href}
+              prefetch={item.href === "/account" ? false : undefined}
               className="py-3 text-xs font-bold uppercase tracking-widest text-[#f2f2ef] transition-colors hover:text-[#ff6872]"
             >
               {item.label}
@@ -68,7 +69,7 @@ const Navbar = () => {
           </Button>
         </div>
 
-        <div className="flex items-center gap-3 lg:hidden">
+        <div className="flex items-center gap-3 xl:hidden">
           <a
             href={siteConfig.contact.phoneHref}
             className="hidden rounded-[3px] border border-[#5a514b] px-3 py-2 text-xs font-bold uppercase tracking-wider text-white sm:block"
@@ -103,13 +104,14 @@ const Navbar = () => {
       {isMenuOpen && (
         <div
           id="mobile-navigation-menu"
-          className="border-t border-[#3a3a3f] bg-[#151517] p-3 text-white lg:hidden"
+          className="max-h-[calc(100dvh-118px)] overflow-y-auto border-t border-[#3a3a3f] bg-[#151517] p-3 text-white lg:max-h-[calc(100dvh-136px)] xl:hidden"
         >
           <div className="grid">
             {navigation.map((item) => (
               <Link
                 key={item.label}
                 href={item.href}
+                prefetch={item.href === "/account" ? false : undefined}
                 onClick={() => setIsMenuOpen(false)}
                 className="border-b border-[#3a3a3f] px-4 py-4 text-sm font-bold uppercase tracking-widest hover:bg-[#242428] hover:text-[#ff6872]"
               >

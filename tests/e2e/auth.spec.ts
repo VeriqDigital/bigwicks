@@ -13,6 +13,62 @@ async function login(page: Page, email: string, password: string) {
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
 }
 
+test("public Wholesale Portal navigation fits desktop/mobile and does not fetch auth before a click", async ({ page }) => {
+  const authRequests: string[] = [];
+  page.on("request", (request) => {
+    const path = new URL(request.url()).pathname;
+    if (path === "/account" || path.startsWith("/api/auth/")) authRequests.push(path);
+  });
+  await page.goto("/");
+  const header = page.locator("header").first();
+  for (const width of [320, 390, 768, 1024, 1279, 1280, 1440]) {
+    await page.setViewportSize({ width, height: 600 });
+    if (width < 1280) await page.getByRole("button", { name: "Open navigation menu" }).click();
+    const portal = header.getByRole("link", { name: "Wholesale Portal", exact: true }).filter({ visible: true });
+    await expect(portal).toHaveCount(1);
+    await expect(portal).toHaveAttribute("href", "/account");
+    await portal.hover();
+    await expect(header.locator('a[href="/admin"], a[href="/studio"]')).toHaveCount(0);
+    const directions = header.getByRole("link", { name: "Get Directions", exact: true }).filter({ visible: true });
+    await directions.scrollIntoViewIfNeeded();
+    await expect(directions).toBeInViewport();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    if (width >= 1280) {
+      const nav = page.getByRole("navigation", { name: "Main navigation" });
+      const logo = await nav.getByRole("link", { name: "Big Wicks Fireworks home" }).boundingBox();
+      const firstLink = await nav.getByRole("link", { name: "Home", exact: true }).boundingBox();
+      expect(firstLink!.x).toBeGreaterThanOrEqual(logo!.x + logo!.width);
+      for (const link of await nav.locator("a").filter({ visible: true }).all()) {
+        const box = await link.boundingBox();
+        expect(box!.x + box!.width).toBeLessThanOrEqual(width);
+      }
+    }
+    await header.screenshot({ path: `test-results/wholesale-navigation-${width}.png` });
+    if (width < 1280) await page.keyboard.press("Escape");
+  }
+  expect(authRequests).toEqual([]);
+  await header.getByRole("link", { name: "Wholesale Portal", exact: true }).click();
+  await expect(page).toHaveURL(/\/login$/);
+});
+
+test("public Wholesale Portal link uses the existing account dispatcher for customer and admin", async ({ page }) => {
+  for (const [email, password, destination] of [
+    ["tier1@example.test", process.env.SEED_TIER1_PASSWORD!, "/portal"],
+    ["admin@example.test", process.env.SEED_ADMIN_PASSWORD!, "/admin"],
+  ]) {
+    await login(page, email, password);
+    await expect(page).toHaveURL(new RegExp(destination + "$"));
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+    await page.getByRole("button", { name: "Open navigation menu" }).click();
+    await page.locator("#mobile-navigation-menu").getByRole("link", { name: "Wholesale Portal", exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(destination + "$"));
+    await expect(page.getByRole("button", { name: "Open navigation menu" })).toBeVisible();
+    await page.getByRole("button", { name: "Sign out", exact: true }).click();
+    await expect(page).toHaveURL(/\/login$/);
+  }
+});
+
 test("unauthenticated direct and RSC requests cannot access protected routes", async ({ request }) => {
   for (const path of ["/admin", "/portal", "/account"]) {
     for (const headers of [{}, { RSC: "1" }] as Record<string, string>[]) {
