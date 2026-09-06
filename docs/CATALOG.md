@@ -1,4 +1,4 @@
-# Catalog content and private pricing — Milestone 3A
+# Catalog content, private pricing and customer browsing
 
 ## Responsibility split
 
@@ -124,9 +124,66 @@ an empty array. Auth denial happens outside the content-error handler. Nothing
 falls back to guessed prices or stale data, and exceptions/secrets are not logged.
 
 All catalog/pricing/audit modules are `server-only`. The service has no public
-route/action and is not yet wired into customer pages. A future protected UI must
-call this service and preserve these boundaries; do not serialize it into public
-pages, metadata, caches or browser-selected queries.
+route/action. Milestone 3B's CUSTOMER-only `/portal` calls it on the server; only
+the authorized result reaches the catalog Client Component. Never serialize it
+into public pages, metadata, shared caches or browser-selected queries.
+
+## Milestone 3B: protected customer catalog
+
+`app/(wholesale)/portal/page.tsx` replaces the placeholder at the same `/portal`
+URL. Its separate route group permits a wider catalog without changing the narrow
+login/admin forms. The page calls the existing customer helper for safe company/email
+context; the catalog service independently authorizes its read. No auth rules change.
+ADMIN still receives 404; anonymous, disabled and revoked sessions remain denied.
+Generic metadata is noindex/nofollow and contains no customer or product prices.
+
+`components/catalog/Catalog.tsx` receives only the existing authorized DTO. It renders
+a responsive product grid with exact price text, SKU, category, name, optional
+description and image. Search matches trimmed, case-insensitive name/SKU/category;
+category options derive only from returned products. Native selects offer name A–Z,
+name Z–A, price low–high and price high–low. Sorting compares canonical decimal
+strings by integer length then digits, with deterministic name/key tie-breaking.
+No floating-point money conversion, totals, per-card reads, fetch-on-search, local
+storage, tier selector, catalog mutation or public pricing API is added.
+
+Currency and case/pack/unit meaning remain unconfirmed. Display the exact supplied
+two-decimal amount under “Your wholesale price”, without an assumed USD/$ or unit.
+Confirm those semantics before customer release. No discounts, stock counts or
+availability guarantees are implied.
+
+The grid uses one through five columns, constrained desktop width, wrapping long
+names/SKUs, and three-line descriptions. Native labeled controls, visible keyboard
+focus, live result counts, semantic headings and 44px+ controls support accessibility.
+Missing category becomes “Uncategorized”; missing description adds no invented copy.
+Zero available products and zero filter matches have distinct messages. Service
+failure shows its existing generic message with a full server reload link. Catalog
+navigation also reloads from the server; local filter/sort changes only use the
+already-delivered snapshot. The account disclosure shows the current login email;
+`/account` remains the existing role dispatcher, so it is not mislabeled as a profile
+page. Existing POST sign-out is reused; no ADMIN links are added for customers.
+
+`ProductImage.tsx` uses Next Image with a component-scoped Sanity CDN loader,
+responsive sizes, lazy loading, a fixed 4:3 container and object-contain. It accepts
+only HTTPS cdn.sanity.io/images/ URLs, bounds transforms to 960×720 with fit=max,
+and requests auto=format. It uses the existing normalized URL without another SDK
+or content query. No remotePatterns/global loader changes or arbitrary remote hosts
+are needed. Missing/failed images share a neutral labeled placeholder. Image content
+is non-secret; its CDN caching contains no prices. Transformation parameters follow
+[Sanity's image documentation](https://www.sanity.io/docs/apis-and-sdks/image-urls).
+
+No dependencies, application environment variables, schema changes or migrations
+are added by 3B. Node 24, the standard Next production build and dynamic request-time
+authorization remain compatible with the existing Vercel configuration.
+
+Automated browser verification runs in two isolated passes: unconfigured Sanity
+(including Studio fallback), then fictional `testonly/test` content. The second
+uses a Node preload transport interceptor under `tests/`, with a temporary local
+JSON fixture. It never adds an application mock switch or endpoint; Sanity requests
+are intercepted before transport and unexpected Sanity hosts fail. Browser image
+requests are intercepted as well. SQL fixtures exist only in the newly created
+local test cluster. Tests cover both tiers, immediate tier changes, forged query/
+POST/login context, HTML/RSC leakage, omitted products, failure/retry, 200 products,
+keyboard controls and responsive screenshots. They never use the live preview data.
 
 ## Freshness and data failures
 
@@ -194,11 +251,42 @@ Do not use SKU/name as the upsert identity once catalogKey exists. Run the audit
 after each authorized import. The current fictional fixtures exist only under
 `tests/`; neither the development seed nor automated tests populate a real dataset.
 
-Deferred: real Sanity project/dataset/CORS/staff setup and live editor validation,
-real product import, pricing write UI/import tools, final customer catalog UI,
-ordering/Excel, inventory, payments, announcements, and deployment.
+The user reports Milestone 3A merged and manually verified with three fictional
+published preview products and six price rows; audit issues were empty. This is
+user-reported context, not a new remote verification performed during 3B.
+
+Deferred: real product import, price-management workflow/write UI/import tools,
+currency/unit confirmation, ordering/Excel/quantities, inventory integration,
+payments, order history, announcements, and deployment. No remote records,
+environment variables or Sanity settings are changed during 3B.
 
 ## Verification and dependency review
+
+Milestone 3B verification on 2026-09-06: Prisma generation, lint, typecheck,
+`npm test` (99 unit tests), `npm run test:integration` (151 combined unit/database
+tests: 99 unit + 52 database), and `npm run build` passed. All four existing
+migrations applied successfully to a fresh isolated PostgreSQL database. Browser
+verification passed 13 existing scenarios in the unconfigured build and all six
+new catalog scenarios in the configured mock build (19 total). The six catalog
+scenarios are intentionally skipped in the first pass and executed in the second.
+The isolated cluster stopped cleanly. No migrations or dependencies changed, so
+the existing clean Node 24 installation was reused.
+
+Screenshots at 390, 768, 1440 and 1920px, individual cards and long-content cases
+were inspected; the 200-product test verified controls and absence of horizontal
+overflow. The final diff was reviewed, `git diff --check` passed, and auth/service,
+Prisma migrations, package files and global image configuration stayed unchanged.
+The standard production build also passed with the existing local configuration;
+no deployment or remote-data verification/write was performed.
+
+The test runner leaves `.next` built with fictional Sanity identifiers. Run
+`npm run build` again before a manual `npm start` using your local configuration
+(done after this milestone's checks); `npm run dev` uses development configuration.
+Plain POST requests without an action identifier are rendered by Next.js and
+still receive only session-authorized data. Next's router can echo query values
+supplied by the caller; tests distinguish that request context from authoritative
+associations, which are absent from normal catalog HTML/RSC. Forged query/form
+context never selects prices or changes authorization.
 
 Milestone 3A checks on 2026-09-06: clean `npm ci`, Prisma generation, all four
 migrations on a fresh isolated database, lint, typecheck, 85 unit tests, 52 database

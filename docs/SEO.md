@@ -71,7 +71,7 @@ Do not build thin public pages around wholesale keywords unless Big Wicks explic
 | About | `/about` if retained | Brand/local trust | Index if substantive |
 | Public wholesale/customer info | `/wholesale` or similar if approved | Explain account ordering | Index only if meant for public acquisition |
 | Login | `/login` | Account utility | Noindex |
-| Protected catalog | `/catalog` / account route | Customer utility | Noindex/auth |
+| Protected catalog | `/portal` | Customer utility | Noindex/auth |
 | Order request pages | protected | Customer utility | Noindex/auth |
 | Account pages | protected | Customer utility | Noindex/auth |
 

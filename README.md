@@ -6,8 +6,9 @@ Website and customer-ordering project for Big Wicks Fireworks LLC in La Porte, I
 
 Milestones 1, 2A and 2B provide authentication, customer management and account
 setup/reset. Milestone 3A establishes Sanity product content and a private
-PostgreSQL pricing/catalog service. The final customer catalog UI and ordering
-option remain later work; no real catalog has been imported.
+PostgreSQL pricing/catalog service. Milestone 3B provides CUSTOMER-only browsing
+at `/portal`, with search, category filters and sorting. Ordering, price management
+and real catalog import remain deferred; currency/unit meaning still needs confirmation.
 
 ## Stack
 
@@ -91,7 +92,10 @@ for automated tests/builds. See [catalog setup and rules](docs/CATALOG.md).
 `npm run catalog:audit` reads configured Sanity/PostgreSQL data and reports drift
 without writes or price amounts. Run it only against the intended environment.
 `npm run test:integration` applies all migrations to a fresh isolated PostgreSQL
-database, mocks catalog content, builds production and runs browser checks.
+database, mocks catalog content, builds production and runs browser checks both
+without Sanity configuration and with locally intercepted fictional content.
+No remote catalog/database writes are performed. Milestone 3B adds no dependencies
+or application environment variables.
 
 ## Security rule for ordering
 

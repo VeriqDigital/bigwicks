@@ -57,6 +57,7 @@ export const navigation: NavItem[] = [
   { label: "About", href: "/#about" },
   { label: "Visit Us", href: "/#visit" },
   { label: "Contact", href: "/contact" },
+  { label: "Wholesale Portal", href: "/account" },
 ];
 
 export const footerLinks: NavItem[] = [

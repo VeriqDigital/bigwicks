@@ -5,8 +5,8 @@
 ## Current priority
 
 **Optimize for:**  
-Complete Milestone 3A's Sanity catalog content and PostgreSQL private-pricing
-foundation, preserving completed Milestone 1/2A/2B security invariants.
+Complete Milestone 3B's protected wholesale catalog UI, preserving completed
+Milestone 1/2A/2B/3A security invariants.
 
 **Waiting on:**
 
@@ -26,6 +26,31 @@ foundation, preserving completed Milestone 1/2A/2B security invariants.
 ---
 
 ## Decision log
+
+### 2026-09-06 — Milestone 3B protected catalog browsing
+
+**Source:** User / Veriq; Milestones 1, 2A, 2B and 3A complete and merged.
+**Status:** Implemented locally; no deployment or remote writes.
+
+Keep `/portal` CUSTOMER-only and call the existing zero-input catalog service on
+the server. Pass only authorized current-tier DTOs to a small client browsing UI.
+Search/filter/name and price sorting run locally; no new pricing endpoint, identity
+inputs or shared protected cache. Price sorting compares exact decimal strings.
+Currency/unit meaning remains unconfirmed, so no USD/$ or case/pack label is assumed.
+
+Use dense responsive cards in existing Big Wicks colors/fonts, native labeled
+controls and explicit empty/failure/missing-image states. Next Image uses a bounded
+Sanity CDN loader on the normalized URL. Keep auth and database architecture intact;
+no dependencies, migrations or application environment variables are needed.
+
+The developer reports existing fictional preview products/prices and a clean audit.
+Automated tests use an isolated database and mocked content/images; no remote data
+is changed. Price management, real catalog import, ordering/quantities, inventory,
+payment, history and announcements remain deferred. Details: `docs/CATALOG.md`.
+
+**Supersedes:** Directions that deferred customer browsing beyond Milestone 3A.
+
+---
 
 ### 2026-09-06 — Milestone 3A catalog/pricing responsibility and identity
 

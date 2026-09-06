@@ -4,7 +4,7 @@ This foundation is shared by both quoted ordering options. Milestone 1 provides
 login/logout, authorization, initial models and development fixtures. Milestone 2A
 adds admin customer management. Milestone 2B adds customer invitations, password
 setup and password reset. Milestone 3A adds a server-only catalog/private-pricing
-foundation; customer catalog UI and ordering remain later milestones.
+foundation; Milestone 3B adds protected customer catalog browsing. Ordering remains deferred.
 
 ## Architecture
 
@@ -45,7 +45,9 @@ foundation; customer catalog UI and ordering remain later milestones.
 Milestone 3A's `getAvailableCatalogForCustomer()` takes no browser inputs and calls
 `requireCustomer()` independently on every read. Current PostgreSQL tier assignment
 selects the only prices returned; no customer-specific catalog caching is used.
-The service is not exposed as a public route or wired into the placeholder portal.
+The service is not exposed as a public API; `/portal` calls it on the server and
+passes only its authorized DTO to the browsing UI. Account context is separately
+resolved by the existing helper and limited to company name/login email.
 `/studio` independently requires ADMIN; editing additionally requires Sanity's own
 project permissions. No shared Sanity write token is added. See `docs/CATALOG.md`
 for schema, identity, pricing, freshness and consistency-audit rules.
@@ -54,8 +56,8 @@ for schema, identity, pricing, freshness and consistency-audit rules.
 
 `/login` accepts existing provisioned credentials only. `/account` resolves the
 current role and redirects to `/admin` or `/portal`. Those routes independently
-enforce authorization. `/admin` links to customer management; `/portal` remains a
-placeholder. There is no public registration or production bootstrap endpoint.
+enforce authorization. `/admin` links to customer management; `/portal` provides
+customer catalog browsing. There is no public registration or production bootstrap endpoint.
 Customer creation is available exclusively through admin-authorized actions.
 
 Passwords are 15–128 characters when provisioned. Login accepts existing passwords
