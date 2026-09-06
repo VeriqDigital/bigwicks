@@ -4,7 +4,8 @@ This foundation is shared by both quoted ordering options. Milestone 1 provides
 login/logout, authorization, initial models and development fixtures. Milestone 2A
 adds admin customer management. Milestone 2B adds customer invitations, password
 setup and password reset. Milestone 3A adds a server-only catalog/private-pricing
-foundation; Milestone 3B adds protected customer catalog browsing. Ordering remains deferred.
+foundation; Milestone 3B adds protected customer catalog browsing. Milestone 3C
+adds ADMIN-only pricing operations. Ordering remains deferred.
 
 ## Architecture
 
@@ -56,9 +57,21 @@ for schema, identity, pricing, freshness and consistency-audit rules.
 
 `/login` accepts existing provisioned credentials only. `/account` resolves the
 current role and redirects to `/admin` or `/portal`. Those routes independently
-enforce authorization. `/admin` links to customer management; `/portal` provides
+enforce authorization. Internal ADMIN navigation links Customers, Pricing, Catalog
+Studio, Public website and POST Sign out; `/portal` provides
 customer catalog browsing. There is no public registration or production bootstrap endpoint.
 Customer creation is available exclusively through admin-authorized actions.
+
+`/admin/pricing`, its CSV export, both Server Actions and all pricing service
+operations independently call `requireAdmin()`. Anonymous/inactive/revoked sessions
+redirect to login; CUSTOMER receives 404. The admin layout also authorizes before
+rendering navigation but is not the endpoint security boundary. Confirmation
+rechecks the active ADMIN/session version within its SQL transaction and locks
+the user row against concurrent access changes. No browser-supplied role, tier ID
+or calculated price change is trusted. The sealed preview binds to the admin and
+session revocation version, not an authoritative auth-token role/tier. Existing
+`AUTH_SECRET` protects the ten-minute preview; rotation invalidates pending previews.
+See `docs/CATALOG.md` for import integrity and transactional limits.
 
 Passwords are 15–128 characters when provisioned. Login accepts existing passwords
 up to 128 characters without trimming them. Argon2id uses 19 MiB memory, two

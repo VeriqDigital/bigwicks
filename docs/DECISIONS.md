@@ -5,8 +5,8 @@
 ## Current priority
 
 **Optimize for:**  
-Complete Milestone 3B's protected wholesale catalog UI, preserving completed
-Milestone 1/2A/2B/3A security invariants.
+Complete Milestone 3C's admin pricing operations, preserving completed
+Milestone 1/2A/2B/3A/3B security invariants.
 
 **Waiting on:**
 
@@ -26,6 +26,39 @@ Milestone 1/2A/2B/3A security invariants.
 ---
 
 ## Decision log
+
+### 2026-09-06 — Milestone 3C admin pricing operations
+
+**Source:** User / Veriq; Milestones 1, 2A, 2B, 3A and 3B complete and merged.
+**Status:** Implemented locally; no deployment or remote writes.
+
+Use `/admin/pricing` for an ADMIN-only completeness/audit table and a bulk CSV
+workflow: Sanity catalog → private export → spreadsheet editing → validation and
+preview → explicit confirmed PostgreSQL update → customer refresh. Product identity
+is immutable catalogKey; SKU/name/category/availability remain Sanity context.
+Blank price cells mean no price, with separate acknowledgment for deletions.
+Omitted products are unchanged; Tier 1 and Tier 2 are independent exact decimals.
+
+Use the small `csv-parse@7.0.2` sync parser for correct quoted/multiline CSV under
+256 KiB, 500-product and 4,096-character record limits. Keep raw uploads in memory
+only. AES-256-GCM previews expire in ten minutes and bind normalized prices and a
+snapshot hash to the admin/session version using domain-separated `AUTH_SECRET`.
+No staging table, new secret, Redis or object storage is needed. Confirmation
+reauthorizes, reads current Sanity and SQL, rejects stale/tampered previews and
+applies removals/bulk upserts in a serializable transaction. No automatic retries.
+Separate Sanity/SQL systems cannot provide one distributed atomic content snapshot.
+
+Internal admin navigation includes Customers, Pricing, Catalog Studio, Public
+website and POST Sign out. Every pricing boundary independently calls requireAdmin;
+the public navbar and customer catalog/auth rules are unchanged. Tests use only
+isolated PostgreSQL and intercepted fictional catalog content. Manual price-edit
+forms, real product/pricing imports, currency/unit confirmation, ordering,
+inventory, payments, history and announcements remain deferred. Details and
+verification: `docs/CATALOG.md`.
+
+**Supersedes:** Deferral of admin price-management/export/import beyond 3B.
+
+---
 
 ### 2026-09-06 — Milestone 3B protected catalog browsing
 

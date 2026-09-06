@@ -7,8 +7,10 @@ Website and customer-ordering project for Big Wicks Fireworks LLC in La Porte, I
 Milestones 1, 2A and 2B provide authentication, customer management and account
 setup/reset. Milestone 3A establishes Sanity product content and a private
 PostgreSQL pricing/catalog service. Milestone 3B provides CUSTOMER-only browsing
-at `/portal`, with search, category filters and sorting. Ordering, price management
-and real catalog import remain deferred; currency/unit meaning still needs confirmation.
+at `/portal`, with search, category filters and sorting. Milestone 3C adds ADMIN-only
+pricing review, CSV export, validation/preview and confirmed transactional imports
+at `/admin/pricing`. Ordering and real catalog import remain deferred;
+currency/unit meaning still needs confirmation.
 
 ## Stack
 
@@ -94,8 +96,24 @@ without writes or price amounts. Run it only against the intended environment.
 `npm run test:integration` applies all migrations to a fresh isolated PostgreSQL
 database, mocks catalog content, builds production and runs browser checks both
 without Sanity configuration and with locally intercepted fictional content.
-No remote catalog/database writes are performed. Milestone 3B adds no dependencies
-or application environment variables.
+No remote catalog/database writes are performed. Milestone 3C adds `csv-parse@7.0.2`
+for bounded, conventional CSV parsing. It adds no migrations or environment variables;
+encrypted previews use the existing server-only `AUTH_SECRET` (at least 32 characters).
+
+## Admin pricing workflow
+
+Sign in as ADMIN and choose **Pricing**. Download the current pricing CSV, edit only
+`tier1Price` and `tier2Price`, and save as comma-separated CSV UTF-8. Upload to see
+validation errors, warnings and exact before/after values. Review, acknowledge any
+removals, then explicitly confirm. A preview alone never changes prices.
+
+`catalogKey` is the permanent product identity; SKU/name are informational. Blank
+price cells remove an existing tier price, never mean zero; omitted products stay
+unchanged. Tiers are independent. Files are limited to 256 KiB, 500 product rows
+and 4,096 characters per record. Previews expire after ten minutes and must be
+recreated if catalog/tier/pricing data changes. Customers see updated prices on
+their next `/portal` refresh without signing in again. See [the full CSV contract,
+authorization and concurrency rules](docs/CATALOG.md#milestone-3c-admin-pricing-operations).
 
 ## Security rule for ordering
 
