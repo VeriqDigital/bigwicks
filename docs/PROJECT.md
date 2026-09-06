@@ -618,9 +618,10 @@ The database answers:
 | GBP cleanup/support               | Yes, as value-add | Do not claim changes until performed |
 | Wholesale customer authentication |               Yes | Milestone 1; preview verified by user |
 | Admin authentication              |               Yes | Milestone 1; preview verified by user |
-| Admin customer management         |               Yes | Milestone 2A implemented locally      |
-| Customer enable/disable           |               Yes | Milestone 2A implemented locally      |
-| Pricing-tier assignment           |               Yes | Milestone 2A implemented locally      |
+| Admin customer management         |               Yes | Milestone 2A complete and merged      |
+| Customer enable/disable           |               Yes | Milestone 2A complete and merged      |
+| Pricing-tier assignment           |               Yes | Milestone 2A complete and merged      |
+| Account setup / password reset    |               Yes | Milestone 2B implemented locally      |
 | Product catalog                   |               Yes | Planned                              |
 | Product availability controls     |               Yes | Planned                              |
 | Protected tier pricing            |               Yes | Planned                              |
@@ -902,7 +903,7 @@ Do not document GBP changes as completed until they are actually performed.
 5. Assign pricing tier
 6. Change pricing tier
 
-Implemented locally: customer list/create/edit, verified tier assignment, synchronized
+Complete and merged per user: customer list/create/edit, verified tier assignment, synchronized
 enable/disable and session revocation. Passwordless accounts await setup and cannot
 authenticate. See `docs/AUTH.md` for mutation rules and the nullable-hash migration.
 
@@ -912,8 +913,12 @@ authenticate. See `docs/AUTH.md` for mutation rules and the nullable-hash migrat
 2. Password reset
 3. Confirmed production provisioning
 
-These flows are deferred from Milestone 2A. No default passwords or invitation
-emails are introduced by customer creation.
+Implemented locally: explicit staff setup invitations, single-use expiring links,
+customer-chosen passwords and customer-only public reset. Setup/reset preserve
+account access and revoke sessions. See `docs/AUTH.md` for token, email and retry
+rules. Customer creation still sends no automatic invitation and creates no default
+password. Production provisioning/configuration and real email delivery verification
+remain a separately authorized release task.
 
 ### Milestone 3 — Product and pricing foundation
 
@@ -1028,14 +1033,14 @@ Test:
 
 ### What Codex should optimize for right now
 
-Complete and verify admin customer management shared by both quoted options.
-Milestone 1 was deployed and manually verified against preview PostgreSQL by the
-user. Milestone 2A changes are local; do not deploy or modify preview/production
-data in this pass. Password setup and invitation delivery remain Milestone 2B.
+Complete and verify Milestone 2B secure account invitations, setup and password
+reset shared by both quoted options. Milestones 1 and 2A are complete and merged
+per the user. Do not deploy, modify preview/production data, or send real emails
+during automated tests in this pass.
 
 The first meaningful milestone is:
 
-> An authorized Big Wicks administrator can securely sign in, access the admin area, create a wholesale customer, assign Tier 1 or Tier 2, and enable/disable the account. Newly created customers can sign in after the secure password setup flow is added in Milestone 2B; existing password-bearing customers retain protected portal access.
+> An authorized administrator can provision a customer and send a setup invitation. The customer can choose or reset their own password securely. Only enabled customers can sign in, and previous sessions cannot survive password or account-access changes.
 
 ### Do not work on yet
 
@@ -1066,7 +1071,7 @@ Build and verify one vertical slice at a time.
 - [ ] What exact price data will be provided for Tier 1 and Tier 2?
 - [ ] Is Tier 2 individually priced per product or derived from a consistent rule?
 - [ ] What exact customer fields are included in the approximately 50-customer import?
-- [ ] How should initial customer password setup work?
+- [x] Initial customer setup: admin-issued, expiring single-use email links (Milestone 2B).
 - [ ] Which Big Wicks staff members need admin accounts?
 - [ ] Which Big Wicks email address(es) should receive Option 2 orders?
 - [ ] For Option 1, exactly how should the Excel order sheet be generated/downloaded/submitted?

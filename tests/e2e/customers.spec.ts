@@ -39,7 +39,7 @@ test("staff create and edit customers, handle conflicts, and protect direct muta
   await page.getByRole("button", { name: "Create customer", exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/customers\/c[a-z0-9]+$/);
   const createRequest = requests.at(-1)!;
-  await expect(page.getByText("Password not set. This account cannot sign in yet. No invitation has been sent.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Password not set. This account cannot sign in yet.", { exact: true })).toBeVisible();
   await page.getByLabel("Company name", { exact: true }).fill("Browser Updated Wholesale");
   await page.getByLabel("Pricing tier", { exact: true }).selectOption({ label: "Tier 2" });
   await page.getByRole("button", { name: "Save customer", exact: true }).click();

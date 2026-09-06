@@ -47,7 +47,7 @@ export default function CustomerForm({ customer, tiers }: {
         <option value="disabled">Disabled</option><option value="active">Active</option>
       </select>
       {errors("status")}
-      <p className="mt-2 text-sm text-[var(--muted)]">New accounts cannot sign in until password setup is available. No invitation is sent.</p>
+      <p className="mt-2 text-sm text-[var(--muted)]">New accounts cannot sign in until they set a password. After saving, send a setup link from the customer page.</p>
     </div>}
     <p role="status" aria-live="polite" className={state.success ? "" : "text-[var(--red-hover)]"}>{state.message}</p>
     <div className="flex flex-wrap items-center gap-5">

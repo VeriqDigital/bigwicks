@@ -46,3 +46,10 @@ export async function listCustomerTiers() {
   await requireAdmin();
   return getDb().pricingTier.findMany({ where: { name: { in: supportedTierNames } }, select: { id: true, name: true }, orderBy: { name: "asc" } });
 }
+
+export async function hasPendingSetup(customerId: string) {
+  await requireAdmin();
+  const user = await getDb().user.findFirst({ where: { role: "CUSTOMER", passwordHash: null, customer: { id: customerId } }, select: { id: true, sessionVersion: true } });
+  if (!user) return false;
+  return !!await getDb().accountToken.findFirst({ where: { userId: user.id, sessionVersion: user.sessionVersion, purpose: "ACCOUNT_SETUP", consumedAt: null, deliveredAt: { not: null }, expiresAt: { gt: new Date() } }, select: { id: true } });
+}

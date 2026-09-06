@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { Prisma } from "@/generated/prisma/client";
 import { requireAdmin } from "@/lib/auth/authorization";
 import { getDb } from "@/lib/db";
+import { invalidateAccountTokens } from "@/lib/auth/account-tokens";
 import { createCustomerSchema, editCustomerSchema, customerStatusSchema, supportedTierNames } from "@/lib/admin/customer-validation";
 import type { CustomerField, CustomerFormState } from "./form-state";
 
@@ -98,6 +99,7 @@ export async function editCustomer(_state: CustomerFormState, formData: FormData
         email: data.email,
         ...(customer.user.email !== data.email ? { sessionVersion: { increment: 1 } } : {}),
       } });
+      if (customer.user.email !== data.email) await invalidateAccountTokens(tx, customer.userId);
       await tx.customer.update({ where: { id: customer.id }, data: {
         companyName: data.companyName, customerNumber: data.customerNumber, pricingTierId: data.pricingTierId,
       } });
@@ -119,6 +121,7 @@ export async function setCustomerStatus(_state: CustomerFormState, formData: For
       // One account-access operation owns both flags. Always revoke, including
       // repeated requests and re-enables, so no previously issued session revives.
       await tx.user.update({ where: { id: customer.userId }, data: { active, sessionVersion: { increment: 1 } } });
+      await invalidateAccountTokens(tx, customer.userId);
       await tx.customer.update({ where: { id: customer.id }, data: { active } });
     }, { isolationLevel: "Serializable" });
   } catch (error) { return mutationError(error); }

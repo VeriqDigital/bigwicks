@@ -5,8 +5,8 @@
 ## Current priority
 
 **Optimize for:**  
-Complete Milestone 2A admin customer management, preserving the shared authentication
-foundation and deferring password setup/invitations to Milestone 2B.
+Complete Milestone 2B customer invitations, password setup and password reset,
+preserving the merged Milestone 1/2A authentication and customer-management invariants.
 
 **Waiting on:**
 
@@ -26,6 +26,38 @@ foundation and deferring password setup/invitations to Milestone 2B.
 ---
 
 ## Decision log
+
+### 2026-09-06 — Milestone 2B secure setup and customer password reset
+
+**Source:** User / Veriq; Milestones 1 and 2A are complete and merged.
+**Status:** Active; implemented locally, no deployment or environment data changes.
+
+Add a dedicated digest-only AccountToken model in a new migration. Setup links last
+24 hours; reset links last one hour. Tokens are single-use and bound to the current
+sessionVersion and a server-selected purpose. New links supersede older links of
+the same purpose; password changes, normalized login-email changes and account-access
+changes invalidate all outstanding account links. Setup/reset preserve both active
+flags and increment sessionVersion transactionally.
+
+Staff explicitly send invitations only to provisioned, passwordless CUSTOMER users.
+Public reset is CUSTOMER-only for identities with a password and a Customer record;
+disabled customers can change passwords but remain unable to sign in. Admin recovery
+remains a controlled operational task, not a public reset endpoint.
+
+Reuse Resend with ACCOUNT_FROM_EMAIL and canonical AUTH_URL. A token is unusable until
+email acceptance is recorded. Delivery failures require a fresh issue; never report
+confirmed success on failure. Reset request responses are generic and independent
+of account eligibility, with lookup/delivery scheduled using Next.js after(). All
+limits use PostgreSQL buckets, not process memory. Details are in `docs/AUTH.md`.
+
+No default passwords, public registration, products, catalog, pricing implementation,
+ordering or unrelated public-site changes. No real test emails, production/preview
+data changes or deployment. Sender/domain configuration, live deliverability and
+production provisioning remain separate release work.
+
+**Supersedes:** Milestone 2A's temporary deferral of setup and reset flows.
+
+---
 
 ### 2026-09-06 — Milestone 2A customer management and account-setup boundary
 
