@@ -21,6 +21,7 @@ model User {
   active         Boolean   @default(false)
   sessionVersion Int       @default(0)
   customer       Customer?
+  accountTokens  AccountToken[]
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 }
@@ -51,5 +52,26 @@ model LoginRateLimit {
   attempts  Int
   expiresAt DateTime
 
+  @@index([expiresAt])
+}
+
+enum AccountTokenPurpose {
+  ACCOUNT_SETUP
+  PASSWORD_RESET
+}
+
+model AccountToken {
+  id             String              @id @default(cuid())
+  userId         String
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash      String              @unique @db.VarChar(64)
+  purpose        AccountTokenPurpose
+  sessionVersion Int
+  expiresAt      DateTime
+  consumedAt     DateTime?
+  deliveredAt    DateTime?
+  createdAt      DateTime            @default(now())
+
+  @@index([userId, purpose, consumedAt])
   @@index([expiresAt])
 }

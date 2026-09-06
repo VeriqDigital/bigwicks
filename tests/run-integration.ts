@@ -9,6 +9,7 @@ async function main() {
   const root = resolve(".test-runtime");
   await mkdir(root, { recursive: true });
   const directory = await mkdtemp(resolve(root, "auth-"));
+  const mailDirectory = await mkdtemp(resolve(root, "mail-"));
   const port = await new Promise<number>((done, reject) => {
     const probe = createServer();
     probe.once("error", reject);
@@ -25,6 +26,9 @@ async function main() {
     AUTH_SECRET: randomBytes(32).toString("base64"),
     AUTH_URL: "http://localhost:3107",
     AUTH_TRUST_HOST: "true",
+    RESEND_API_KEY: "isolated-test-key",
+    ACCOUNT_FROM_EMAIL: "Big Wicks Tests <accounts@example.test>",
+    TEST_ACCOUNT_MAIL_DIR: mailDirectory,
     ALLOW_DEVELOPMENT_SEED: "true",
     SEED_ADMIN_PASSWORD: randomBytes(24).toString("hex"),
     SEED_TIER1_PASSWORD: randomBytes(24).toString("hex"),
@@ -64,7 +68,7 @@ async function main() {
     await run(["--conditions=react-server", "--import", "tsx", "prisma/seed.ts"]);
     await run(["node_modules/vitest/vitest.mjs", "run", "--config", "vitest.integration.config.ts"]);
     await run(["node_modules/next/dist/bin/next", "build"], true);
-    app = start(["node_modules/next/dist/bin/next", "start", "--port", "3107", "--hostname", "localhost"], true);
+    app = start(["--import", "./tests/email-interceptor.mjs", "node_modules/next/dist/bin/next", "start", "--port", "3107", "--hostname", "localhost"], true);
     let ready = false;
     for (let i = 0; i < 60; i++) {
       if (app.exitCode !== null) throw new Error("Test application exited before readiness.");

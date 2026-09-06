@@ -2,8 +2,8 @@
 
 This foundation is shared by both quoted ordering options. Milestone 1 provides
 login/logout, authorization, initial models and development fixtures. Milestone 2A
-adds admin customer management. Invitations/password setup and reset are deferred
-to Milestone 2B; catalog, product pricing UI and ordering remain later milestones.
+adds admin customer management. Milestone 2B adds customer invitations, password
+setup and password reset. Catalog, product pricing UI and ordering remain later milestones.
 
 ## Architecture
 
@@ -64,7 +64,7 @@ Serve production exclusively over HTTPS, with a canonical HTTPS `AUTH_URL`.
 
 Logout clears this browser's session cookie. To revoke all sessions for a user,
 increment `User.sessionVersion`. Admin email and access changes now increment that
-version in the same transaction as the change. Future password reset/setup and
+version in the same transaction as the change, as do password reset/setup. Future
 role management must do the same. Current status and
 role checks already take effect immediately; incrementing prevents old cookies
 becoming usable again after re-enabling an account. Already delivered browser
@@ -98,7 +98,7 @@ verified with Node 24.20.0. On PowerShell with script execution disabled, use
    `node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"`.
    All backend and seed variables are server-only; never use a `NEXT_PUBLIC_` prefix.
 3. Run `npm run db:generate`, then `npm run db:deploy` to apply the checked-in initial
-   migration. Use `npm run db:migrate -- --name descriptive_name` for future changes
+   migrations. Use `npm run db:migrate -- --name descriptive_name` for future changes
    in a disposable development database, not production.
 4. Set `ALLOW_DEVELOPMENT_SEED=true` and supply three distinct strong passwords in
    `SEED_ADMIN_PASSWORD`, `SEED_TIER1_PASSWORD`, `SEED_TIER2_PASSWORD`.
@@ -114,7 +114,7 @@ These are clearly fictional test records, not client facts. Seed requires explic
 opt-in, rejects production mode and non-local database hosts, and never prints
 passwords. Repeated seeds preserve existing passwords, status, role and tiers.
 Turn off the seed opt-in after use. Never seed a production database through a tunnel.
-Real account provisioning/invitation decisions remain Milestone 2B.
+Real production provisioning remains a separately authorized release task.
 
 ## Milestone 2A: admin customer management
 
@@ -133,9 +133,9 @@ and explicitly rejects a missing hash, even if the dummy password matches.
 
 New accounts default to disabled in the form; staff can explicitly select active.
 Active status alone does not enable a passwordless account to sign in. The form
-and edit page state that no invitation is sent and password setup is unavailable.
-The eventual setup flow can populate the existing nullable hash without changing
-the User/Customer relationship.
+and edit page explain that a password is required. Customer creation sends no
+email automatically; staff explicitly send a setup link from the edit page.
+Setup populates the nullable hash without changing the User/Customer relationship.
 
 Each create, edit and status action independently calls `requireAdmin()` before
 validation or database access. The list, detail and tier read helpers also check
@@ -165,11 +165,138 @@ normalized login email increments the session version; casing/outer whitespace
 normalization alone does not. Current tiers remain resolved from the database,
 never from auth tokens. No role-edit or hard-delete functionality is provided.
 
-Milestone 2B is responsible for secure single-use expiring setup/invitation links,
-delivery, password reset and real production provisioning. Setup must verify its
-token server-side, store a real hash, preserve the admin's access decision, and
-increment the session version transactionally. This pass adds none of those flows
-and changes no preview or production data. No new environment variables are required.
+Milestone 2A added no email flow or environment variables. The following section
+describes the subsequent Milestone 2B implementation.
+
+## Milestone 2B: setup invitations and password reset
+
+### Token storage and consumption
+
+The new `20260906020000_account_tokens` Prisma migration adds `AccountToken` and
+`AccountTokenPurpose`; neither previously applied migration changes. Each row has
+a unique SHA-256 digest of a cryptographically random 32-byte (256-bit) bearer token,
+a User relation, purpose, issue-time sessionVersion, expiration, creation time,
+consumption/supersession timestamp and email-acceptance timestamp (`deliveredAt`).
+Indexes support user/purpose/outstanding-token and expiration queries. A random
+token needs no password-style slow hash; brute-forcing its entropy is impractical.
+Raw tokens are never stored in PostgreSQL, returned to staff, or logged.
+
+Setup links expire after 24 hours; password reset links expire after one hour.
+Validation always requires the correct server-selected purpose, an unexpired,
+unconsumed, email-accepted row, matching current sessionVersion, CUSTOMER role and
+associated Customer. Setup additionally requires a null hash; reset requires an
+existing hash. ADMIN accounts are ineligible for both public token flows.
+
+Issuance and consumption lock the User row before reading current state. Concurrent
+reissues leave at most one current link for that purpose; concurrent consumption
+can change the password only once. Passwords and confirmation are validated with
+the existing untrimmed 15–128 character policy. Argon2id hashing uses the existing
+settings and occurs before acquiring the database lock to keep lock duration short.
+The token is then revalidated inside the transaction; password hash update,
+sessionVersion increment, consumption and invalidation of every other outstanding
+account token commit together or all roll back. Neither active flag is written.
+
+### Staff invitations and email failure
+
+`sendSetupLink()` independently calls `requireAdmin()` and resolves the CUSTOMER
+identity from the validated customer ID. No browser user ID/role/email determines
+the recipient. Passwordless customers can be invited whether active or disabled.
+The edit page offers Send/Resend, shows current setup-pending state, and never
+shows a password, token or link. Already-set-up accounts have no invitation action.
+
+Before issuing a link, configuration is validated. The new row and supersession
+of older unused tokens of the same purpose commit before Resend is called. The
+new row is unusable until Resend accepts the email and `deliveredAt` is recorded.
+That name records provider acceptance, **not inbox delivery**. The UI uses that
+distinction explicitly. A concurrent reissue/email/access change prevents the
+older delivery from reporting success or making its token usable.
+
+On provider rejection/timeout, the new token is invalidated and the admin sees a
+retry message. If invalidation storage fails, its null `deliveredAt` still denies
+use. If a process stops between sending and recording acceptance, the received
+link remains unusable. Retry always issues a fresh link; it never attempts to
+recover a raw token from storage. Older links may already be superseded even when
+delivery fails. No automatic retry queue or delivery webhook is added.
+
+### Customer routes and reset policy
+
+`/setup-account?token=...` and `/reset-password?token=...` validate server-side before
+showing password and confirmation fields. Invalid/missing/expired/used/wrong-purpose
+links show a generic unavailable message without account details. Actions capture
+only the digest and server-selected purpose in Next.js's encrypted closure; they
+do not receive raw tokens in client props or trust identity/purpose/expiry fields.
+Every POST revalidates against PostgreSQL. A successful change redirects to
+`/login?password=updated`; it creates no authenticated session.
+
+The pages are dynamic, noindex, no-store and use `Referrer-Policy: no-referrer`.
+Once hydrated, the form removes the bearer query from the current history entry.
+A reload then needs the original email link again. Tokens still initially travel
+in the email URL and reach the hosting ingress; redact these routes' query strings
+in hosting/access logs and do not add analytics or email click tracking to them.
+No application code logs token URLs, passwords or provider exception payloads.
+
+`/login` links to `/forgot-password`. All request outcomes use identical generic
+wording, including missing/admin/passwordless accounts, throttling and failures.
+For allowed, syntactically valid requests, Next.js 16 `after()` performs eligibility
+lookup and delivery **after the response**; lookup/provider latency is not exposed
+as an account-existence signal. This uses Vercel's request lifetime support with
+a 30-second route duration and a 10-second Resend timeout, not an unawaited promise.
+It is not a durable queue: failures log only a fixed message and the customer may
+request another link. The response promises no account existence or confirmed delivery.
+
+Reset is CUSTOMER-only with an existing password and Customer association.
+Disabled customers may also reset a password, but stay disabled and cannot log in.
+Null-hash customers must use a staff-issued setup link. ADMIN recovery is deliberately
+not exposed publicly and remains a separate controlled operational procedure.
+
+### Invalidation and limits
+
+| Event | Outstanding setup/reset tokens | Sessions/access |
+| --- | --- | --- |
+| Issue/reissue setup or reset | Supersede unused tokens of the same purpose | No access/version change |
+| Complete setup/reset | Invalidate all outstanding purposes | Increment version; preserve both active flags |
+| Change normalized login email | Invalidate all in the email-update transaction | Existing version revocation preserved |
+| Change account access, including re-enable | Invalidate all in the status-update transaction | Set both flags together; increment version |
+| Ordinary business/tier edit or email casing normalization | Preserve | Preserve sessions |
+| Expired/consumed/unaccepted token | Always rejected | No effect |
+
+Fresh links can be issued after a status change, including for a disabled account.
+Issue-time version binding also rejects tokens if another version-revoking operation
+occurs. Future role/security writers must continue the same revocation rule.
+Expired/consumed rows remain harmless; no background cleanup system is required.
+
+All limits reuse the atomic PostgreSQL `LoginRateLimit` buckets and HMAC keys with
+separate namespaces; no browser IP/forwarding header or in-memory counter is trusted:
+
+- Public reset: 3 requests per normalized email per 15 minutes; 30 global/minute.
+- Staff setup mail: 3 per customer per 15 minutes; 30 global/hour.
+- Password consumption: 10 per token digest per 15 minutes; 60 global/minute,
+  checked before Argon2 work. Invalid attempts count; storage failure denies writes.
+
+The same targeted/global denial-of-service tradeoffs as credential limiting apply.
+Limits bound work across instances, not all ingress traffic; production WAF/rate
+controls and operational volume review remain appropriate.
+
+### Email configuration and local verification
+
+- Reuse server-only `RESEND_API_KEY`.
+- Add `ACCOUNT_FROM_EMAIL`, a sender on a verified Resend domain. This is independent
+  of contact-form recipients/senders; account email goes only to the current login email.
+- `AUTH_URL` must be an exact canonical origin with no path, credentials, query or
+  fragment. HTTPS is required except localhost/loopback development. Request Host
+  and forwarded headers are never used to construct links.
+- Confirm the actual sender/domain, disable Resend click tracking for account links,
+  and verify real inbox delivery as a separately authorized environment/release task.
+- Run `npm run db:generate` and apply all three migrations with `npm run db:deploy`
+  only against your intended local database. No new packages or secret client variables.
+
+Automated tests use only a fresh isolated PostgreSQL database. Database tests mock
+the email boundary; the production browser-test server loads a test-only Node
+preload that intercepts Resend HTTP calls. Dummy email configuration overrides local
+settings. Captured test messages stay in ignored `.test-runtime/mail-*` directories.
+The preload is never imported by application code, and there is no production
+email-bypass environment switch. No real emails, deployments, or preview/production
+data changes are part of this milestone.
 
 ## Production configuration and review
 
@@ -234,3 +361,13 @@ callers and rejection of an old session cookie after admin disable/re-enable.
 List/edit layouts were inspected at 390px, 768px and 1440px. No dependencies changed,
 so the existing clean Node 24 installation was reused. Preview/production data
 and deployments were not touched; the user separately verified Milestone 1 preview.
+
+Milestone 2B verification: Prisma generation and all three migrations passed
+against a fresh isolated local PostgreSQL database. Lint, typecheck, 62 unit tests,
+38 database integration tests (100 combined), 11 Playwright scenarios and the
+production build passed. Coverage includes concurrent issue/consume, transaction
+rollback, email failure/reissue, direct unauthorized invitation actions, token
+tampering/expiry, disabled setup/reset and revocation of a real browser session.
+Setup forms were inspected at 390px, 768px and 1440px. Dependencies and both earlier
+migrations remain unchanged. No real email delivery or hosting configuration was
+verified, and no preview/production data or deployments were modified.
