@@ -14,7 +14,7 @@ Internal build work has started ahead of final client sign-off because the proje
 - Tailwind CSS 4
 - Vercel hosting
 - Resend for server-side email
-- If the managed ordering option is selected: Auth.js, Prisma, and PostgreSQL are the preferred foundation unless the user explicitly changes direction
+- Auth.js, Prisma, and PostgreSQL form the Milestone 1 foundation shared by both ordering options
 
 ## Project documentation
 
@@ -26,6 +26,7 @@ Read these before substantial work:
 - `docs/CONTENT.md`
 - `docs/SEO.md`
 - `docs/DECISIONS.md`
+- `docs/AUTH.md` — authentication architecture, setup, fixtures and verification
 
 Client-specific facts and scope live in `/docs`; do not rely on this README as the detailed source of truth.
 
@@ -68,7 +69,10 @@ The current contact form uses:
 - `CONTACT_TO_EMAIL`
 - `NEXT_PUBLIC_SITE_URL`
 
-If authentication/database work is introduced, document new variables in `.env.example` without committing secrets.
+Database/authentication and development seed variables are listed in `.env.example`.
+Follow [the authentication setup guide](docs/AUTH.md) before using `/login`, `/admin`
+or `/portal`. No production database or real customer accounts are provisioned by
+this repository change.
 
 ## Security rule for ordering
 
