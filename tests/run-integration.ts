@@ -29,6 +29,10 @@ async function main() {
     RESEND_API_KEY: "isolated-test-key",
     ACCOUNT_FROM_EMAIL: "Big Wicks Tests <accounts@example.test>",
     TEST_ACCOUNT_MAIL_DIR: mailDirectory,
+    // Tests never depend on or contact a real content dataset, even if local
+    // development configuration points to one. Content tests mock the boundary.
+    NEXT_PUBLIC_SANITY_PROJECT_ID: "",
+    NEXT_PUBLIC_SANITY_DATASET: "",
     ALLOW_DEVELOPMENT_SEED: "true",
     SEED_ADMIN_PASSWORD: randomBytes(24).toString("hex"),
     SEED_TIER1_PASSWORD: randomBytes(24).toString("hex"),
@@ -62,6 +66,20 @@ async function main() {
     await postgres.initialise();
     await postgres.start();
     started = true;
+    if (process.platform === "win32") {
+      // embedded-postgres uses taskkill /f /t on Windows, which can orphan PG18
+      // I/O workers and lock node_modules during npm ci. Gracefully stop only
+      // this newly created cluster instead. Its exit hook calls this same
+      // idempotent method, so it cannot wait on an already-exited process.
+      let stopping: Promise<void> | undefined;
+      postgres.stop = () => stopping ??= new Promise<void>((yes, no) => {
+        const stop = spawn(resolve("node_modules/@embedded-postgres/windows-x64/native/bin/pg_ctl.exe"),
+          ["-D", directory, "stop", "-m", "fast", "-w", "-t", "15"],
+          { windowsHide: true, stdio: "ignore" });
+        stop.once("error", no);
+        stop.once("exit", (code) => code === 0 ? yes() : no(new Error("Isolated PostgreSQL shutdown failed.")));
+      });
+    }
     await postgres.createDatabase("big_wicks_auth_test");
     await run(["node_modules/prisma/build/index.js", "generate"]);
     await run(["node_modules/prisma/build/index.js", "migrate", "deploy"]);

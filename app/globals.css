@@ -1,3 +1,5 @@
+/* Sanity's reset must not override existing site utility spacing after visiting Studio. */
+@layer theme, base, sui, components, utilities;
 @import "tailwindcss";
 
 :root {

@@ -5,8 +5,8 @@
 ## Current priority
 
 **Optimize for:**  
-Complete Milestone 2B customer invitations, password setup and password reset,
-preserving the merged Milestone 1/2A authentication and customer-management invariants.
+Complete Milestone 3A's Sanity catalog content and PostgreSQL private-pricing
+foundation, preserving completed Milestone 1/2A/2B security invariants.
 
 **Waiting on:**
 
@@ -26,6 +26,39 @@ preserving the merged Milestone 1/2A authentication and customer-management inva
 ---
 
 ## Decision log
+
+### 2026-09-06 — Milestone 3A catalog/pricing responsibility and identity
+
+**Source:** User / Veriq; Milestones 1, 2A and 2B are complete.
+**Status:** Active; implementation local only.
+
+Sanity owns non-secret product content, category references, images and manual
+visibility. PostgreSQL owns customers, tiers and private decimal ProductPrice rows.
+Auth.js retains session authentication. No wholesale price fields belong in Sanity.
+
+Generate a UUID catalogKey once per product, keep it read-only in Studio, validate
+uniqueness/published-key immutability and disable product duplication. SKU/name
+edits preserve identity. API writers can bypass Studio guards, so the service
+rejects ambiguous keys and a read-only audit detects drift; no cross-system FK
+is claimed. A new migration adds ProductPrice with composite key, tier FK and
+nonnegative finite NUMERIC(12,2) price. No product content is duplicated in SQL.
+
+Embed Studio at `/studio`, protected by ADMIN and Sanity's own editor permissions.
+Use a public content dataset with no read token. Missing configuration must not
+break builds. Server catalog reads take no customer/tier inputs, independently
+authenticate the customer, join only current-tier prices, and use no shared cache
+or CDN. Missing/invalid prices and ambiguous identities are omitted; unavailable
+content is excluded. Optional content degrades gracefully. Details: `docs/CATALOG.md`.
+
+No real Sanity project/data creation, preview/production writes or deployment.
+No final catalog UI, duplicate custom product CMS, ordering/Excel, inventory,
+payments or announcements. Currency/unit meaning and real import format remain
+unconfirmed; tests use explicitly fictional fixtures only.
+
+**Supersedes:** Earlier placeholders that left product content ownership or the
+cross-system identity undefined. The client ordering-option decision remains open.
+
+---
 
 ### 2026-09-06 — Milestone 2B secure setup and customer password reset
 

@@ -4,7 +4,10 @@ Website and customer-ordering project for Big Wicks Fireworks LLC in La Porte, I
 
 ## Current status
 
-Internal build work has started ahead of final client sign-off because the project is highly likely to proceed. The public marketing site already exists in a strong first-pass state. The immediate work is to refine the site architecture and prepare it for the selected customer-ordering option without prematurely building functionality the client has not finalized.
+Milestones 1, 2A and 2B provide authentication, customer management and account
+setup/reset. Milestone 3A establishes Sanity product content and a private
+PostgreSQL pricing/catalog service. The final customer catalog UI and ordering
+option remain later work; no real catalog has been imported.
 
 ## Stack
 
@@ -15,6 +18,7 @@ Internal build work has started ahead of final client sign-off because the proje
 - Vercel hosting
 - Resend for server-side email
 - Auth.js, Prisma, and PostgreSQL form the Milestone 1 foundation shared by both ordering options
+- Sanity Studio for non-secret catalog content; private prices stay in PostgreSQL
 
 ## Project documentation
 
@@ -27,15 +31,19 @@ Read these before substantial work:
 - `docs/SEO.md`
 - `docs/DECISIONS.md`
 - `docs/AUTH.md` — authentication architecture, setup, fixtures and verification
+- `docs/CATALOG.md` — Sanity setup, permanent product identity, private pricing and audit
 
 Client-specific facts and scope live in `/docs`; do not rely on this README as the detailed source of truth.
 
 ## Development
 
 ```bash
-npm install
+npm ci
+npm run db:generate
 npm run dev
 npm run lint
+npm run typecheck
+npm test
 npm run build
 ```
 
@@ -73,6 +81,17 @@ Database/authentication and development seed variables are listed in `.env.examp
 Follow [the authentication setup guide](docs/AUTH.md) before using `/login`, `/admin`
 or `/portal`. No production database or real customer accounts are provisioned by
 this repository change.
+
+Sanity uses `NEXT_PUBLIC_SANITY_PROJECT_ID` and `NEXT_PUBLIC_SANITY_DATASET` for a
+public content-only dataset. Both can remain empty for local checks; `/studio`
+shows an admin-only configuration notice. Staff need both application ADMIN and
+Sanity project permissions. No Sanity read token or remote project is required
+for automated tests/builds. See [catalog setup and rules](docs/CATALOG.md).
+
+`npm run catalog:audit` reads configured Sanity/PostgreSQL data and reports drift
+without writes or price amounts. Run it only against the intended environment.
+`npm run test:integration` applies all migrations to a fresh isolated PostgreSQL
+database, mocks catalog content, builds production and runs browser checks.
 
 ## Security rule for ordering
 
