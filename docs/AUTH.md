@@ -3,7 +3,8 @@
 This foundation is shared by both quoted ordering options. Milestone 1 provides
 login/logout, authorization, initial models and development fixtures. Milestone 2A
 adds admin customer management. Milestone 2B adds customer invitations, password
-setup and password reset. Catalog, product pricing UI and ordering remain later milestones.
+setup and password reset. Milestone 3A adds a server-only catalog/private-pricing
+foundation; customer catalog UI and ordering remain later milestones.
 
 ## Architecture
 
@@ -17,7 +18,8 @@ setup and password reset. Catalog, product pricing UI and ordering remain later 
   One login per customer is the initial choice; multi-user businesses can be
   introduced deliberately later. No unconfirmed business fields are required.
 - `PricingTier` contains a unique name and ID, with Tier 1 and Tier 2 development
-  records. No discount formula or product pricing is implemented.
+  records. `ProductPrice` now holds private decimal prices per catalogKey/tier;
+  Sanity holds non-secret content only. No discount formula is implemented.
 - Both identity and customer default inactive. A CUSTOMER must have an active
   associated Customer; an ADMIN must have no Customer association. Inconsistent
   records fail closed. Provisioning must write related records transactionally.
@@ -39,6 +41,14 @@ setup and password reset. Catalog, product pricing UI and ordering remain later 
 - Every future protected page, route handler, server action and data operation
   must call the appropriate helper independently. Layouts and hidden links are
   not security boundaries. No proxy-based authorization is required here.
+
+Milestone 3A's `getAvailableCatalogForCustomer()` takes no browser inputs and calls
+`requireCustomer()` independently on every read. Current PostgreSQL tier assignment
+selects the only prices returned; no customer-specific catalog caching is used.
+The service is not exposed as a public route or wired into the placeholder portal.
+`/studio` independently requires ADMIN; editing additionally requires Sanity's own
+project permissions. No shared Sanity write token is added. See `docs/CATALOG.md`
+for schema, identity, pricing, freshness and consistency-audit rules.
 
 ## Authentication behavior
 

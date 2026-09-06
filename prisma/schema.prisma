@@ -45,6 +45,19 @@ model PricingTier {
   id        String     @id @default(cuid())
   name      String     @unique @db.VarChar(100)
   customers Customer[]
+  productPrices ProductPrice[]
+}
+
+model ProductPrice {
+  catalogKey    String      @db.Uuid
+  pricingTierId String
+  pricingTier   PricingTier @relation(fields: [pricingTierId], references: [id], onDelete: Restrict)
+  price         Decimal     @db.Decimal(12, 2)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@id([catalogKey, pricingTierId])
+  @@index([pricingTierId])
 }
 
 model LoginRateLimit {

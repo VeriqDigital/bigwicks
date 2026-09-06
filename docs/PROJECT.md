@@ -420,7 +420,10 @@ The proposal clearly requires Big Wicks to control which products customers curr
 
 Therefore an availability control is required.
 
-Product content management is expected to be handled through Sanity CMS in a later milestone rather than duplicating full catalog editing inside the custom admin area. The custom admin remains responsible for customer accounts and pricing-tier management.
+Milestone 3A establishes Sanity Studio for product content, categories, images and
+manual availability. The custom admin remains responsible for customer accounts
+and pricing-tier assignment. Private prices belong exclusively in PostgreSQL;
+there is no duplicate custom product CMS.
 
 The following may be architecturally supported but should not be assumed as required UI until confirmed:
 
@@ -539,12 +542,12 @@ name
 
 ### Product
 
-Represents a catalog product.
+Represents non-secret catalog content in Sanity, not a PostgreSQL Product table.
 
 Likely fields:
 
 ```text
-id
+catalogKey (immutable generated UUID, distinct from editable SKU and Sanity _id)
 sku
 name
 category
@@ -560,9 +563,9 @@ Represents authoritative tier-specific pricing.
 Likely fields:
 
 ```text
-productId
+catalogKey
 pricingTierId
-price
+price (PostgreSQL NUMERIC(12,2))
 ```
 
 ### Order
@@ -621,10 +624,10 @@ The database answers:
 | Admin customer management         |               Yes | Milestone 2A complete and merged      |
 | Customer enable/disable           |               Yes | Milestone 2A complete and merged      |
 | Pricing-tier assignment           |               Yes | Milestone 2A complete and merged      |
-| Account setup / password reset    |               Yes | Milestone 2B implemented locally      |
-| Product catalog                   |               Yes | Planned                              |
-| Product availability controls     |               Yes | Planned                              |
-| Protected tier pricing            |               Yes | Planned                              |
+| Account setup / password reset    |               Yes | Milestone 2B complete per user        |
+| Product catalog                   |               Yes | Milestone 3A content/service foundation; customer UI later |
+| Product availability controls     |               Yes | Milestone 3A Sanity schema            |
+| Protected tier pricing            |               Yes | Milestone 3A PostgreSQL/service foundation |
 | Excel ordering                    |          Option 1 | Pending client selection             |
 | Website order submission          |          Option 2 | Pending client selection             |
 | Order email notification          |          Option 2 | Planned if selected                  |
@@ -913,21 +916,25 @@ authenticate. See `docs/AUTH.md` for mutation rules and the nullable-hash migrat
 2. Password reset
 3. Confirmed production provisioning
 
-Implemented locally: explicit staff setup invitations, single-use expiring links,
+Complete per user: explicit staff setup invitations, single-use expiring links,
 customer-chosen passwords and customer-only public reset. Setup/reset preserve
 account access and revoke sessions. See `docs/AUTH.md` for token, email and retry
 rules. Customer creation still sends no automatic invitation and creates no default
 password. Production provisioning/configuration and real email delivery verification
 remain a separately authorized release task.
 
-### Milestone 3 — Product and pricing foundation
+### Milestone 3A — Product catalog and private pricing foundation
 
-1. Finalize product import format.
-2. Import/seed approximately 200 products.
-3. Add categories.
-4. Add manual availability state.
-5. Add tier-specific pricing.
-6. Ensure private prices remain server-side.
+1. Sanity product/category schemas and an embedded `/studio` route.
+2. Immutable catalogKey independent of SKU/name.
+3. PostgreSQL ProductPrice per catalogKey/tier, decimal-safe and private.
+4. Authenticated server-only catalog join using the current customer tier.
+5. Read-only content/pricing consistency audit.
+6. Fresh isolated tests with fictional fixtures only.
+
+Implemented locally; see `docs/CATALOG.md`. Real catalog/import columns, pricing
+currency/unit meaning, remote Sanity setup and customer catalog UI remain later work.
+No real product records, full product admin UI or ordering are created in this pass.
 
 ### Milestone 4 — Admin catalog controls
 
@@ -1033,14 +1040,14 @@ Test:
 
 ### What Codex should optimize for right now
 
-Complete and verify Milestone 2B secure account invitations, setup and password
-reset shared by both quoted options. Milestones 1 and 2A are complete and merged
-per the user. Do not deploy, modify preview/production data, or send real emails
-during automated tests in this pass.
+Complete and verify Milestone 3A's Sanity content/PostgreSQL private-pricing
+foundation, shared by both quoted options. Milestones 1, 2A and 2B are complete
+per the user. Do not deploy, create a real Sanity project, modify preview/production
+data, or invent/import real products in this pass.
 
 The first meaningful milestone is:
 
-> An authorized administrator can provision a customer and send a setup invitation. The customer can choose or reset their own password securely. Only enabled customers can sign in, and previous sessions cannot survive password or account-access changes.
+> Catalog content and private prices have distinct owners and a stable identity. An authenticated customer service resolves current account/tier state and returns only available, unambiguous products with valid prices for that customer. An operator can audit content/pricing drift before importing real data.
 
 ### Do not work on yet
 
