@@ -616,11 +616,11 @@ The database answers:
 | Click-to-call / directions        |               Yes | Existing                             |
 | Core SEO/local metadata           |               Yes | Existing foundation; improve         |
 | GBP cleanup/support               | Yes, as value-add | Do not claim changes until performed |
-| Wholesale customer authentication |               Yes | Planned                              |
-| Admin authentication              |               Yes | Planned                              |
-| Admin customer management         |               Yes | Planned                              |
-| Customer enable/disable           |               Yes | Planned                              |
-| Pricing-tier assignment           |               Yes | Planned                              |
+| Wholesale customer authentication |               Yes | Milestone 1; preview verified by user |
+| Admin authentication              |               Yes | Milestone 1; preview verified by user |
+| Admin customer management         |               Yes | Milestone 2A implemented locally      |
+| Customer enable/disable           |               Yes | Milestone 2A implemented locally      |
+| Pricing-tier assignment           |               Yes | Milestone 2A implemented locally      |
 | Product catalog                   |               Yes | Planned                              |
 | Product availability controls     |               Yes | Planned                              |
 | Protected tier pricing            |               Yes | Planned                              |
@@ -893,7 +893,7 @@ Do not document GBP changes as completed until they are actually performed.
 7. Implement protected customer area.
 8. Confirm disabled-account behavior.
 
-### Milestone 2 — Admin customer management
+### Milestone 2A — Admin customer management
 
 1. Customer list
 2. Create customer
@@ -901,7 +901,19 @@ Do not document GBP changes as completed until they are actually performed.
 4. Enable/disable customer
 5. Assign pricing tier
 6. Change pricing tier
-7. Customer account setup/invite flow
+
+Implemented locally: customer list/create/edit, verified tier assignment, synchronized
+enable/disable and session revocation. Passwordless accounts await setup and cannot
+authenticate. See `docs/AUTH.md` for mutation rules and the nullable-hash migration.
+
+### Milestone 2B — Customer account setup
+
+1. Secure first-time password setup/invite flow
+2. Password reset
+3. Confirmed production provisioning
+
+These flows are deferred from Milestone 2A. No default passwords or invitation
+emails are introduced by customer creation.
 
 ### Milestone 3 — Product and pricing foundation
 
@@ -1016,11 +1028,14 @@ Test:
 
 ### What Codex should optimize for right now
 
-Build the secure application foundation required by both quoted options.
+Complete and verify admin customer management shared by both quoted options.
+Milestone 1 was deployed and manually verified against preview PostgreSQL by the
+user. Milestone 2A changes are local; do not deploy or modify preview/production
+data in this pass. Password setup and invitation delivery remain Milestone 2B.
 
 The first meaningful milestone is:
 
-> An authorized Big Wicks administrator can securely sign in, access the admin area, create a wholesale customer, assign Tier 1 or Tier 2, enable/disable the account, and the created customer can securely sign in to a protected customer area.
+> An authorized Big Wicks administrator can securely sign in, access the admin area, create a wholesale customer, assign Tier 1 or Tier 2, and enable/disable the account. Newly created customers can sign in after the secure password setup flow is added in Milestone 2B; existing password-bearing customers retain protected portal access.
 
 ### Do not work on yet
 

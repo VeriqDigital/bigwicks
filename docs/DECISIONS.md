@@ -5,7 +5,8 @@
 ## Current priority
 
 **Optimize for:**  
-Refine/carve the existing public site into the strongest Big Wicks retail experience while keeping the architecture ready for the final selected customer-ordering option.
+Complete Milestone 2A admin customer management, preserving the shared authentication
+foundation and deferring password setup/invitations to Milestone 2B.
 
 **Waiting on:**
 
@@ -25,6 +26,29 @@ Refine/carve the existing public site into the strongest Big Wicks retail experi
 ---
 
 ## Decision log
+
+### 2026-09-06 — Milestone 2A customer management and account-setup boundary
+
+**Source:** User / Veriq; Milestone 1 is deployed and manually verified by the user.
+**Status:** Active
+
+Implement only staff customer list/create/edit, enable/disable and Tier 1/Tier 2
+assignment. New identities may have a null password hash and cannot authenticate
+until a later secure setup flow stores a real password. Never generate default
+passwords or send invitations in this pass.
+
+Account-access mutations set User.active and Customer.active together and increment
+sessionVersion in one transaction. Re-enabling cannot restore old sessions. Normal
+business/tier edits preserve sessions; changing the normalized login email revokes
+them. Every mutation checks requireAdmin independently and verifies target records.
+
+Apply the new nullable-hash migration only to isolated test databases during this
+pass. Do not deploy or modify preview/production data. Implementation details and
+Milestone 2B requirements are recorded in `docs/AUTH.md`.
+
+**Supersedes:** Earlier sequencing that deferred the shared admin customer controls.
+
+---
 
 ### 2026-09-06 — Start internal build before final sign-off
 

@@ -15,6 +15,7 @@ vi.mock("next/navigation", () => ({
 import { authorizeCredentials } from "@/lib/auth/credentials";
 import { requireAdmin, requireCustomer, requireUser } from "@/lib/auth/authorization";
 import { resolvePrincipal } from "@/lib/auth/principal";
+import { createCustomer, editCustomer, setCustomerStatus } from "@/app/(portal)/admin/customers/actions";
 
 const customer = {
   id: "user-a", email: "a@example.test", role: "CUSTOMER", active: true,
@@ -48,6 +49,11 @@ describe("credential authentication", () => {
     expect(await authorizeCredentials({ email: "missing@example.test", password: "wrong" })).toBeNull();
     expect(mocks.verify).toHaveBeenCalledWith("wrong", undefined);
   });
+  it("rejects a passwordless account even if dummy verification succeeds", async () => {
+    mocks.findUnique.mockResolvedValue({ ...customer, passwordHash: null });
+    expect(await authorizeCredentials({ email: customer.email, password: "unused-dummy-password" })).toBeNull();
+    expect(mocks.verify).toHaveBeenCalledWith("unused-dummy-password", undefined);
+  });
   it.each([
     { ...customer, active: false },
     { ...customer, customer: { ...customer.customer, active: false } },
@@ -68,6 +74,17 @@ describe("credential authentication", () => {
     mocks.allow.mockRejectedValue(new Error("unavailable"));
     await expect(authorizeCredentials({ email: customer.email, password: "correct" })).rejects.toThrow();
     expect(mocks.verify).not.toHaveBeenCalled();
+  });
+});
+
+describe("direct customer-management mutation authorization", () => {
+  it.each([createCustomer, editCustomer, setCustomerStatus])("denies customer users before mutation or input validation", async (action) => {
+    await expect(action({}, new FormData())).rejects.toThrow("notFound");
+  });
+  it.each([createCustomer, editCustomer, setCustomerStatus])("denies logged-out callers before mutation or input validation", async (action) => {
+    mocks.auth.mockResolvedValue(null);
+    await expect(action({}, new FormData())).rejects.toThrow("redirect:/login");
+    expect(mocks.findUnique).not.toHaveBeenCalled();
   });
 });
 
