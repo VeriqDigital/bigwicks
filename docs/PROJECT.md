@@ -625,7 +625,7 @@ The database answers:
 | Customer enable/disable           |               Yes | Milestone 2A complete and merged      |
 | Pricing-tier assignment           |               Yes | Milestone 2A complete and merged      |
 | Account setup / password reset    |               Yes | Milestone 2B complete per user        |
-| Product catalog                   |               Yes | Milestone 3A content/service foundation; customer UI later |
+| Product catalog                   |               Yes | Milestone 3B protected browsing UI; ordering deferred |
 | Product availability controls     |               Yes | Milestone 3A Sanity schema            |
 | Protected tier pricing            |               Yes | Milestone 3A PostgreSQL/service foundation |
 | Excel ordering                    |          Option 1 | Pending client selection             |
@@ -932,9 +932,17 @@ remain a separately authorized release task.
 5. Read-only content/pricing consistency audit.
 6. Fresh isolated tests with fictional fixtures only.
 
-Implemented locally; see `docs/CATALOG.md`. Real catalog/import columns, pricing
-currency/unit meaning, remote Sanity setup and customer catalog UI remain later work.
-No real product records, full product admin UI or ordering are created in this pass.
+Complete and merged per user; fictional preview content/prices and a clean audit
+were manually verified by the developer. See `docs/CATALOG.md`. Real catalog/import
+columns and currency/unit meaning remain unconfirmed.
+
+### Milestone 3B — Protected wholesale catalog UI
+
+Implemented at CUSTOMER-only `/portal`: server-authorized current-tier catalog,
+client search/category filters/name and exact-price sorting, responsive cards,
+optional-content fallbacks, empty/failure states and account/sign-out navigation.
+No ordering, quantity inputs or private pricing API. Automated checks use only
+isolated SQL and mocked Sanity content. See `docs/CATALOG.md` for boundaries.
 
 ### Milestone 4 — Admin catalog controls
 
@@ -946,6 +954,9 @@ At minimum:
 Add broader product-editing controls only if confirmed necessary.
 
 ### Milestone 5 — Customer catalog
+
+Browsing/search/filter/pricing are now implemented by Milestone 3B. Quantity and
+ordering interactions remain deferred to the selected ordering milestone.
 
 1. Customer authentication
 2. Search/filter catalog
@@ -1040,14 +1051,13 @@ Test:
 
 ### What Codex should optimize for right now
 
-Complete and verify Milestone 3A's Sanity content/PostgreSQL private-pricing
-foundation, shared by both quoted options. Milestones 1, 2A and 2B are complete
-per the user. Do not deploy, create a real Sanity project, modify preview/production
-data, or invent/import real products in this pass.
+Complete and verify Milestone 3B's protected customer catalog UI, shared by both
+quoted options. Milestones 1, 2A, 2B and 3A are complete and merged per the user.
+Do not deploy, modify remote data/settings, or invent/import real products.
 
 The first meaningful milestone is:
 
-> Catalog content and private prices have distinct owners and a stable identity. An authenticated customer service resolves current account/tier state and returns only available, unambiguous products with valid prices for that customer. An operator can audit content/pricing drift before importing real data.
+> An approved customer can browse/search/filter available products and see only their current assigned prices. All authoritative reads remain server-side; no ordering is implemented.
 
 ### Do not work on yet
 

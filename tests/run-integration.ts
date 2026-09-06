@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp } from "node:fs/promises";
+import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
 import { resolve } from "node:path";
@@ -29,6 +29,7 @@ async function main() {
     RESEND_API_KEY: "isolated-test-key",
     ACCOUNT_FROM_EMAIL: "Big Wicks Tests <accounts@example.test>",
     TEST_ACCOUNT_MAIL_DIR: mailDirectory,
+    TEST_CATALOG_CONTENT_FILE: "",
     // Tests never depend on or contact a real content dataset, even if local
     // development configuration points to one. Content tests mock the boundary.
     NEXT_PUBLIC_SANITY_PROJECT_ID: "",
@@ -61,6 +62,21 @@ async function main() {
   }
   let app: ChildProcess | undefined;
   let started = false;
+  async function stopApp() {
+    if (app && app.exitCode === null) {
+      const exited = new Promise((done) => app!.once("exit", done));
+      app.kill();
+      await exited;
+    }
+  }
+  async function waitForApp() {
+    for (let i = 0; i < 60; i++) {
+      if (!app || app.exitCode !== null) throw new Error("Test application exited before readiness.");
+      try { if ((await fetch(env.AUTH_URL + "/login")).ok) return; } catch { /* Starting. */ }
+      await new Promise((done) => setTimeout(done, 500));
+    }
+    throw new Error("Test application did not become ready.");
+  }
   try {
     console.log("Starting isolated PostgreSQL authentication checks.");
     await postgres.initialise();
@@ -87,21 +103,21 @@ async function main() {
     await run(["node_modules/vitest/vitest.mjs", "run", "--config", "vitest.integration.config.ts"]);
     await run(["node_modules/next/dist/bin/next", "build"], true);
     app = start(["--import", "./tests/email-interceptor.mjs", "node_modules/next/dist/bin/next", "start", "--port", "3107", "--hostname", "localhost"], true);
-    let ready = false;
-    for (let i = 0; i < 60; i++) {
-      if (app.exitCode !== null) throw new Error("Test application exited before readiness.");
-      try { ready = (await fetch(env.AUTH_URL + "/login")).ok; } catch { /* Starting. */ }
-      if (ready) break;
-      await new Promise((done) => setTimeout(done, 500));
-    }
-    if (!ready) throw new Error("Test application did not become ready.");
+    await waitForApp();
     await run(["node_modules/@playwright/test/cli.js", "test"]);
+    await stopApp();
+    // A second build verifies the configured content path without a remote
+    // project. The first still verifies unconfigured builds and Studio fallback.
+    env.NEXT_PUBLIC_SANITY_PROJECT_ID = "testonly";
+    env.NEXT_PUBLIC_SANITY_DATASET = "test";
+    env.TEST_CATALOG_CONTENT_FILE = resolve(directory, "catalog.json");
+    await writeFile(env.TEST_CATALOG_CONTENT_FILE, JSON.stringify({ products: [] }));
+    await run(["node_modules/next/dist/bin/next", "build"], true);
+    app = start(["--import", "./tests/email-interceptor.mjs", "--import", "./tests/catalog-interceptor.mjs", "node_modules/next/dist/bin/next", "start", "--port", "3107", "--hostname", "localhost"], true);
+    await waitForApp();
+    await run(["node_modules/@playwright/test/cli.js", "test", "catalog-ui.spec.ts"]);
   } finally {
-    if (app && app.exitCode === null) {
-      const exited = new Promise((done) => app!.once("exit", done));
-      app.kill();
-      await exited;
-    }
+    await stopApp();
     if (started) await postgres.stop();
     // Retained under the ignored directory for debugging; never touch a user's database.
   }
