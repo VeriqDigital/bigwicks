@@ -43,7 +43,7 @@ export default function ContactPage() {
             <ContactForm />
 
             <aside className="space-y-6" aria-label="Big Wicks store information">
-              <figure className="relative aspect-[16/10] overflow-hidden rounded-[7px] border border-[#d5d5d0] bg-[#deded9]">
+              <figure className="relative aspect-16/10 overflow-hidden rounded-[7px] border border-[#d5d5d0] bg-[#deded9]">
                 <Image
                   src="/images/store/big-wicks-storefront-night.jpg"
                   alt="Big Wicks Fireworks storefront illuminated in La Porte, Indiana"

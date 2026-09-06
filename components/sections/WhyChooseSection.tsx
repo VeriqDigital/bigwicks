@@ -36,7 +36,7 @@ const WhyChooseSection = () => (
   <div>
     <div className="grid gap-8 lg:grid-cols-[1fr_0.65fr] lg:items-end">
       <div>
-        <p className="text-sm font-extrabold uppercase tracking-[0.1em] text-(--red)">
+        <p className="text-sm font-extrabold uppercase tracking-widest text-(--red)">
           Customer feedback themes
         </p>
         <h2 className="text-balance mt-4 font-heading text-5xl font-bold uppercase leading-[0.9] text-[#171411] md:text-6xl">

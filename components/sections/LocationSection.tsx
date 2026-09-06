@@ -6,7 +6,7 @@ const LocationSection = () => (
   <div>
     <div className="grid gap-12 lg:grid-cols-[0.82fr_1.18fr] lg:items-center">
       <div>
-        <p className="text-sm font-extrabold uppercase tracking-[0.1em] text-(--red)">
+        <p className="text-sm font-extrabold uppercase tracking-widest text-(--red)">
           Visit Big Wicks
         </p>
         <h2 className="text-balance mt-4 font-heading text-5xl font-bold uppercase leading-[0.9] text-[#171411] md:text-6xl">
@@ -53,7 +53,7 @@ const LocationSection = () => (
           className="object-cover object-[center_24%]"
           sizes="(max-width: 1024px) 100vw, 60vw"
         />
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-7 pt-28">
+        <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/90 via-black/50 to-transparent p-7 pt-28">
           <figcaption className="text-sm font-bold text-white">
             Look for the red trim and Big Wicks sign
           </figcaption>

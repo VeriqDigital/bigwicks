@@ -4,7 +4,7 @@ const SelectionShowcase = () => (
   <div>
     <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
       <div className="max-w-4xl">
-        <p className="text-sm font-extrabold uppercase tracking-[0.1em] text-(--red)">
+        <p className="text-sm font-extrabold uppercase tracking-widest text-(--red)">
           Proof of selection
         </p>
         <h2 className="text-balance mt-4 font-heading text-5xl font-bold uppercase leading-[0.9] text-[#171719] md:text-7xl">
@@ -29,7 +29,7 @@ const SelectionShowcase = () => (
           className="object-cover object-center"
           sizes="(max-width: 1024px) 100vw, 68vw"
         />
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-7 pt-28">
+        <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/90 to-transparent p-7 pt-28">
           <figcaption className="max-w-xl font-heading text-2xl font-bold uppercase text-white sm:text-3xl">
             A full store built around choice
           </figcaption>

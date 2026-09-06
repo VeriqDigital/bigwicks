@@ -8,7 +8,7 @@ import {
 } from "@/app/contact/contact-form-state";
 
 const fieldClasses =
-  "mt-2 w-full rounded-[3px] border border-[#cfcfca] bg-white px-4 py-3.5 text-base text-[#171719] outline-none transition-colors placeholder:text-[#8b8b87] focus:border-(--red) focus:ring-2 focus:ring-[#d62935]/15 aria-[invalid=true]:border-(--red)";
+  "mt-2 w-full rounded-[3px] border border-[#cfcfca] bg-white px-4 py-3.5 text-base text-[#171719] outline-none transition-colors placeholder:text-[#8b8b87] focus:border-(--red) focus:ring-2 focus:ring-[#d62935]/15 aria-invalid:border-(--red)";
 
 const ContactForm = () => {
   const [state, formAction, pending] = useActionState(

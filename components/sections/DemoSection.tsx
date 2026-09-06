@@ -18,7 +18,7 @@ const DemoSection = () => (
     </div>
 
     <div>
-      <p className="text-sm font-extrabold uppercase tracking-[0.1em] text-[#ff5a65]">
+      <p className="text-sm font-extrabold uppercase tracking-widest text-[#ff5a65]">
         See the effect
       </p>
       <h2 className="text-balance mt-4 font-heading text-5xl font-bold uppercase leading-[0.9] text-white md:text-6xl">

@@ -9,7 +9,7 @@ const FAQ = () => {
   return (
     <div className="grid gap-12 lg:grid-cols-[0.7fr_1.3fr]">
       <div>
-        <p className="text-sm font-extrabold uppercase tracking-[0.1em] text-(--red)">
+        <p className="text-sm font-extrabold uppercase tracking-widest text-(--red)">
           FAQ
         </p>
         <h2 className="text-balance mt-4 font-heading text-5xl font-bold uppercase leading-[0.9] text-[#171719] md:text-6xl">

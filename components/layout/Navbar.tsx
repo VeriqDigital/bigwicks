@@ -58,7 +58,7 @@ const Navbar = () => {
             <Link
               key={item.label}
               href={item.href}
-              className="py-3 text-xs font-bold uppercase tracking-[0.1em] text-[#f2f2ef] transition-colors hover:text-[#ff6872]"
+              className="py-3 text-xs font-bold uppercase tracking-widest text-[#f2f2ef] transition-colors hover:text-[#ff6872]"
             >
               {item.label}
             </Link>
@@ -111,7 +111,7 @@ const Navbar = () => {
                 key={item.label}
                 href={item.href}
                 onClick={() => setIsMenuOpen(false)}
-                className="border-b border-[#3a3a3f] px-4 py-4 text-sm font-bold uppercase tracking-[0.1em] hover:bg-[#242428] hover:text-[#ff6872]"
+                className="border-b border-[#3a3a3f] px-4 py-4 text-sm font-bold uppercase tracking-widest hover:bg-[#242428] hover:text-[#ff6872]"
               >
                 {item.label}
               </Link>

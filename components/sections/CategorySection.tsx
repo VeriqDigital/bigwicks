@@ -26,7 +26,7 @@ const CategorySection = () => (
           key={category.title}
           className="group overflow-hidden rounded-[7px] border border-[#d3d3cf] bg-white transition-colors duration-200 hover:border-(--red)"
         >
-          <div className="relative aspect-[4/3] overflow-hidden bg-[#ecece8]">
+          <div className="relative aspect-4/3 overflow-hidden bg-[#ecece8]">
             <Image
               src={category.image}
               alt={category.alt}

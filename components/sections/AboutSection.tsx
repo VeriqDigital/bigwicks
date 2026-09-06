@@ -12,8 +12,8 @@ const AboutSection = () => (
         className="object-cover object-center"
         sizes="(max-width: 1024px) 100vw, 62vw"
       />
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#0b0b0d] via-[#0b0b0d]/70 to-transparent p-7 pt-36 sm:p-9 sm:pt-40">
-        <p className="text-sm font-extrabold uppercase tracking-[0.1em] text-[#ff5a65]">
+      <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-[#0b0b0d] via-[#0b0b0d]/70 to-transparent p-7 pt-36 sm:p-9 sm:pt-40">
+        <p className="text-sm font-extrabold uppercase tracking-widest text-[#ff5a65]">
           A real local store on IN-39
         </p>
         <p className="mt-2 max-w-xl font-heading text-3xl font-bold uppercase leading-none text-white sm:text-4xl">
@@ -23,7 +23,7 @@ const AboutSection = () => (
     </div>
 
     <div>
-      <p className="text-sm font-extrabold uppercase tracking-[0.1em] text-[#ff5a65]">
+      <p className="text-sm font-extrabold uppercase tracking-widest text-[#ff5a65]">
         About Big Wicks
       </p>
       <h2 className="text-balance mt-4 font-heading text-5xl font-bold uppercase leading-[0.9] text-white md:text-6xl">

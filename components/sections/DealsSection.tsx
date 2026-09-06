@@ -50,7 +50,7 @@ const DealsSection = () => (
           key={slot.title}
           className="flex min-h-80 flex-col rounded-[7px] border border-[#d5d5d0] bg-white p-7 sm:p-8"
         >
-          <p className="text-xs font-extrabold uppercase tracking-[0.1em] text-(--red)">
+          <p className="text-xs font-extrabold uppercase tracking-widest text-(--red)">
             {slot.eyebrow}
           </p>
           <h3 className="mt-6 font-heading text-3xl font-bold uppercase leading-none text-[#171411]">
@@ -61,7 +61,7 @@ const DealsSection = () => (
           </p>
           <a
             href={slot.href}
-            className="group mt-7 flex items-center justify-between border-t border-[#deded9] pt-5 text-xs font-extrabold uppercase tracking-[0.1em] text-(--red)"
+            className="group mt-7 flex items-center justify-between border-t border-[#deded9] pt-5 text-xs font-extrabold uppercase tracking-widest text-(--red)"
           >
             {slot.action}
             <span
