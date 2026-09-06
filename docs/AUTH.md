@@ -1,16 +1,17 @@
-# Milestone 1: database and authentication
+# Authentication and customer management
 
-This foundation is shared by both quoted ordering options. Only login/logout,
-authorization, initial models, development fixtures and protected placeholders
-are implemented. Customer management, invitations/password reset, catalog,
-pricing UI and ordering remain later milestones.
+This foundation is shared by both quoted ordering options. Milestone 1 provides
+login/logout, authorization, initial models and development fixtures. Milestone 2A
+adds admin customer management. Invitations/password setup and reset are deferred
+to Milestone 2B; catalog, product pricing UI and ordering remain later milestones.
 
 ## Architecture
 
 - PostgreSQL with Prisma 7.10.0 and the Node PostgreSQL driver adapter. The generated
   client is ignored and recreated by `db:generate`, `typecheck` and `build`.
-- `User` is authentication identity: normalized unique email, Argon2id password
-  hash, ADMIN/CUSTOMER role, active flag and session revocation version.
+- `User` is authentication identity: normalized unique email, nullable Argon2id
+  password hash, ADMIN/CUSTOMER role, active flag and session revocation version.
+  A null hash means password setup has not been completed and login is rejected.
 - `Customer` is separate wholesale business data, with a unique user association,
   company name, optional customer number, active flag and required pricing tier.
   One login per customer is the initial choice; multi-user businesses can be
@@ -43,8 +44,9 @@ pricing UI and ordering remain later milestones.
 
 `/login` accepts existing provisioned credentials only. `/account` resolves the
 current role and redirects to `/admin` or `/portal`. Those routes independently
-enforce authorization and render simple placeholders. There is no registration
-page, registration API, account-creation action or production bootstrap endpoint.
+enforce authorization. `/admin` links to customer management; `/portal` remains a
+placeholder. There is no public registration or production bootstrap endpoint.
+Customer creation is available exclusively through admin-authorized actions.
 
 Passwords are 15–128 characters when provisioned. Login accepts existing passwords
 up to 128 characters without trimming them. Argon2id uses 19 MiB memory, two
@@ -61,8 +63,9 @@ Cookies remain HttpOnly and SameSite=Lax; Auth.js uses Secure cookies with HTTPS
 Serve production exclusively over HTTPS, with a canonical HTTPS `AUTH_URL`.
 
 Logout clears this browser's session cookie. To revoke all sessions for a user,
-increment `User.sessionVersion`. Later password reset/role/disable management must
-increment that version in the same transaction as the change. Current status and
+increment `User.sessionVersion`. Admin email and access changes now increment that
+version in the same transaction as the change. Future password reset/setup and
+role management must do the same. Current status and
 role checks already take effect immediately; incrementing prevents old cookies
 becoming usable again after re-enabling an account. Already delivered browser
 content cannot be recalled, but subsequent protected server reads are denied.
@@ -111,7 +114,62 @@ These are clearly fictional test records, not client facts. Seed requires explic
 opt-in, rejects production mode and non-local database hosts, and never prints
 passwords. Repeated seeds preserve existing passwords, status, role and tiers.
 Turn off the seed opt-in after use. Never seed a production database through a tunnel.
-Real account provisioning/invitation decisions remain Milestone 2.
+Real account provisioning/invitation decisions remain Milestone 2B.
+
+## Milestone 2A: admin customer management
+
+Staff can open `/admin/customers`, create a customer at `/admin/customers/new`,
+and edit details or access at `/admin/customers/[customerId]`. The list shows
+company, normalized login email, optional customer number, tier, active/disabled
+status and whether password setup is still needed. Customer names and emails
+are kept out of metadata. Existing noindex and robots restrictions apply.
+
+The only schema change is nullable `User.passwordHash`, delivered by the new
+`20260906010000_customer_password_setup` migration. The already-applied Milestone 1
+migration is unchanged and existing password hashes are preserved. A new account
+has `passwordHash = null`; no fake, default or generated password is created.
+Credential login still performs dummy password verification for these accounts
+and explicitly rejects a missing hash, even if the dummy password matches.
+
+New accounts default to disabled in the form; staff can explicitly select active.
+Active status alone does not enable a passwordless account to sign in. The form
+and edit page state that no invitation is sent and password setup is unavailable.
+The eventual setup flow can populate the existing nullable hash without changing
+the User/Customer relationship.
+
+Each create, edit and status action independently calls `requireAdmin()` before
+validation or database access. The list, detail and tier read helpers also check
+admin authorization. Actions allowlist submitted fields, validate CUIDs and input
+lengths with Zod, share login's email normalization, resolve the target Customer's
+CUSTOMER user server-side, and accept only existing Tier 1/Tier 2 records. Browser
+role, user ID, password hash and session-version fields are ignored.
+
+User and Customer writes use serializable PostgreSQL transactions. Database
+unique constraints arbitrate email and non-empty customer-number conflicts,
+including simultaneous submissions. Blank customer numbers become null. A failed
+Customer insert or update rolls back identity changes as well. Errors returned
+to staff omit database details. Serialization conflicts ask the admin to retry.
+
+Account access has one application-level write rule: the dedicated access action
+sets **both `User.active` and `Customer.active` to the same requested value** in
+one transaction and increments `User.sessionVersion` atomically. Every access
+command revokes prior sessions, including repeated commands and re-enabling.
+Ordinary detail edits do not write either active flag, preventing stale edit forms
+from undoing access changes. Existing drift from direct database edits is shown
+as disabled with an access-review notice; the access action normalizes both flags.
+All future application writers must use this same rule. Direct database writes
+can still create drift, and authentication continues to reject either inactive flag.
+
+Company name, customer number and tier changes preserve sessions. A change to the
+normalized login email increments the session version; casing/outer whitespace
+normalization alone does not. Current tiers remain resolved from the database,
+never from auth tokens. No role-edit or hard-delete functionality is provided.
+
+Milestone 2B is responsible for secure single-use expiring setup/invitation links,
+delivery, password reset and real production provisioning. Setup must verify its
+token server-side, store a real hash, preserve the admin's access decision, and
+increment the session version transactionally. This pass adds none of those flows
+and changes no preview or production data. No new environment variables are required.
 
 ## Production configuration and review
 
@@ -167,3 +225,12 @@ Milestone verification completed on 2026-09-06: lint, TypeScript, production bui
 not clean; the existing runtime advisories are listed above. Production hosting,
 HTTPS cookie behavior at the actual origin, real account provisioning and the
 production database have not been configured or verified in this milestone.
+
+Milestone 2A verification: Prisma generation and both migrations ran against a
+new isolated local PostgreSQL database. Lint, typecheck, 44 unit tests, 15 database
+integration tests and eight browser scenarios passed, along with the production
+build. Browser checks include direct HTTP action replay as anonymous/customer
+callers and rejection of an old session cookie after admin disable/re-enable.
+List/edit layouts were inspected at 390px, 768px and 1440px. No dependencies changed,
+so the existing clean Node 24 installation was reused. Preview/production data
+and deployments were not touched; the user separately verified Milestone 1 preview.

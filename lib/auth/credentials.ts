@@ -4,9 +4,10 @@ import { getDb } from "@/lib/db";
 import { isActivePrincipal, principalSelect } from "./principal";
 import { allowCredentialAttempt } from "./rate-limit";
 import { verifyPassword } from "./password";
+import { loginEmailSchema } from "./validation";
 
 const credentialsSchema = z.object({
-  email: z.string().trim().toLowerCase().max(254).email(),
+  email: loginEmailSchema,
   password: z.string().min(1).max(128),
 });
 
@@ -18,7 +19,7 @@ export async function authorizeCredentials(credentials: Partial<Record<string, u
   const user = await getDb().user.findUnique({
     where: { email }, select: { ...principalSelect, passwordHash: true },
   });
-  const validPassword = await verifyPassword(password, user?.passwordHash);
-  if (!validPassword || !user || !isActivePrincipal(user)) return null;
+  const validPassword = await verifyPassword(password, user?.passwordHash ?? undefined);
+  if (!validPassword || !user?.passwordHash || !isActivePrincipal(user)) return null;
   return { id: user.id, sessionVersion: user.sessionVersion };
 }
