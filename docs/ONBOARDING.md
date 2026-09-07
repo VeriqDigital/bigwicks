@@ -10,7 +10,27 @@ for 5A.1; no real source or product rows are committed. Customers order complete
 cases. Selling Price is the Tier 2 case price; Unit Cost is confidential internal
 case cost. Item Number supplies the customer-facing SKU, never permanent identity.
 Currency and Tier 1 source still need confirmation. No remote writes or deployment
-were performed.
+were performed during the 5A.1 implementation task; subsequent onboarding is recorded below.
+
+## Current status
+
+User-confirmed state following the Milestone 5B implementation, before PR #13 merge:
+
+- **Non-production Sanity:** project `sim96pgy`, dataset `development` contains
+  302 real Big Wicks products and 17 real categories. Catalog import verification
+  returned **302 unchanged / 0 new / 0 updates / 0 errors**.
+- **Preview Postgres:** 280 real Tier 2 ProductPrice rows are imported;
+  22 Tier 2 prices remain unresolved/blank. Tier 1 has 0 prices and awaits the
+  client source. No replacement prices are derived.
+- **Content readiness:** all 302 imported products remain `available=false`.
+  Descriptions and images remain missing.
+- **Production:** no Sanity catalog import or Postgres pricing import has been performed.
+- **Customers:** no real customer import has been performed and no real customer
+  invitations have been sent.
+
+The verification records below describe earlier implementation tasks, not this
+subsequent non-production onboarding. This status correction records the user's
+report; it performs no remote verification or writes.
 
 ## Canonical file
 
@@ -158,8 +178,10 @@ The original raw-text mapper also reported 14 `invalid_selling_price` false
 positives caused by XLSX floating storage artifacts, confirmed by the user's
 investigation. Milestone 5A.2 corrects that interpretation with numeric parsing;
 these are not established source pricing errors. Four suspected operational
-records also require review. Categories have not been approved/normalized.
-These are diagnostics, not decisions to delete, merge, round or publish products.
+records also required review, and categories had not yet been approved/normalized
+at that inspection. These historical diagnostics are not decisions to delete,
+merge, round or publish products; see [current status](#current-status) for the
+subsequent onboarding outcome.
 
 ## Dynamic tier contract
 
@@ -360,11 +382,14 @@ offline dry-run commands passed. Generated/source working paths are ignored,
 the diff is clean, and application/domain code and dependencies are unchanged.
 Sanity mutation tests exclude prices; the production client bundles contain
 neither `SANITY_API_WRITE_TOKEN` nor the fictional token marker used for the scan.
-No remote apply, remote database changes or deployment was performed.
+No remote apply, remote database changes or deployment was performed during that
+Milestone 5A verification task.
 
-Deferred: operator source corrections/exclusions, real data import, real customer imports,
-images, live remote apply verification, deletion, taxonomy redesign, inventory,
-payments, deployments and changes to customer ordering.
+Currently pending: production catalog/pricing imports, the 22 unresolved Tier 2
+prices, the Tier 1 client source, descriptions/images, real customer imports and
+real invitations. Non-production catalog/pricing onboarding is recorded in
+[current status](#current-status). Deletion, taxonomy redesign, inventory,
+payments, deployments and changes to customer ordering remain outside this tooling's scope.
 
 ## Customer onboarding — Milestone 5B
 

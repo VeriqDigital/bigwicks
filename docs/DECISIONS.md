@@ -11,7 +11,7 @@ the completed milestones through 5A.2 and their security invariants.
 **Waiting on:**
 
 - Confirmed staff order-notification inbox and currency wording
-- Tier 1 per-product source and review of received BoxHero anomalies
+- Tier 1 per-product source, 22 unresolved Tier 2 prices, descriptions/images and availability review
 - Real customer list and invitation timing
 - Final production-domain / launch details
 
@@ -26,6 +26,25 @@ the completed milestones through 5A.2 and their security invariants.
 ---
 
 ## Decision log
+
+### 2026-09-07 — Non-production catalog onboarding completed
+
+**Source:** User confirmation before PR #13 merge, after Milestone 5B implementation.
+**Current status:** Sanity `sim96pgy` / `development` contains 302 real Big Wicks
+products and 17 real categories; catalog import verification returned 302 unchanged /
+0 new / 0 updates / 0 errors. Preview Postgres contains 280 real Tier 2 ProductPrice
+rows, with 22 Tier 2 prices unresolved/blank. Tier 1 has 0 prices pending the client
+source. All 302 products remain `available=false`; descriptions and images are missing.
+
+No production Sanity catalog import, production Postgres pricing import, real
+customer import or real customer invitations have occurred. See
+[current onboarding status](ONBOARDING.md#current-status).
+
+**Supersedes:** Earlier blanket deferrals of real catalog/pricing imports.
+Earlier dated implementation and verification notes retain their historical scope;
+their no-remote-write statements do not describe the current non-production state.
+
+---
 
 ### 2026-09-07 — Milestone 5B bulk customer onboarding
 
