@@ -105,6 +105,15 @@ encrypted previews use the existing server-only `AUTH_SECRET` (at least 32 chara
 
 ## Admin pricing workflow
 
+Milestone 5A adds operator-only catalog onboarding: map the future client file to
+the internal canonical CSV, run `npm run catalog:prepare -- input.csv
+data/onboarding/resolved.csv`, review, then dry-run `catalog:import` with explicit
+Sanity project/dataset flags. Apply requires a reviewed hash and target confirmation;
+production has additional safeguards. Preparation also generates the existing
+admin-pricing CSV. Prices never go to Sanity or directly into SQL through these
+tools. Real data, images and remote applies remain deferred. See the complete
+[onboarding workflow and safeguards](docs/ONBOARDING.md).
+
 Sign in as ADMIN and choose **Pricing**. Download the current pricing CSV, edit only
 `tier1Price` and `tier2Price`, and save as comma-separated CSV UTF-8. Upload to see
 validation errors, warnings and exact before/after values. Review, acknowledge any

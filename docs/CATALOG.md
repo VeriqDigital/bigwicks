@@ -366,9 +366,18 @@ orphan. Run before/after future imports and after content identity repairs. Sani
 and PostgreSQL are separate snapshots, so rerun if a concurrent edit caused a
 transient issue; this is a practical audit, not a distributed transaction.
 
-## Future import contract and scope
+## Onboarding tooling and future client mapping
 
-No real catalog/source format has been supplied. A future import should reconcile
+Milestone 5A implements CLI-only canonical CSV preparation, dry-run planning and
+explicit Sanity content apply. Preparation assigns missing permanent UUIDs once
+and generates the existing admin-pricing CSV; apply never generates catalogKeys
+or writes ProductPrice. Products match only catalogKey, normalized category names
+must be unambiguous, existing images/omitted products are preserved, and production
+is guarded by default. See `docs/ONBOARDING.md` for the exact eight-column contract,
+two-transaction category/product strategy, revision checks, concurrency limits and
+isolated verification. No real remote imports have been performed.
+
+No real catalog/source format has been supplied. Future client mapping should reconcile
 records resembling the following logical shape, after actual client columns and
 currency/unit meaning are confirmed:
 

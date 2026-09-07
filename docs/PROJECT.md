@@ -5,7 +5,7 @@
 **Client / business name:** Big Wicks Fireworks LLC
 **Public-facing name:** Big Wicks Fireworks
 **Project type:** Retail marketing website + protected wholesale customer portal
-**Current stage:** Internal build/refinement started; final ordering option still pending client selection
+**Current stage:** Managed website ordering is functionally complete through Milestone 4A (merged per user); Milestone 5A prepares operator onboarding tooling while real client data is pending
 **Primary Veriq contact:** Mick Enev
 
 ### Project summary
@@ -987,7 +987,17 @@ Big Wicks owns final availability review, substitutions, payment, invoicing and
 fulfillment outside the website. See `docs/ORDERING.md` for exact architecture,
 notification recovery limits, setup and verification.
 
-### Earlier Milestone 4 — Admin catalog controls
+### Milestone 5A — Product catalog onboarding tooling
+
+Milestones 1, 2A, 2B, 3A, 3B, 3C and 4A are complete and merged per the user.
+Add only operator tooling: canonical CSV preparation into a preserved UUID mapping,
+explicit target-aware Sanity dry-run/apply, and a compatible pricing CSV for the
+existing admin validation/confirmation workflow. No client columns or products are
+invented, no ProductPrice writes replace that workflow, and no customer UI changes.
+Real data and images remain pending. No remote apply or deployment is authorized
+during implementation. See `docs/ONBOARDING.md` for safeguards and limitations.
+
+### Earlier admin catalog controls
 
 At minimum:
 
@@ -1094,13 +1104,13 @@ Test:
 
 ### What Codex should optimize for right now
 
-Complete and verify Milestone 4A's managed Website Ordering option, authorized by
-the user. Milestones 1, 2A, 2B, 3A, 3B and 3C are complete and merged per the user.
+Complete and verify Milestone 5A's catalog onboarding tooling. Milestones 1, 2A,
+2B, 3A, 3B, 3C and 4A are complete and merged per the user.
 Do not deploy, modify remote data/settings, or invent/import real products.
 
 The first meaningful milestone is:
 
-> A customer can select quantities, review current server values and submit one immutable order request. Staff can view the saved request and notification state; finalization and payment stay outside the website.
+> An operator can prepare a permanent catalog identity file, review a safe Sanity content-import plan and generate the existing private pricing-import CSV without touching remote data during development.
 
 ### Do not work on yet
 

@@ -15,6 +15,8 @@
     "test:integration": "tsx tests/run-integration.ts",
     "db:generate": "prisma generate",
     "catalog:audit": "node --conditions=react-server --import tsx scripts/catalog-audit.ts",
+    "catalog:prepare": "node --conditions=react-server --import tsx scripts/onboarding/cli.ts prepare",
+    "catalog:import": "node --conditions=react-server --import tsx scripts/onboarding/cli.ts import",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "node --conditions=react-server --import tsx prisma/seed.ts"
