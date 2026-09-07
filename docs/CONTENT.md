@@ -181,7 +181,8 @@ Do not invent additional steps such as online payment or warehouse picking autom
 ### Order request
 
 **Purpose:** Authenticated customer order submission  
-**Status:** Not implemented yet / only if selected  
+**Status:** Milestone 4A implements the Website Ordering option authorized by the user
+
 **Recipient:** `[CONFIRM]`  
 **Core data:** authenticated customer, product snapshots, quantities, prices, calculated totals, submission timestamp, optional customer note if approved
 
@@ -227,7 +228,7 @@ Do not state without confirmation:
 
 ## 12. Content gaps
 
-- [ ] Final client option selection
+- [x] Website Ordering authorized for Milestone 4A implementation by the user
 - [ ] Authoritative product list
 - [ ] Product SKUs/categories/descriptions/images
 - [ ] Tier 1 and Tier 2 price source

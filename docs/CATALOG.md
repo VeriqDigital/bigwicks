@@ -301,6 +301,28 @@ Direct per-product editing and orphan repair remain deferred. This milestone add
 no quantities, cart, ordering/Excel customer order generation, totals, inventory,
 payments, invoices, announcements, real customer/product imports or deployment.
 
+## Milestone 4A: catalog quantities and order requests
+
+The existing CUSTOMER catalog DTO, search/filter/sort and price ownership remain
+unchanged. Quantity state lives only in the client catalog component and persists
+across filters. Review sends only catalogKey/quantity pairs. A separate server-only
+ordering service independently authorizes, reads current Sanity and current SQL
+customer/tier/prices, and returns a protected review. Final submission repeats the
+authoritative reads and refuses stale or unavailable selections. Price changes
+require refreshed review instead of silently submitting different amounts.
+
+Submitted OrderItems snapshot catalogKey/SKU/name/quantity/exact prices and totals;
+historical order views never read Sanity or current ProductPrice. Customer/tier
+context is also snapshotted. This is intentionally historical order evidence,
+not a duplicate mutable product CMS. Catalog availability remains a manual switch;
+submitting never changes Sanity, ProductPrice or stock. Admin price imports still
+apply only to future reads/reviews, never to saved order snapshots.
+
+Milestone 4A supersedes the earlier deferral of managed website ordering. Excel
+ordering, inventory, payment, customer history/editing and real imports remain
+deferred. See `docs/ORDERING.md` for quantities, exact totals, review integrity,
+duplicate prevention, notifications, admin visibility, setup and verification.
+
 ## Freshness and data failures
 
 Reads use the Sanity origin API (`useCdn: false`), `perspective: "published"`, no
@@ -372,7 +394,7 @@ published preview products and six price rows; audit issues were empty. This is
 user-reported context, not a new remote verification performed during 3B.
 
 Deferred: real product import, direct per-product price editing and orphan repair,
-currency/unit confirmation, ordering/Excel/quantities, inventory integration,
+currency/unit confirmation, Excel ordering, inventory integration,
 payments, order history, announcements, and deployment. No remote records,
 environment variables or Sanity settings are changed during 3B/3C. The 3C CSV
 workflow maintains prices for existing Sanity products; it is not a content import.
