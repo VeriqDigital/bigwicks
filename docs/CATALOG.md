@@ -185,6 +185,122 @@ local test cluster. Tests cover both tiers, immediate tier changes, forged query
 POST/login context, HTML/RSC leakage, omitted products, failure/retry, 200 products,
 keyboard controls and responsive screenshots. They never use the live preview data.
 
+## Milestone 3C: admin pricing operations
+
+`/admin/pricing` joins published Sanity content with all private PostgreSQL prices
+on the server. It shows completeness counts, existing audit issues and a product
+pricing table. Counts include both visible and hidden valid products; the audit's
+missing-price warnings still apply only to available products. Orphaned SQL rows
+are reported but never exported, matched or silently deleted. Content remains in
+Sanity; no product table, schema change or migration is introduced.
+
+Internal ADMIN navigation includes Customers, Pricing, Catalog Studio, Public
+website and POST Sign out. The pricing page, export handler, both Server Actions
+and every service operation independently call `requireAdmin()`. Anonymous,
+inactive and revoked sessions are redirected to login; CUSTOMER receives 404.
+The additional admin layout authorization is defense in depth. Public navigation,
+the `/account` dispatcher and customer catalog behavior remain unchanged.
+
+### Staff workflow and CSV contract
+
+1. Open **Pricing** and review completeness/audit issues.
+2. Download the current export from `/admin/pricing/export`.
+3. Edit only the two price columns in Excel or another spreadsheet application.
+4. Save as comma-separated CSV UTF-8 and upload for validation/preview.
+5. Review per-tier create/update/remove/unchanged counts, warnings and exact
+   before/after values. Resolve any errors; an invalid upload cannot be confirmed.
+6. Acknowledge removals when applicable and explicitly confirm the import.
+7. Customers refresh `/portal` to read their current tier price without logging in again.
+
+The exact seven unique headers are required; their order may vary:
+
+```csv
+catalogKey,sku,productName,category,available,tier1Price,tier2Price
+```
+
+Export includes valid published products whether visible or hidden, exact decimal
+prices or empty missing-price cells, and `true`/`false` manual availability. It uses
+UTF-8 with BOM, CRLF and conventional double-quote escaping, including multiline
+content. Formula-like human text (including leading whitespace, =/+/−/@ and their
+full-width forms, tab/newline or apostrophe) gets a leading apostrophe. Price and
+UUID fields are unaffected. This neutralization may be visible in spreadsheet
+software; preserve those context columns on reimport. The parser accepts both
+the original and escaped SKU/name for mismatch comparisons.
+
+catalogKey is the only import identity: it must be a valid product UUID and exist
+unambiguously in current Sanity content. Duplicate upload keys, including case
+aliases, are rejected. UUID case/outer whitespace is normalized for lookup.
+SKU/name mismatches are warnings, never alternate identity matches. Category and
+availability are informational and ignored on import; no CSV content edit writes
+Sanity. Hidden products may retain prices, with a warning when pricing is supplied.
+
+Each tier is independent. Reuse `priceText()` for nonnegative decimal text within
+NUMERIC(12,2), maximum `9999999999.99`, at most two decimal places. No JavaScript
+Number conversion, currency symbols, grouping commas, negatives, exponent notation,
+NaN or Infinity. Outer price whitespace is trimmed; blank/whitespace means no price
+for that tier. It removes an existing row only after explicit removal acknowledgment.
+Blank never means `0.00`; explicit zero is valid. Products omitted from the CSV stay
+unchanged. No automatic Tier 2 calculation, currency or case/pack/unit assumption.
+
+Files must be nonempty, at most **256 KiB**, **500 product rows**, and **4,096
+characters per record**. Empty lines are skipped. Extra/missing/duplicate headers,
+unequal field counts, malformed quoting, NUL and invalid UTF-8 are rejected.
+`csv-parse@7.0.2` supplies bounded in-memory sync parsing rather than custom CSV
+tokenization. No raw upload is logged, written to disk, stored in SQL or exposed
+through a URL. No XLSX upload is supported.
+
+### Preview integrity and writes
+
+Validation creates a ten-minute AES-256-GCM encrypted/authenticated envelope with
+a random 96-bit nonce. It contains only normalized catalogKey/tier amounts, the
+admin ID/session revocation version, expiry and a SHA-256 snapshot fingerprint.
+A domain-separated key derives from the existing server-only `AUTH_SECRET` (at
+least 32 characters); rotating it invalidates outstanding previews. The browser
+receives the intended ADMIN preview plus this sealed token, never the secret.
+No new environment variables, staging table, Redis or object storage is required.
+The confirmation endpoint ignores browser-supplied prices, tier IDs and prior
+action state. It opens only an authentic, unexpired, correctly bound token.
+
+Confirmation reauthorizes, reads current published Sanity content, then opens a
+serializable PostgreSQL transaction. It locks the admin User row for share and
+rechecks active ADMIN, no Customer association and the current session version.
+It rereads all tier/price rows, checks expiry again and recomputes the snapshot.
+The fingerprint covers document IDs/catalogKeys, normalized SKU/name/category/
+visibility, all tier identities/names and all SQL prices/updatedAt versions.
+Description/image edits do not invalidate it. Unrelated price changes conservatively
+invalidate the whole preview; staff must upload again instead of overwriting them.
+
+Invalid/duplicate catalog identities or required content, invalid SQL prices and
+missing/unsupported tiers block export, preview and confirmation. Optional content
+warnings and orphaned SQL prices remain visible without inventing matches. A Sanity
+failure blocks all operations with a fixed safe message; export returns 503 without
+fabricated rows. The existing read-only `catalog:audit` stays unchanged.
+
+After drift validation, the server recalculates changes. An explicit blank-removal
+acknowledgment is enforced server-side. One bulk delete and one parameterized bulk
+upsert run in the same transaction; any failure rolls everything back. Unchanged
+rows keep their timestamps. PricingTier, Customer and Sanity are never modified.
+Transaction conflicts require a new upload; there is no automatic overwrite/retry.
+A successful write makes the old token stale. Replaying a no-op preview within its
+expiry is harmless and writes nothing; no long-lived used-token store is added.
+
+Sanity and PostgreSQL cannot participate in a shared atomic transaction. A content
+change after the final Sanity read can take effect during SQL commit. Immutable
+catalogKey, fail-closed customer reads and the audit constrain that cross-system
+window; this workflow does not claim distributed locking. Already-delivered
+browser previews/prices cannot be recalled after account revocation, but subsequent
+protected requests and confirmation are denied.
+
+Pricing routes are dynamically rendered, metadata is generic/noindex and no prices
+enter public pages, metadata or public diagnostics. CSV responses use
+`private, no-store, max-age=0`, attachment disposition, noindex and nosniff. Pricing
+modules are server-only. Successful confirmation revalidates the admin pricing and
+customer portal paths; existing uncached customer reads resolve current prices.
+
+Direct per-product editing and orphan repair remain deferred. This milestone adds
+no quantities, cart, ordering/Excel customer order generation, totals, inventory,
+payments, invoices, announcements, real customer/product imports or deployment.
+
 ## Freshness and data failures
 
 Reads use the Sanity origin API (`useCdn: false`), `perspective: "published"`, no
@@ -255,12 +371,34 @@ The user reports Milestone 3A merged and manually verified with three fictional
 published preview products and six price rows; audit issues were empty. This is
 user-reported context, not a new remote verification performed during 3B.
 
-Deferred: real product import, price-management workflow/write UI/import tools,
+Deferred: real product import, direct per-product price editing and orphan repair,
 currency/unit confirmation, ordering/Excel/quantities, inventory integration,
 payments, order history, announcements, and deployment. No remote records,
-environment variables or Sanity settings are changed during 3B.
+environment variables or Sanity settings are changed during 3B/3C. The 3C CSV
+workflow maintains prices for existing Sanity products; it is not a content import.
 
 ## Verification and dependency review
+
+Milestone 3C verification on 2026-09-06: clean `npm ci`, Prisma generation, lint,
+typecheck, `npm test` (130 unit tests) and `npm run test:integration` passed.
+The isolated run passed 207 combined tests (130 unit + 77 database) and all four
+existing migrations on a fresh local PostgreSQL cluster. Playwright passed 15
+scenarios against the unconfigured build and nine against intercepted fictional
+Sanity content (24 total); the latter nine intentionally skip in the first pass.
+Coverage includes direct unauthorized export/actions, disabled/revoked access,
+CSV validation/escaping/formulas, preview-only zero writes, forged fields,
+tamper/expiry/session binding, stale identity/tier/price changes, concurrent
+confirmation, rollback after a failed upsert, exact independent tiers, customer
+refresh, safe provider failure and a complete 200-product bulk import.
+
+Dashboard, import/confirmation and table screenshots were inspected at 390, 768
+and 1440px. Tables scroll within their labeled region; the page has no horizontal
+overflow. The final diff was reviewed for scope and `git diff --check` passed.
+The final `npm run build` also passed with the existing local configuration,
+restoring `.next` after the fictional test build; pricing routes remain dynamic.
+The local cluster stopped cleanly. Tests performed no remote database/content
+writes, real uploads or deployment. The only dependency addition is the pinned
+CSV parser; existing dependency-audit findings below still require release review.
 
 Milestone 3B verification on 2026-09-06: Prisma generation, lint, typecheck,
 `npm test` (99 unit tests), `npm run test:integration` (151 combined unit/database

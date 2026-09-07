@@ -25,6 +25,7 @@
     "@sanity/client": "8.5.0",
     "@sanity/icons": "5.2.1",
     "argon2": "0.45.1",
+    "csv-parse": "7.0.2",
     "dotenv": "17.4.2",
     "next": "16.2.9",
     "next-auth": "5.0.0-beta.32",

@@ -422,7 +422,8 @@ Therefore an availability control is required.
 
 Milestone 3A establishes Sanity Studio for product content, categories, images and
 manual availability. The custom admin remains responsible for customer accounts
-and pricing-tier assignment. Private prices belong exclusively in PostgreSQL;
+and pricing-tier assignment. Milestone 3C adds bulk CSV price maintenance.
+Private prices belong exclusively in PostgreSQL;
 there is no duplicate custom product CMS.
 
 The following may be architecturally supported but should not be assumed as required UI until confirmed:
@@ -628,6 +629,7 @@ The database answers:
 | Product catalog                   |               Yes | Milestone 3B protected browsing UI; ordering deferred |
 | Product availability controls     |               Yes | Milestone 3A Sanity schema            |
 | Protected tier pricing            |               Yes | Milestone 3A PostgreSQL/service foundation |
+| Admin pricing operations          |               Yes | Milestone 3C review/export/preview/confirmed CSV import |
 | Excel ordering                    |          Option 1 | Pending client selection             |
 | Website order submission          |          Option 2 | Pending client selection             |
 | Order email notification          |          Option 2 | Planned if selected                  |
@@ -938,11 +940,28 @@ columns and currency/unit meaning remain unconfirmed.
 
 ### Milestone 3B — Protected wholesale catalog UI
 
-Implemented at CUSTOMER-only `/portal`: server-authorized current-tier catalog,
+Complete and merged per user. Implemented at CUSTOMER-only `/portal`: server-authorized current-tier catalog,
 client search/category filters/name and exact-price sorting, responsive cards,
 optional-content fallbacks, empty/failure states and account/sign-out navigation.
 No ordering, quantity inputs or private pricing API. Automated checks use only
 isolated SQL and mocked Sanity content. See `docs/CATALOG.md` for boundaries.
+
+### Milestone 3C — Admin pricing operations
+
+Implemented locally at `/admin/pricing`: current completeness/audit overview,
+product pricing table, private CSV export, bounded CSV validation and detailed
+preview, then explicit confirmation of one atomic PostgreSQL import. Blank cells
+mean no price and require acknowledgment before deleting existing prices; omitted
+products remain unchanged. catalogKey is authoritative; SKU/name are context.
+Each tier is independently supplied, with no automatic discount formula.
+
+Every pricing page, export, action and service independently requires ADMIN.
+Encrypted ten-minute previews bind to the admin/session version and reject tampering
+or catalog/tier/price drift. Internal navigation links Customers, Pricing, Catalog
+Studio, Public website and Sign out; public navigation is unchanged. Sanity retains
+content/availability ownership. No new schema, migration or environment variable.
+Manual per-product editing, real-data imports, ordering and inventory stay deferred.
+See `docs/CATALOG.md` for workflow, operational limits and local-only verification.
 
 ### Milestone 4 — Admin catalog controls
 
@@ -1051,13 +1070,13 @@ Test:
 
 ### What Codex should optimize for right now
 
-Complete and verify Milestone 3B's protected customer catalog UI, shared by both
-quoted options. Milestones 1, 2A, 2B and 3A are complete and merged per the user.
+Complete and verify Milestone 3C's admin pricing operations, shared by both
+quoted options. Milestones 1, 2A, 2B, 3A and 3B are complete and merged per the user.
 Do not deploy, modify remote data/settings, or invent/import real products.
 
 The first meaningful milestone is:
 
-> An approved customer can browse/search/filter available products and see only their current assigned prices. All authoritative reads remain server-side; no ordering is implemented.
+> An ADMIN can export current pricing, edit a CSV, review a validated preview and explicitly confirm an atomic update. Customers see their current tier prices on refresh. No ordering is implemented.
 
 ### Do not work on yet
 
@@ -1092,7 +1111,7 @@ Build and verify one vertical slice at a time.
 - [ ] Which Big Wicks staff members need admin accounts?
 - [ ] Which Big Wicks email address(es) should receive Option 2 orders?
 - [ ] For Option 1, exactly how should the Excel order sheet be generated/downloaded/submitted?
-- [ ] Does Big Wicks need admins to edit product details/prices, or only visibility?
+- [x] Content/availability belongs in Sanity; ADMIN bulk pricing maintenance is authorized for Milestone 3C. Individual price-edit forms remain deferred.
 - [ ] What quantity limits should apply to customer order inputs?
 
 ### Can wait until later
