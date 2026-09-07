@@ -5,8 +5,8 @@
 ## Current priority
 
 **Optimize for:**  
-Complete Milestone 4A's managed online ordering, preserving completed
-Milestone 1/2A/2B/3A/3B/3C security invariants.
+Complete Milestone 5A catalog onboarding tooling, preserving completed
+Milestone 1/2A/2B/3A/3B/3C/4A security invariants.
 
 **Waiting on:**
 
@@ -26,6 +26,34 @@ Milestone 1/2A/2B/3A/3B/3C security invariants.
 ---
 
 ## Decision log
+
+### 2026-09-07 — Milestone 5A canonical catalog onboarding
+
+**Source:** User / Veriq; milestones through 4A are complete and merged.
+**Status:** Implemented locally; real client spreadsheet and remote apply deferred.
+
+Use operator CLI tooling, not an application endpoint. Prepare validates a strict
+eight-column canonical CSV, generates only missing UUIDv4 catalogKeys and preserves
+the resolved identity mapping. Emit a spreadsheet-safe CSV for the existing admin
+pricing workflow. Private prices never enter Sanity mutations or direct SQL writes.
+Import defaults to a read-only plan, matches products only by catalogKey and rejects
+ambiguous keys/categories, SKU collisions, malformed identities and drafts/releases.
+Category names match via normalized name; ordinary document IDs come from Sanity.
+Missing categories commit first, followed by one revision-guarded product transaction.
+Document category-only partial outcomes and require one operator with edits paused.
+
+Require explicit project/dataset, reviewed plan hash and exact target confirmation.
+All targets are production-guarded unless explicitly designated non-production;
+production additionally requires an environment acknowledgement and CLI flag.
+Only CLI code reads the write token. Files live in ignored `data/onboarding/` and
+are never overwritten. Tests use fictional in-memory/CLI fixtures with no remote
+writes. Images, customer import, real data, deletion and deployment stay deferred.
+Full contract, commands and limits: `docs/ONBOARDING.md`.
+
+**Supersedes:** Deferral of developer product-import tooling. Actual client mapping
+and production onboarding still require later data and explicit authorization.
+
+---
 
 ### 2026-09-06 — Milestone 4A managed Website Ordering
 

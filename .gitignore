@@ -45,6 +45,7 @@ next-env.d.ts
 /generated/prisma/
 /.test-runtime/
 /test-results/
+/data/onboarding/
 /playwright-report/
 
 .vercel
