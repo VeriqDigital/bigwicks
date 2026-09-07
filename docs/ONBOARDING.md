@@ -123,6 +123,16 @@ Put decisions in the configuration's `rows` array and the exact `sourceHash`
 at the top level. An exclusion is `{"row":3,"exclude":"Reviewed operational record"}`.
 Line numbers are for this source review only, never product identity. Altering the
 workbook invalidates row decisions; altering either file changes the reviewed plan.
+The SHA-256 `planHash` binds the source hash, validated review configuration and
+actual derived plan: every candidate's canonical content and tier prices,
+exclusions, acknowledgements, warnings and errors. The domain is
+`big-wicks/boxhero-mapping/v2`; source row order and issue order are deterministic,
+with no timestamps or generated identities. Mapper output changes invalidate old
+reviews even when source and configuration are unchanged. Private prices are
+hashed internally, never printed. Unit Cost and BoxHero SKU are absent from the
+derived plan; changing any original file bytes still changes its opaque source hash.
+`--write` requires the exact current plan hash and all existing review checks;
+run a fresh dry-run after upgrading the mapper before writing.
 When all included rows validate and every warning is acknowledged, review again:
 
 ```text

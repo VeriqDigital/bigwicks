@@ -1,4 +1,4 @@
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { zipSync, strToU8 } from "fflate";
 import { parse } from "csv-parse/sync";
@@ -7,6 +7,7 @@ import { canonicalCsv, prepare } from "../../scripts/onboarding/csv";
 import { plan, snapshot } from "../../scripts/onboarding/plan";
 import { parsePricingCsv } from "@/lib/pricing/csv";
 import { normalizeCatalogContent } from "@/lib/catalog/normalize";
+import * as money from "@/lib/catalog/money";
 
 const tiers = [{ name: "Tier 1", rank: 1 }, { name: "Tier 2", rank: 2 }, { name: "Fictional future group", rank: 3 }];
 const config = { tiers, categories: { "Fictional Type": "Fictional category" } };
@@ -16,6 +17,49 @@ const row = (change: Record<string, string> = {}) => {
   return boxHeroHeaders.map((h) => data[h]);
 };
 const hash = "a".repeat(64);
+it("produces a deterministic reviewed plan hash for identical source, config and mapping", () => {
+  const source = [boxHeroHeaders, row(), row({ "Item Number": "OTHER-FICTIONAL", Brand: "" })];
+  expect(mapBoxHero(structuredClone(source), structuredClone(config), hash)).toEqual(mapBoxHero(source, config, hash));
+});
+it.each([
+  ["Selling Price", "125.67"], ["Item Number", "OTHER-FICTIONAL"], ["Item Name", "Other fictional product"],
+  ["Type", "Other fictional category"], ["Brand", "Other fictional brand"], ["Packing", "12/6"],
+])("binds derived %s even when the supplied source hash and config stay the same", (field, value) => {
+  const original = mapBoxHero([boxHeroHeaders, row()], config, hash);
+  const changed = mapBoxHero([boxHeroHeaders, row({ [field]: value })], config, hash);
+  expect(changed.report.planHash).not.toBe(original.report.planHash);
+});
+it.each([{ exclude: "Reviewed exclusion" }, { acknowledge: ["missing_brand"] }])("binds exclusion and acknowledgement decisions %j", (decision) => {
+  const source = [boxHeroHeaders, row({ Brand: "" })];
+  const original = mapBoxHero(source, config, hash);
+  const changed = mapBoxHero(source, { ...config, sourceHash: hash, rows: [{ row: 2, ...decision }] }, hash);
+  expect(changed.report.planHash).not.toBe(original.report.planHash);
+});
+it("binds review issues even when mapped product content is unchanged", () => {
+  const original = mapBoxHero([boxHeroHeaders, row()], config, hash);
+  const changed = mapBoxHero([boxHeroHeaders, row({ Quantity: "-1", "Qty(Warehouse)": "-1" })], config, hash);
+  expect(changed.rows).toEqual(original.rows);
+  expect(changed.report.issues).not.toEqual(original.report.issues);
+  expect(changed.report.planHash).not.toBe(original.report.planHash);
+});
+it("invalidates review after a simulated mapper price change with identical source and config", () => {
+  const source = [boxHeroHeaders, row()];
+  const original = mapBoxHero(source, config, hash);
+  const mappingChange = vi.spyOn(money, "priceText").mockReturnValue("123.46");
+  try {
+    const changed = mapBoxHero(source, config, hash);
+    expect(changed.rows[0].prices["price:2:Tier 2"]).toBe("123.46");
+    expect(changed.report.sourceHash).toBe(original.report.sourceHash);
+    expect(changed.report.planHash).not.toBe(original.report.planHash);
+  } finally { mappingChange.mockRestore(); }
+});
+it("discards Unit Cost and BoxHero SKU from the derived plan and output", () => {
+  const original = mapBoxHero([boxHeroHeaders, row()], config, hash);
+  const changed = mapBoxHero([boxHeroHeaders, row({ "Unit Cost": "987654.32", SKU: "OTHER-PRIVATE-BOXHERO-ID" })], config, hash);
+  // Hold the opaque file hash fixed to isolate the derived plan's inputs.
+  expect(changed).toEqual(original);
+  for (const value of [cost, "987654.32", "BOXHERO-NOT-IDENTITY", "OTHER-PRIVATE-BOXHERO-ID"]) expect(JSON.stringify(changed)).not.toContain(value);
+});
 it("maps item number and independent Tier 2 case price, leaves other tiers blank and availability manual; cost never leaves the source", () => {
   const result = mapBoxHero([boxHeroHeaders, row()], config, hash);
   expect(result.writable).toBe(true);

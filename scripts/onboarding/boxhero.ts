@@ -102,7 +102,9 @@ export function mapBoxHero(source: unknown[][], rawConfig: unknown, hash: string
   const included = candidates.filter((c) => !c.excluded);
   const issues = candidates.map((c) => ({ row: c.row, excluded: c.excluded, errors: [...new Set(c.errors)], warnings: [...new Set(c.warnings)],
     unacknowledged: c.warnings.filter((code) => !c.acknowledge.includes(code)) }));
-  const planHash = sourceHash(Buffer.from(JSON.stringify({ hash, config })));
+  // Bind the derived plan too: identical source/config can map differently after a code change.
+  // Candidates contain only allowlisted content, prices and deterministic review state.
+  const planHash = sourceHash(Buffer.from(JSON.stringify({ contract: "big-wicks/boxhero-mapping/v2", hash, config, candidates, issues })));
   return { rows: included.map((c) => c.product), writable: included.length > 0 && issues.every((i) => i.excluded || (!i.errors.length && !i.unacknowledged.length)),
     report: { sourceHash: hash, planHash, rows: candidates.length, validCandidates: included.filter((c) => !c.errors.length).length,
       blockedCandidates: included.filter((c) => c.errors.length).length, excludedCandidates: candidates.filter((c) => c.excluded).length, issues } };
