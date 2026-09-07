@@ -5,12 +5,12 @@
 ## Current priority
 
 **Optimize for:**  
-Complete Milestone 3C's admin pricing operations, preserving completed
-Milestone 1/2A/2B/3A/3B security invariants.
+Complete Milestone 4A's managed online ordering, preserving completed
+Milestone 1/2A/2B/3A/3B/3C security invariants.
 
 **Waiting on:**
 
-- Final client option selection
+- Confirmed staff order-notification inbox and currency/unit wording
 - Authoritative product/pricing data
 - Customer import details
 - Final production-domain / launch details
@@ -26,6 +26,44 @@ Milestone 1/2A/2B/3A/3B security invariants.
 ---
 
 ## Decision log
+
+### 2026-09-06 — Milestone 4A managed Website Ordering
+
+**Source:** User / Veriq; Milestones 1 through 3C complete and merged.
+**Status:** Implemented locally; no deployment or remote writes.
+
+The Website Ordering option is authorized for this milestone. Customers select
+quantities, review current server values and explicitly submit an order request.
+Big Wicks handles availability questions, substitutions, finalization, payment,
+invoicing and fulfillment afterward. No stock reservation or completed-purchase
+claim is introduced. Currency/unit wording remains neutral until confirmed.
+
+Persist immutable customer/tier/product/money snapshots in new Order/OrderItem
+models, with SUBMITTED as the only order status. Revalidate current customer access,
+tier, unambiguous published availability and exact prices in the final service.
+Use BigInt integer cents and decimal SQL columns. A sealed 15-minute server review
+binds intent/current snapshot to user/customer/session version. Meaningful changes
+require refreshed review; `(customerId, submissionId)` uniqueness prevents duplicates.
+All parent/item writes use one serializable transaction with bulk item insertion.
+
+Use a local quantity map, 0–999 per product and at most 250 selected products.
+Shared SQL limiting bounds review/submission attempts to 30/minute per user;
+transactional counting permits 10 saved requests/hour per customer. Add only
+ownership-protected individual customer confirmations and ADMIN list/detail views
+(50/page); Orders belongs in internal ADMIN navigation, not the public navbar.
+
+After persistence, attempt plain-text Resend notification using existing verified
+ACCOUNT_FROM_EMAIL/RESEND_API_KEY and new, initially unset ORDER_TO_EMAIL. Record
+PENDING/ACCEPTED/FAILED separately; acceptance is not inbox delivery. Failed or
+uncertain notification leaves the order saved and visible for manual staff handoff.
+No automatic queue, resend UI, customer history/editing, admin repricing,
+fulfillment/payment/inventory workflow or real imports are added. Cross-system
+Sanity/SQL timing and direct-mail limitations are detailed in `docs/ORDERING.md`.
+
+**Supersedes:** Deferral of Website Ordering beyond the catalog/pricing milestones.
+Excel ordering remains out of this implementation.
+
+---
 
 ### 2026-09-06 — Milestone 3C admin pricing operations
 

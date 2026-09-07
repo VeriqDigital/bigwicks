@@ -5,7 +5,7 @@ login/logout, authorization, initial models and development fixtures. Milestone 
 adds admin customer management. Milestone 2B adds customer invitations, password
 setup and password reset. Milestone 3A adds a server-only catalog/private-pricing
 foundation; Milestone 3B adds protected customer catalog browsing. Milestone 3C
-adds ADMIN-only pricing operations. Ordering remains deferred.
+adds ADMIN-only pricing operations. Milestone 4A adds managed website order requests.
 
 ## Architecture
 
@@ -72,6 +72,17 @@ or calculated price change is trusted. The sealed preview binds to the admin and
 session revocation version, not an authoritative auth-token role/tier. Existing
 `AUTH_SECRET` protects the ten-minute preview; rotation invalidates pending previews.
 See `docs/CATALOG.md` for import integrity and transactional limits.
+
+Milestone 4A order review/submission actions and services independently require
+CUSTOMER. Submission locks and rechecks current User/Customer state and resolves
+current tier/prices in its transaction; browser identity/tier/money never selects
+the order owner or amounts. `/portal/confirmation/[reference]` checks current
+customer ownership server-side and excludes staff notification/tier/internal data.
+`/admin/orders` and its detail pages/services independently require ADMIN. Disabled
+or revoked sessions cannot submit or read confirmations. Order review tokens bind
+the current session version and use a separate cryptographic domain with existing
+AUTH_SECRET. No authentication token role/tier or login behavior changes.
+See `docs/ORDERING.md` for idempotency, freshness, limits and notification rules.
 
 Passwords are 15–128 characters when provisioned. Login accepts existing passwords
 up to 128 characters without trimming them. Argon2id uses 19 MiB memory, two

@@ -28,6 +28,7 @@ async function main() {
     AUTH_TRUST_HOST: "true",
     RESEND_API_KEY: "isolated-test-key",
     ACCOUNT_FROM_EMAIL: "Big Wicks Tests <accounts@example.test>",
+    ORDER_TO_EMAIL: "orders@example.test",
     TEST_ACCOUNT_MAIL_DIR: mailDirectory,
     TEST_CATALOG_CONTENT_FILE: "",
     // Tests never depend on or contact a real content dataset, even if local
@@ -115,7 +116,7 @@ async function main() {
     await run(["node_modules/next/dist/bin/next", "build"], true);
     app = start(["--import", "./tests/email-interceptor.mjs", "--import", "./tests/catalog-interceptor.mjs", "node_modules/next/dist/bin/next", "start", "--port", "3107", "--hostname", "localhost"], true);
     await waitForApp();
-    await run(["node_modules/@playwright/test/cli.js", "test", "catalog-ui.spec.ts", "pricing.spec.ts"]);
+    await run(["node_modules/@playwright/test/cli.js", "test", "catalog-ui.spec.ts", "pricing.spec.ts", "orders.spec.ts"]);
   } finally {
     await stopApp();
     if (started) await postgres.stop();

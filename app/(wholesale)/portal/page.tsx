@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   description: "Big Wicks wholesale customer catalog.",
   robots: { index: false, follow: false },
 };
+export const maxDuration = 30;
 
 export default async function CustomerPortalPage() {
   const { customer, email } = await requireCustomer();

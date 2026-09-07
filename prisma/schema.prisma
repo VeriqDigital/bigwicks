@@ -22,6 +22,7 @@ model User {
   sessionVersion Int       @default(0)
   customer       Customer?
   accountTokens  AccountToken[]
+  submittedOrders Order[]
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 }
@@ -35,6 +36,7 @@ model Customer {
   pricingTierId  String
   pricingTier    PricingTier @relation(fields: [pricingTierId], references: [id], onDelete: Restrict)
   active         Boolean     @default(false)
+  orders         Order[]
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
@@ -66,6 +68,56 @@ model LoginRateLimit {
   expiresAt DateTime
 
   @@index([expiresAt])
+}
+
+enum OrderStatus {
+  SUBMITTED
+}
+
+enum OrderNotificationStatus {
+  PENDING
+  ACCEPTED
+  FAILED
+}
+
+model Order {
+  id                     String @id @default(cuid())
+  reference              String @unique @db.VarChar(23)
+  submissionId           String @db.Uuid
+  reviewHash             String @db.VarChar(64)
+  customerId             String
+  customer               Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  submittedByUserId      String
+  submittedByUser        User @relation(fields: [submittedByUserId], references: [id], onDelete: Restrict)
+  status                 OrderStatus @default(SUBMITTED)
+  companyNameSnapshot    String @db.VarChar(200)
+  customerNumberSnapshot String? @db.VarChar(100)
+  emailSnapshot          String @db.VarChar(254)
+  pricingTierIdSnapshot  String
+  pricingTierNameSnapshot String @db.VarChar(100)
+  total                  Decimal @db.Decimal(18, 2)
+  createdAt              DateTime @default(now())
+  notificationStatus     OrderNotificationStatus @default(PENDING)
+  notificationAcceptedAt DateTime?
+  items                  OrderItem[]
+
+  @@unique([customerId, submissionId])
+  @@index([createdAt, id])
+  @@index([customerId, createdAt])
+}
+
+model OrderItem {
+  id                   String @id @default(cuid())
+  orderId              String
+  order                Order @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  catalogKey           String @db.Uuid
+  skuSnapshot          String @db.VarChar(100)
+  productNameSnapshot  String @db.VarChar(200)
+  unitPriceSnapshot    Decimal @db.Decimal(12, 2)
+  quantity             Int
+  lineTotalSnapshot    Decimal @db.Decimal(18, 2)
+
+  @@unique([orderId, catalogKey])
 }
 
 enum AccountTokenPurpose {

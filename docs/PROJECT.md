@@ -631,8 +631,8 @@ The database answers:
 | Protected tier pricing            |               Yes | Milestone 3A PostgreSQL/service foundation |
 | Admin pricing operations          |               Yes | Milestone 3C review/export/preview/confirmed CSV import |
 | Excel ordering                    |          Option 1 | Pending client selection             |
-| Website order submission          |          Option 2 | Pending client selection             |
-| Order email notification          |          Option 2 | Planned if selected                  |
+| Website order submission          |          Option 2 | Milestone 4A implemented locally; authorized by user |
+| Order email notification          |          Option 2 | Milestone 4A direct Resend; staff recipient pending |
 | Live inventory                    |                No | Explicitly excluded                  |
 | BoxHero integration               |                No | Explicitly excluded                  |
 | Online payments                   |                No | Explicitly excluded                  |
@@ -948,7 +948,7 @@ isolated SQL and mocked Sanity content. See `docs/CATALOG.md` for boundaries.
 
 ### Milestone 3C — Admin pricing operations
 
-Implemented locally at `/admin/pricing`: current completeness/audit overview,
+Complete and merged per user. Implemented at `/admin/pricing`: current completeness/audit overview,
 product pricing table, private CSV export, bounded CSV validation and detailed
 preview, then explicit confirmation of one atomic PostgreSQL import. Blank cells
 mean no price and require acknowledgment before deleting existing prices; omitted
@@ -960,10 +960,34 @@ Encrypted ten-minute previews bind to the admin/session version and reject tampe
 or catalog/tier/price drift. Internal navigation links Customers, Pricing, Catalog
 Studio, Public website and Sign out; public navigation is unchanged. Sanity retains
 content/availability ownership. No new schema, migration or environment variable.
-Manual per-product editing, real-data imports, ordering and inventory stay deferred.
+Manual per-product editing, real-data imports and inventory stay deferred.
+Website ordering is implemented in Milestone 4A below.
 See `docs/CATALOG.md` for workflow, operational limits and local-only verification.
 
-### Milestone 4 — Admin catalog controls
+### Milestone 4A — Managed online ordering
+
+The user authorized the quoted Website Ordering option for this milestone.
+Implemented locally: catalog quantity inputs, server-generated review, explicit
+submission with current customer/tier/price/availability validation, exact money
+calculation, immutable Order/OrderItem snapshots and database-backed idempotency.
+Changed review values require renewed customer review before an order can be saved.
+Orders use only SUBMITTED status; there is no fulfillment state machine.
+
+Resend notification occurs after persistence and tracks provider acceptance/failure
+separately. ADMIN has a newest-first 50-order list and snapshot detail pages, with
+Orders in internal navigation. Customer confirmation enforces ownership and exposes
+no staff notification state. There is no customer history list or order editing.
+Limits: 999 per product, 250 selected products, 30 ordering attempts/minute per user
+and 10 saved requests/hour per customer. These are documented defensive choices.
+
+One new migration adds submitted orders; no old migration or dependencies change.
+The new server-only `ORDER_TO_EMAIL` remains unset pending recipient confirmation
+and reuses the verified account sender. No remote writes, real orders or deployment.
+Big Wicks owns final availability review, substitutions, payment, invoicing and
+fulfillment outside the website. See `docs/ORDERING.md` for exact architecture,
+notification recovery limits, setup and verification.
+
+### Earlier Milestone 4 — Admin catalog controls
 
 At minimum:
 
@@ -974,8 +998,8 @@ Add broader product-editing controls only if confirmed necessary.
 
 ### Milestone 5 — Customer catalog
 
-Browsing/search/filter/pricing are now implemented by Milestone 3B. Quantity and
-ordering interactions remain deferred to the selected ordering milestone.
+Browsing/search/filter/pricing are implemented by Milestone 3B. Quantity and
+managed website ordering interactions are implemented by Milestone 4A.
 
 1. Customer authentication
 2. Search/filter catalog
@@ -1070,19 +1094,18 @@ Test:
 
 ### What Codex should optimize for right now
 
-Complete and verify Milestone 3C's admin pricing operations, shared by both
-quoted options. Milestones 1, 2A, 2B, 3A and 3B are complete and merged per the user.
+Complete and verify Milestone 4A's managed Website Ordering option, authorized by
+the user. Milestones 1, 2A, 2B, 3A, 3B and 3C are complete and merged per the user.
 Do not deploy, modify remote data/settings, or invent/import real products.
 
 The first meaningful milestone is:
 
-> An ADMIN can export current pricing, edit a CSV, review a validated preview and explicitly confirm an atomic update. Customers see their current tier prices on refresh. No ordering is implemented.
+> A customer can select quantities, review current server values and submit one immutable order request. Staff can view the saved request and notification state; finalization and payment stay outside the website.
 
 ### Do not work on yet
 
 Until needed by the active milestone:
 
-- Website ordering
 - Excel ordering implementation
 - Customer order history
 - Payments
@@ -1102,7 +1125,7 @@ Build and verify one vertical slice at a time.
 
 ### Blocks later implementation
 
-- [ ] Which ordering option does Big Wicks select?
+- [x] Website Ordering authorized by the user for Milestone 4A implementation.
 - [ ] What exact product-data source/format will Big Wicks provide?
 - [ ] What exact price data will be provided for Tier 1 and Tier 2?
 - [ ] Is Tier 2 individually priced per product or derived from a consistent rule?
@@ -1112,7 +1135,7 @@ Build and verify one vertical slice at a time.
 - [ ] Which Big Wicks email address(es) should receive Option 2 orders?
 - [ ] For Option 1, exactly how should the Excel order sheet be generated/downloaded/submitted?
 - [x] Content/availability belongs in Sanity; ADMIN bulk pricing maintenance is authorized for Milestone 3C. Individual price-edit forms remain deferred.
-- [ ] What quantity limits should apply to customer order inputs?
+- [x] Milestone 4A defensive limits: 0–999 per product and 250 selected products; review against real operational needs before launch.
 
 ### Can wait until later
 

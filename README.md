@@ -9,8 +9,10 @@ setup/reset. Milestone 3A establishes Sanity product content and a private
 PostgreSQL pricing/catalog service. Milestone 3B provides CUSTOMER-only browsing
 at `/portal`, with search, category filters and sorting. Milestone 3C adds ADMIN-only
 pricing review, CSV export, validation/preview and confirmed transactional imports
-at `/admin/pricing`. Ordering and real catalog import remain deferred;
-currency/unit meaning still needs confirmation.
+at `/admin/pricing`. Milestone 4A adds website order requests: quantities, current
+server review, duplicate-safe submission, immutable snapshots, staff notification
+and read-only admin order visibility. Real catalog import remains deferred;
+currency/unit meaning and the staff notification recipient still need confirmation.
 
 ## Stack
 
@@ -35,6 +37,7 @@ Read these before substantial work:
 - `docs/DECISIONS.md`
 - `docs/AUTH.md` — authentication architecture, setup, fixtures and verification
 - `docs/CATALOG.md` — Sanity setup, permanent product identity, private pricing and audit
+- `docs/ORDERING.md` — order snapshots, review/submission security, notifications and local setup
 
 Client-specific facts and scope live in `/docs`; do not rely on this README as the detailed source of truth.
 
@@ -57,15 +60,15 @@ The project combines two distinct jobs:
 1. A public retail marketing site that helps local shoppers discover Big Wicks, understand the selection, and visit/contact the store.
 2. A private customer portal for approved business/wholesale customers if the client selects that option.
 
-The likely managed-ordering flow is intentionally **not ecommerce checkout**:
+The authorized Milestone 4A managed-ordering flow is:
 
 ```text
 Approved customer
   -> login
   -> protected catalog with assigned pricing
-  -> enter quantities
+  -> enter quantities and review current server values
   -> submit order request
-  -> Big Wicks receives the order
+  -> order is saved and staff notification is attempted
   -> salesperson confirms availability/substitutions/final total offline
 ```
 
@@ -117,4 +120,15 @@ authorization and concurrency rules](docs/CATALOG.md#milestone-3c-admin-pricing-
 
 ## Security rule for ordering
 
-If online ordering is selected, the browser must never be authoritative for customer identity, pricing tier, unit price, or order total. Those values must be derived and calculated server-side from the authenticated account and authoritative product data.
+The browser submits only catalogKey/quantity pairs for review and an opaque server
+review token for final submission. Current customer, tier and exact prices are
+resolved server-side again; changed values require renewed review. The database
+uniquely constrains each customer/submission ID. No customer order-history list,
+payment, inventory reservation or submitted-order editing is added.
+
+Milestone 4A adds the `20260906040000_submitted_orders` migration. Apply it only to
+an intended local database with `npm run db:deploy`; builds never apply migrations.
+Set server-only `ORDER_TO_EMAIL` to the confirmed staff inbox before release.
+Notifications reuse `ACCOUNT_FROM_EMAIL` and `RESEND_API_KEY`. A saved order remains
+valid if email fails; `/admin/orders` exposes notification state for staff follow-up.
+See [ordering operations and limitations](docs/ORDERING.md). No new dependencies.
