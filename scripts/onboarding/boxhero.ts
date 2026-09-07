@@ -84,8 +84,10 @@ export function mapBoxHero(source: unknown[][], rawConfig: unknown, hash: string
     if (!/^-?\d+$/.test(quantity) || !/^-?\d+$/.test(warehouse)) warnings.push("invalid_inventory_quantity");
     else { if (BigInt(quantity) < 0 || BigInt(warehouse) < 0) warnings.push("negative_inventory_quantity"); if (BigInt(quantity) !== BigInt(warehouse)) warnings.push("warehouse_quantity_mismatch"); }
     if (/\b(?:discontinued|shipping|stock transfer|items for tents)\b/i.test(name)) warnings.push("suspected_non_product");
+    // BoxHero zero means unresolved customer pricing, even after acknowledgement.
+    const tier2Price = price === "0.00" ? null : price;
     const product: Row = { catalogKey: "", sku, name, category, brand, packing, description: "", available: false,
-      prices: Object.fromEntries(tiers.map((tier) => [priceColumn(tier), tier.rank === 2 ? price : null])) };
+      prices: Object.fromEntries(tiers.map((tier) => [priceColumn(tier), tier.rank === 2 ? tier2Price : null])) };
     // Reuse canonical content/price validation without generating an identity.
     if (!errors.length) try { readCanonical(Buffer.from(canonicalCsv([product]))); } catch { errors.push("invalid_canonical_content"); }
     return { row, product, errors, warnings, excluded: !!decision?.exclude, acknowledge: decision?.acknowledge ?? [] };

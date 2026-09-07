@@ -1,6 +1,7 @@
 import { expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { zipSync, strToU8 } from "fflate";
+import { parse } from "csv-parse/sync";
 import { boxHeroHeaders, mapBoxHero, readBoxHero, sourceHash } from "../../scripts/onboarding/boxhero";
 import { canonicalCsv, prepare } from "../../scripts/onboarding/csv";
 import { plan, snapshot } from "../../scripts/onboarding/plan";
@@ -28,6 +29,35 @@ it("maps item number and independent Tier 2 case price, leaves other tiers blank
     expect(output).not.toContain(cost); expect(output).not.toContain("Unit Cost"); expect(output).not.toContain("BOXHERO-NOT-IDENTITY");
   }
   expect(JSON.stringify(mutations)).not.toContain("123.45");
+});
+it.each(["0", "0.0", "0.00"])("keeps BoxHero zero %s unpriced before and after acknowledgement", (sellingPrice) => {
+  const source = [boxHeroHeaders, row({ "Selling Price": sellingPrice })];
+  for (const acknowledged of [false, true]) {
+    const result = mapBoxHero(source, { ...config, sourceHash: hash,
+      rows: [{ row: 2, acknowledge: acknowledged ? ["zero_selling_price"] : [] }] }, hash);
+    expect(result.writable).toBe(acknowledged);
+    expect(result.report.issues[0].warnings).toContain("zero_selling_price");
+    expect(result.report.issues[0].errors).toEqual([]);
+    expect(result.rows[0].prices).toEqual({ "price:1:Tier 1": null, "price:2:Tier 2": null, "price:3:Fictional future group": null });
+  }
+});
+it("resolves a zero selling price only with an explicit positive override without deriving other tiers", () => {
+  const result = mapBoxHero([boxHeroHeaders, row({ "Selling Price": "0" })], { ...config, sourceHash: hash,
+    rows: [{ row: 2, sellingPrice: "151.27" }] }, hash);
+  expect(result.writable).toBe(true);
+  expect(result.report.issues[0].warnings).not.toContain("zero_selling_price");
+  expect(result.rows[0].prices).toEqual({ "price:1:Tier 1": null, "price:2:Tier 2": "151.27", "price:3:Fictional future group": null });
+});
+it("exports an acknowledged zero selling price as a blank Tier 2 pricing CSV cell", () => {
+  const result = mapBoxHero([boxHeroHeaders, row({ "Selling Price": "0" })], { ...config, sourceHash: hash,
+    rows: [{ row: 2, acknowledge: ["zero_selling_price"] }] }, hash);
+  expect(result.writable).toBe(true);
+  const prepared = prepare(Buffer.from(canonicalCsv(result.rows)));
+  const cells = parse(prepared.pricingCsv, { bom: true, columns: true, skip_empty_lines: true }) as Record<string, string>[];
+  expect(cells[0]["price:2:Tier 2"]).toBe("");
+  const imported = parsePricingCsv(Buffer.from(prepared.pricingCsv), tiers);
+  expect(imported.errors).toEqual([]);
+  expect(imported.rows[0].prices).toEqual({ "price:1:Tier 1": null, "price:2:Tier 2": null, "price:3:Fictional future group": null });
 });
 it.each([
   [{ "Item Number": "" }, "missing_item_number", true], [{ Type: "" }, "missing_category", true],

@@ -85,8 +85,13 @@ no names, source IDs, costs or price lists. It maps Item Name/name, Item Number/
 Type/category, Brand/brand, Packing/packing, and Selling Price/rank 2 case price.
 All other tiers stay blank. Available is always false, regardless of positive,
 zero, negative or mismatched inventory. Visibility is approved separately later.
-Zero selling prices require explicit review; malformed/excess-scale prices block
-the row. No rounding, discount, margin, cost or packing-based price formula exists.
+Zero BoxHero selling prices mean unresolved customer pricing: Tier 2 stays blank
+and the mapper emits `zero_selling_price`. Acknowledging that warning allows the
+row to proceed unpriced, never with `0.00`. Supply a positive explicit
+`sellingPrice` row override, exclude the row, or acknowledge that it remains
+unpriced. This source-specific rule does not change the shared ProductPrice rule
+allowing explicit zero elsewhere. Malformed/excess-scale prices block the row.
+No rounding, discount, margin, cost or packing-based price formula exists.
 
 Every source Type should be reviewed. `categories` maps exact source labels to
 approved display text; mapping a label to itself explicitly approves retaining it.
