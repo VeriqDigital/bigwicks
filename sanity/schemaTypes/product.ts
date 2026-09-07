@@ -32,6 +32,9 @@ export const product = defineType({
     defineField({ name: "category", title: "Category", type: "reference", to: [{ type: "category" }],
       validation: (rule) => rule.required().warning("Choose a category to help customers browse.") }),
     defineField({ name: "description", title: "Description", type: "text", rows: 5, validation: (rule) => rule.max(10000) }),
+    ...["brand", "packing"].map((name) => defineField({ name, title: name === "brand" ? "Brand" : "Case packing", type: "string",
+      description: name === "packing" ? "Contents of one complete case. Preserve the supplied notation; prices are per case." : "Optional product brand/manufacturer.",
+      validation: (rule) => rule.max(100).custom((value) => !value || !/[\u0000-\u001f\u007f-\u009f]/u.test(value) || "Use plain single-line text.") })),
     defineField({ name: "image", title: "Product image", type: "image", options: { hotspot: true }, fields: [
       defineField({ name: "alt", title: "Image description", type: "string", validation: (rule) => rule.max(300) }),
     ] }),

@@ -10,7 +10,7 @@ export function orderEmailText(order: StaffOrderEmail) {
   return ["Big Wicks website wholesale order submission", "", `Reference: ${order.reference}`,
     `Company: ${field(order.companyName)}`, ...(order.customerNumber ? [`Customer number: ${field(order.customerNumber)}`] : []),
     `Login email: ${field(order.email)}`, `Submitted (UTC): ${order.createdAt}`, "",
-    ...order.items.map((item) => `${field(item.sku)} | ${field(item.name)} | Quantity: ${item.quantity} | Price: ${item.unitPrice} | Line total: ${item.lineTotal}`),
+    ...order.items.map((item) => `${field(item.sku)} | ${field(item.name)} ${item.brand ? ` | Brand: ${field(item.brand)}` : ""}${item.packing ? ` | Packing: ${field(item.packing)}` : ""} | Cases: ${item.quantity} | Case price: ${item.unitPrice} | Line total: ${item.lineTotal}`),
     "", `Submitted total: ${order.total}`, "",
     "Order request for staff review. Availability and finalization are handled by Big Wicks; payment is handled separately.",
   ].join("\n");

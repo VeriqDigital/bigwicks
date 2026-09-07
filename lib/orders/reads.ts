@@ -11,7 +11,7 @@ type StoredOrder = Prisma.OrderGetPayload<{ include: typeof withItems }>;
 function receipt(order: StoredOrder): OrderReceipt {
   return { reference: order.reference, createdAt: order.createdAt.toISOString(), companyName: order.companyNameSnapshot, total: order.total.toFixed(2),
     items: order.items.map((item) => ({ catalogKey: item.catalogKey, sku: item.skuSnapshot, name: item.productNameSnapshot,
-      unitPrice: item.unitPriceSnapshot.toFixed(2), lineTotal: item.lineTotalSnapshot.toFixed(2), quantity: item.quantity })) };
+      brand: item.brandSnapshot, packing: item.packingSnapshot, unitPrice: item.unitPriceSnapshot.toFixed(2), lineTotal: item.lineTotalSnapshot.toFixed(2), quantity: item.quantity })) };
 }
 export async function getCustomerConfirmation(reference: unknown) {
   const user = await requireCustomer();

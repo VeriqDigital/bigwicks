@@ -8,7 +8,7 @@ test.skip(!process.env.TEST_CATALOG_CONTENT_FILE, "Requires the isolated mocked 
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
 const key = (index: number) => `e5000000-0000-4000-8000-${String(index).padStart(12, "0")}`;
 const keys = Array.from({ length: 201 }, (_, index) => key(index + 1));
-const headers = "catalogKey,sku,productName,category,available,tier1Price,tier2Price";
+const headers = "catalogKey,sku,productName,category,available,price:1:Tier 1,price:2:Tier 2";
 let tier1: string; let tier2: string;
 const csv = (value = "14567.89") => `${headers}\r\n${key(1)},EDITED-SKU,Edited name,,true,${value},\r\n${key(2)},TEST-ONLY-001,Fictional hidden product,,false,7.01,8.02\r\n`;
 async function content(products: unknown[], fail = false) { await writeFile(process.env.TEST_CATALOG_CONTENT_FILE!, JSON.stringify({ products, fail })); }
@@ -30,6 +30,43 @@ test.beforeEach(async () => {
   await content([fictionalProduct({ _id: "pricing-first", catalogKey: key(1), image: null }), fictionalProduct({ _id: "pricing-hidden", catalogKey: key(2), name: "Fictional hidden product", available: false, image: null })]);
 });
 test.afterAll(async () => { await db.productPrice.deleteMany({ where: { catalogKey: { in: keys } } }); await db.$disconnect(); });
+
+test("configured Tier 3 renders, exports, imports and reaches its customer at responsive widths", async ({ page }) => {
+  const third = await db.pricingTier.create({ data: { name: "Tier 3", rank: 3 } });
+  const customer = await db.customer.findFirstOrThrow({ where: { user: { email: "tier1@example.test" } } });
+  try {
+    await login(page); await page.goto("/admin/customers/new");
+    await expect(page.getByLabel("Pricing tier", { exact: true }).locator("option", { hasText: "Tier 3" })).toHaveCount(1);
+    await page.goto("/admin/pricing");
+    await expect(page.getByRole("columnheader", { name: "Tier 3", exact: true })).toBeVisible();
+    const exported = await (await page.request.get("/admin/pricing/export")).text();
+    expect(exported).toContain("price:3:Tier 3");
+    await upload(page, `${headers},price:3:Tier 3\n${key(1)},TEST-ONLY-001,Fictional test product one,,true,10.01,12.03,17.29\n`);
+    await page.getByRole("heading", { name: "Review pricing import" }).waitFor();
+    await page.getByRole("button", { name: "Confirm pricing import", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Pricing import applied." })).toBeVisible();
+    await page.reload();
+    for (const width of [390, 768, 1440]) {
+      await page.setViewportSize({ width, height: 1000 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await page.screenshot({ path: `test-results/pricing-third-tier-${width}.png` });
+    }
+    await db.customer.update({ where: { id: customer.id }, data: { pricingTierId: third.id } });
+    await page.getByRole("button", { name: "Sign out", exact: true }).click(); await login(page, false);
+    await expect(page.getByTestId("product-price")).toHaveText("17.29");
+    await expect(page.getByText("Brand: Fictional brand", { exact: true })).toBeVisible();
+    await expect(page.getByText("Packing: 18/6/6", { exact: true })).toBeVisible();
+    await expect(page.getByLabel("Cases for Fictional test product one", { exact: true })).toBeVisible();
+    for (const width of [390, 768, 1440]) {
+      await page.setViewportSize({ width, height: 1000 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await page.getByRole("article").screenshot({ path: `test-results/catalog-case-${width}.png` });
+    }
+  } finally {
+    await db.customer.update({ where: { id: customer.id }, data: { pricingTierId: customer.pricingTierId } });
+    await db.productPrice.deleteMany({ where: { pricingTierId: third.id } }); await db.pricingTier.delete({ where: { id: third.id } });
+  }
+});
 
 test("admin pricing export, validation, preview and explicit confirmation update the customer catalog", async ({ page, browser, playwright }) => {
   await login(page);

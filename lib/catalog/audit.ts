@@ -1,17 +1,16 @@
 import "server-only";
 import { getDb } from "@/lib/db";
-import { supportedTierNames } from "@/lib/admin/customer-validation";
+import { validTiers, orderedTiers, type PricingTier } from "@/lib/pricing/tiers";
 import { readPublishedCatalogContent } from "./content";
 import { normalizeCatalogContent, type CatalogIssue } from "./normalize";
 import { priceText } from "./money";
 import { isCatalogKey } from "@/sanity/catalog-key";
 
-export function analyzeCatalog(raw: unknown, prices: { catalogKey: string; pricingTierId: string; price: unknown }[], tiers: { id: string; name: string }[]) {
+export function analyzeCatalog(raw: unknown, prices: { catalogKey: string; pricingTierId: string; price: unknown }[], tiers: PricingTier[]) {
   const content = normalizeCatalogContent(raw);
   const issues: CatalogIssue[] = [...content.issues];
-  const supported = tiers.filter((tier) => supportedTierNames.some((name) => name === tier.name));
-  for (const name of supportedTierNames) if (!supported.some((tier) => tier.name === name)) issues.push({ code: name === "Tier 1" ? "missing_tier_1" : "missing_tier_2" });
-  for (const tier of tiers) if (!supported.some((entry) => entry.id === tier.id)) issues.push({ code: "unsupported_pricing_tier", pricingTierId: tier.id });
+  const supported = validTiers(tiers) ? orderedTiers(tiers) : [];
+  if (!supported.length) issues.push({ code: "invalid_or_missing_pricing_tiers" });
   for (const row of prices) {
     const detail = { catalogKey: row.catalogKey, pricingTierId: row.pricingTierId };
     if (!isCatalogKey(row.catalogKey)) issues.push({ code: "invalid_price_catalog_key", ...detail });
@@ -38,7 +37,7 @@ export async function auditCatalog() {
   const db = getDb();
   const [prices, tiers] = await Promise.all([
     db.productPrice.findMany({ select: { catalogKey: true, pricingTierId: true, price: true } }),
-    db.pricingTier.findMany({ select: { id: true, name: true } }),
+    db.pricingTier.findMany({ select: { id: true, name: true, rank: true }, orderBy: { rank: "asc" } }),
   ]);
   return analyzeCatalog(content, prices, tiers);
 }

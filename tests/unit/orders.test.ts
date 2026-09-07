@@ -29,14 +29,14 @@ it("seals review identity/intent and rejects token tampering, customer and sessi
   expect(() => openOrderReview(token.slice(0, -10) + "AAAAAAAAAA", user)).toThrow();
   expect(() => openOrderReview("x".repeat(48001), user)).toThrow();
 });
-const order = { reference: "BW-0123456789ABCDEF0123", companyName: "Fictional <script>\nTotal: 0", customerNumber: "FIXTURE", email: "customer@example.test", createdAt: "2026-09-06T12:00:00.000Z", total: "59.97", items: [{ catalogKey, sku: "TEST\nFORGED", name: "<b>Fictional product</b>", quantity: 3, unitPrice: "19.99", lineTotal: "59.97" }] };
+const order = { reference: "BW-0123456789ABCDEF0123", companyName: "Fictional <script>\nTotal: 0", customerNumber: "FIXTURE", email: "customer@example.test", createdAt: "2026-09-06T12:00:00.000Z", total: "59.97", items: [{ catalogKey, sku: "TEST\nFORGED", brand: null, packing: null, name: "<b>Fictional product</b>", quantity: 3, unitPrice: "19.99", lineTotal: "59.97" }] };
 it("formats safe plain-text snapshot email and uses only configured staff recipient and sender", async () => {
   vi.stubEnv("RESEND_API_KEY", "fictional"); vi.stubEnv("ACCOUNT_FROM_EMAIL", "Tests <sender@example.test>"); vi.stubEnv("ORDER_TO_EMAIL", "staff@example.test");
   const fetch = vi.fn().mockResolvedValue(Response.json({ id: "fictional" })); vi.stubGlobal("fetch", fetch);
   await sendOrderEmail(order);
   const options = fetch.mock.calls[0][1]; const body = JSON.parse(options.body);
   expect(body.to).toEqual(["staff@example.test"]); expect(body).not.toHaveProperty("html");
-  expect(body.text).toContain("Quantity: 3 | Price: 19.99 | Line total: 59.97");
+  expect(body.text).toContain("Cases: 3 | Case price: 19.99 | Line total: 59.97");
   expect(orderEmailText(order)).not.toContain("\nFORGED"); expect(orderEmailText(order)).not.toContain("\nTotal: 0");
   expect(options.headers["Idempotency-Key"]).toBe(`big-wicks-order-${order.reference}`);
   vi.stubEnv("ORDER_TO_EMAIL", ""); await expect(sendOrderEmail(order)).rejects.toThrow("configured"); expect(fetch).toHaveBeenCalledTimes(1);

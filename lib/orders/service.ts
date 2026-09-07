@@ -4,7 +4,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { getDb } from "@/lib/db";
 import { requireCustomer } from "@/lib/auth/authorization";
 import { consumeBucket } from "@/lib/auth/rate-limit";
-import { supportedTierNames } from "@/lib/admin/customer-validation";
+import { validTier } from "@/lib/pricing/tiers";
 import { readPublishedCatalogContent } from "@/lib/catalog/content";
 import { normalizeCatalogContent } from "@/lib/catalog/normalize";
 import { priceText } from "@/lib/catalog/money";
@@ -21,19 +21,20 @@ const db = () => getDb();
 async function currentSnapshot(tx: Prisma.TransactionClient, user: CustomerPrincipal, items: RequestedItem[], raw: unknown) {
   const current = await tx.user.findUnique({ where: { id: user.id }, select: {
     id: true, email: true, active: true, role: true, sessionVersion: true,
-    customer: { select: { id: true, active: true, companyName: true, customerNumber: true, pricingTierId: true, pricingTier: { select: { name: true } } } },
+    customer: { select: { id: true, active: true, companyName: true, customerNumber: true, pricingTierId: true, pricingTier: { select: { name: true, rank: true } } } },
   } });
   const customer = current?.customer;
   if (!current?.active || current.role !== "CUSTOMER" || current.sessionVersion !== user.sessionVersion || !customer?.active || customer.id !== user.customer.id) throw new OrderError("Your account changed. Sign in again before ordering.");
-  if (!supportedTierNames.some((name) => name === customer.pricingTier.name)) throw new OrderError("Your pricing is unavailable. Contact Big Wicks.");
+  if (!validTier(customer.pricingTier)) throw new OrderError("Your pricing is unavailable. Contact Big Wicks.");
   const content = normalizeCatalogContent(raw);
   const prices = await tx.productPrice.findMany({ where: { pricingTierId: customer.pricingTierId, catalogKey: { in: items.map((item) => item.catalogKey) } }, select: { catalogKey: true, price: true } });
   const lines: OrderLine[] = items.map((item) => {
     const product = content.products.find((product) => product.catalogKey === item.catalogKey);
-    if (!product?.available) throw new OrderError("A selected product is no longer available. Return to the catalog, reload it and review your quantities.");
+    if (!product?.available) throw new OrderError("A selected product is no longer available. Return to the catalog, reload it and review your case counts.");
     const price = priceText(prices.find((row) => row.catalogKey === item.catalogKey)?.price);
-    if (price === null) throw new OrderError("A selected product no longer has a valid price. Reload the catalog and review your quantities.");
-    return { catalogKey: product.catalogKey, sku: product.sku, name: product.name, unitPrice: price, quantity: item.quantity, lineTotal: lineTotal(price, item.quantity) };
+    if (price === null) throw new OrderError("A selected product no longer has a valid price. Reload the catalog and review your case counts.");
+    return { catalogKey: product.catalogKey, sku: product.sku, name: product.name, brand: product.brand, packing: product.packing,
+      unitPrice: price, quantity: item.quantity, lineTotal: lineTotal(price, item.quantity) };
   });
   const identity = (raw as { _id: string; catalogKey?: string }[])
     .filter((row) => !row._id.startsWith("drafts.") && !row._id.startsWith("versions.") && items.some((item) => item.catalogKey === row.catalogKey))
@@ -99,7 +100,7 @@ export async function submitOrder(token: unknown): Promise<OrderState> {
         customerNumberSnapshot: snapshot.customerNumber, emailSnapshot: snapshot.email,
         pricingTierIdSnapshot: snapshot.tierId, pricingTierNameSnapshot: snapshot.tierName, total: snapshot.total,
         items: { createMany: { data: snapshot.items.map((item) => ({ catalogKey: item.catalogKey, skuSnapshot: item.sku, productNameSnapshot: item.name,
-          unitPriceSnapshot: item.unitPrice, quantity: item.quantity, lineTotalSnapshot: item.lineTotal })) } },
+          brandSnapshot: item.brand, packingSnapshot: item.packing, unitPriceSnapshot: item.unitPrice, quantity: item.quantity, lineTotalSnapshot: item.lineTotal })) } },
       } });
       return { kind: "created" as const, order, snapshot };
     }, { isolationLevel: "Serializable", maxWait: 5000, timeout: 15000 });

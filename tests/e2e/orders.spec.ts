@@ -54,7 +54,7 @@ for (const interrupted of [false, true]) {
     await login(page);
     // A known prior document makes replace-vs-assign history behavior explicit.
     await page.goto("/contact"); await page.goto("/portal");
-    await page.getByLabel("Quantity for Alpha fictional order product", { exact: true }).fill("2");
+    await page.getByLabel("Cases for Alpha fictional order product", { exact: true }).fill("2");
     await review(page);
 
     const submissions: string[] = [];
@@ -84,7 +84,7 @@ for (const interrupted of [false, true]) {
       await page.getByRole("button", { name: "Submit order request", exact: true }).click();
       if (interrupted) {
         await expect(page.getByRole("button", { name: "Submitting…", exact: true })).toBeDisabled();
-        await expect(page.getByRole("button", { name: "Back to quantities", exact: true })).toBeDisabled();
+        await expect(page.getByRole("button", { name: "Back to cases", exact: true })).toBeDisabled();
       }
       await expect.poll(() => db.order.count({ where: { customerId } })).toBe(1);
       releaseAction();
@@ -92,7 +92,7 @@ for (const interrupted of [false, true]) {
         await expect(page.getByRole("status")).toContainText("Submission was interrupted. Retry this submission to recover the same order");
         await expect(page).toHaveURL(/\/portal$/);
         await expect(page.getByTestId("order-total")).toHaveText("39.98");
-        await expect(page.getByRole("button", { name: "Back to quantities", exact: true })).toBeEnabled();
+        await expect(page.getByRole("button", { name: "Back to cases", exact: true })).toBeEnabled();
         interruptions.length = 0;
         await page.getByRole("button", { name: "Submit order request", exact: true }).click();
       }
@@ -122,10 +122,10 @@ for (const interrupted of [false, true]) {
 
 test("quantity entry, review, persisted confirmation, staff notification and order snapshots work end to end", async ({ page, browser, playwright }) => {
   await login(page);
-  const quantity = page.getByLabel("Quantity for Alpha fictional order product", { exact: true });
-  await quantity.fill("1.5"); await expect(page.getByRole("alert").filter({ hasText: "Correct invalid quantities" })).toContainText("whole number");
+  const quantity = page.getByLabel("Cases for Alpha fictional order product", { exact: true });
+  await quantity.fill("1.5"); await expect(page.getByRole("alert").filter({ hasText: "Correct invalid case counts" })).toContainText("whole number");
   await expect(page.getByRole("button", { name: "Review order", exact: true })).toBeDisabled();
-  await quantity.fill("3"); await page.getByLabel("Quantity for Beta fictional order product", { exact: true }).fill("2");
+  await quantity.fill("3"); await page.getByLabel("Cases for Beta fictional order product", { exact: true }).fill("2");
   await page.getByLabel("Search products").fill("no match");
   await expect(page.getByText("2 selected products · Estimated total: 60.17")).toBeVisible();
   await page.getByRole("button", { name: "Clear filters" }).click(); await expect(quantity).toHaveValue("3");
@@ -172,7 +172,7 @@ test("quantity entry, review, persisted confirmation, staff notification and ord
 });
 
 test("price changes require a new review, unavailable items reject submission and failed email preserves the order", async ({ page, browser }) => {
-  await login(page); await page.getByLabel("Quantity for Alpha fictional order product", { exact: true }).fill("2"); await review(page);
+  await login(page); await page.getByLabel("Cases for Alpha fictional order product", { exact: true }).fill("2"); await review(page);
   await db.productPrice.updateMany({ where: { catalogKey: key(1), pricingTierId: tier1 }, data: { price: "20.99" } });
   await page.getByRole("button", { name: "Submit order request", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("changed before submission"); await expect(page.getByTestId("order-total")).toHaveText("41.98");

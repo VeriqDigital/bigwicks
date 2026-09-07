@@ -1,0 +1,4 @@
+{
+  "tiers": [{ "rank": 1, "name": "Tier 1" }, { "rank": 2, "name": "Tier 2" }],
+  "categories": { "Fictional Type": "Fictional category" }
+}

@@ -4,6 +4,19 @@
 
 ## 1. Business identity
 
+### Confirmed wholesale semantics (Milestone 5A.1)
+
+Customers order complete cases. Packing describes one case's contents and remains
+supplier notation, without mathematical interpretation. BoxHero Selling Price is
+the Tier 2 case price; Unit Cost is Big Wicks' confidential internal case cost and
+must never appear in customer content or pricing artifacts. Item Number is the
+customer-facing SKU; catalogKey remains permanent identity. Brand is optional
+customer-visible metadata. Tier 1 is cheapest; higher ranks represent more
+expensive customer groups with independently supplied prices per product and no
+percentage formula. BoxHero quantities are not website availability. Tier 1 source,
+source cleanup/category mapping and initial visibility still require review.
+These rules supersede earlier unconfirmed unit/source/tier notes.
+
 **Public business name:** Big Wicks Fireworks  
 **Legal/business name currently used:** Big Wicks Fireworks LLC  
 **Current descriptor:** Fireworks store / retail fireworks destination  

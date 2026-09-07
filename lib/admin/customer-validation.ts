@@ -13,5 +13,3 @@ export const customerFieldsSchema = z.object({
 export const createCustomerSchema = customerFieldsSchema.extend({ status: accountStatusSchema });
 export const editCustomerSchema = customerFieldsSchema.extend({ customerId: customerIdSchema });
 export const customerStatusSchema = z.object({ customerId: customerIdSchema, status: accountStatusSchema });
-
-export const supportedTierNames = ["Tier 1", "Tier 2"];

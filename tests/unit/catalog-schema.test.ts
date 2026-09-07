@@ -9,7 +9,7 @@ it("generates fresh immutable keys, starts unavailable and has no pricing fields
   const initial = product.initialValue as () => { catalogKey: string; available: boolean };
   const one = initial(); const two = initial();
   expect(isCatalogKey(one.catalogKey)).toBe(true); expect(one.catalogKey).not.toBe(two.catalogKey); expect(one.available).toBe(false);
-  expect(product.fields.find((field) => field.name === "catalogKey")?.readOnly).toBe(true);
+  expect(product.fields.find((field) => field.name === "catalogKey")).toHaveProperty("readOnly", true);
   expect(product.fields.find((field) => field.name === "sku")).not.toHaveProperty("readOnly", true);
   expect(product.fields.some((field) => /price|tier/i.test(field.name))).toBe(false);
   expect(category.fields.map((field) => field.name)).toEqual(["name"]);

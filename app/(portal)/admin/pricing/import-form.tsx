@@ -12,7 +12,7 @@ function describe(change: Change) { return `${change.before ?? "No price"} → $
 function Confirmation({ stage }: { stage: Extract<ImportState, { status: "preview" }> }) {
   const [result, action, pending] = useActionState(confirmImport, { status: "idle" } as ImportState);
   const { preview } = stage;
-  const removals = preview.summary.tier1.remove + preview.summary.tier2.remove;
+  const removals = preview.summary.reduce((sum, tier) => sum + tier.remove, 0);
   if (result.status === "success" || result.status === "invalid") return <p role="status" className="mt-5 border-l-4 border-(--red) bg-white p-4">{result.message}</p>;
   return <section className="mt-6" aria-labelledby="pricing-preview-title">
     <h3 id="pricing-preview-title" className="font-heading text-2xl font-bold">Review pricing import</h3>
@@ -20,13 +20,13 @@ function Confirmation({ stage }: { stage: Extract<ImportState, { status: "previe
     <div className="mt-4 overflow-x-auto" role="region" aria-label="Import counts" tabIndex={0}>
       <table className="w-full text-left text-sm"><caption className="sr-only">Proposed changes by pricing tier</caption>
         <thead><tr>{["Tier", "Create", "Update", "Remove", "Unchanged"].map((label) => <th key={label} scope="col" className="p-2">{label}</th>)}</tr></thead>
-        <tbody>{(["tier1", "tier2"] as const).map((tier, index) => <tr key={tier} className="border-t border-(--border)"><th scope="row" className="p-2 whitespace-nowrap">Tier {index + 1}</th>{(["create", "update", "remove", "unchanged"] as const).map((kind) => <td key={kind} className="p-2">{preview.summary[tier][kind]}</td>)}</tr>)}</tbody>
+        <tbody>{preview.summary.map((tier) => <tr key={tier.id} className="border-t border-(--border)"><th scope="row" className="p-2 whitespace-nowrap">{tier.name}</th>{(["create", "update", "remove", "unchanged"] as const).map((kind) => <td key={kind} className="p-2">{tier[kind]}</td>)}</tr>)}</tbody>
       </table>
     </div>
     {preview.warnings.length > 0 && <details className="mt-4"><summary className="cursor-pointer py-3 font-semibold">{preview.warnings.length} warnings</summary><ul className="list-disc space-y-2 pl-5 text-sm">{preview.warnings.map((issue, index) => <li key={index}>Row {issue.row}: {issue.message}</li>)}</ul></details>}
     <details className="mt-3"><summary className="cursor-pointer py-3 font-semibold">Review all proposed values</summary>
       <ul className="max-h-96 space-y-3 overflow-y-auto text-sm">{preview.changes.map((change) => <li key={change.catalogKey} className="border-b border-(--border) py-3 wrap-anywhere">
-        <strong>{change.sku} — {change.name}</strong><p>Tier 1: {describe(change.tier1)}</p><p>Tier 2: {describe(change.tier2)}</p>
+        <strong>{change.sku} — {change.name}</strong>{change.prices.map((price) => <p key={price.pricingTierId}>{price.tierName}: {describe(price)}</p>)}
       </li>)}</ul>
     </details>
     <p className="mt-3 text-sm text-(--muted)">This preview expires in 10 minutes. If catalog or pricing data changes, upload the CSV again.</p>
@@ -41,7 +41,7 @@ export default function PricingImportForm() {
   const [state, action, pending] = useActionState(previewImport, { status: "idle" } as ImportState);
   return <section aria-labelledby="pricing-import-title" className="mt-8 border-t border-(--border) pt-6">
     <h2 id="pricing-import-title" className="font-heading text-2xl font-bold">Import updated prices</h2>
-    <p className="mt-2 text-sm">Edit only tier1Price and tier2Price in the export. Blank cells mean no price and remove an existing price after confirmation. Products omitted from the file are unchanged.</p>
+    <p className="mt-2 text-sm">Edit only the price columns in a fresh export. Keep every configured tier column. Blank cells mean no price and remove an existing price after confirmation. Products omitted from the file are unchanged.</p>
     <p id="csv-help" className="mt-2 text-sm text-(--muted)">CSV UTF-8, comma-separated. Maximum 256 KiB and 500 products. Product content stays in Catalog Studio.</p>
     <form action={action} className="mt-4 space-y-4">
       <label className="block font-semibold" htmlFor="pricing-csv">Pricing CSV file</label>

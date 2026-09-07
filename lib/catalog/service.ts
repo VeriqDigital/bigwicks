@@ -1,7 +1,7 @@
 import "server-only";
 import { requireCustomer } from "@/lib/auth/authorization";
 import { getDb } from "@/lib/db";
-import { supportedTierNames } from "@/lib/admin/customer-validation";
+import { validTier } from "@/lib/pricing/tiers";
 import { readPublishedCatalogContent } from "./content";
 import { normalizeCatalogContent, type CatalogContent } from "./normalize";
 import { priceText } from "./money";
@@ -17,8 +17,8 @@ export async function getAvailableCatalogForCustomer(): Promise<CustomerCatalogR
   const { customer } = await requireCustomer();
   try {
     const db = getDb();
-    const tier = await db.pricingTier.findUnique({ where: { id: customer.pricingTierId }, select: { name: true } });
-    if (!tier || !supportedTierNames.some((name) => name === tier.name)) throw new Error("Unsupported tier.");
+    const tier = await db.pricingTier.findUnique({ where: { id: customer.pricingTierId }, select: { name: true, rank: true } });
+    if (!tier || !validTier(tier)) throw new Error("Invalid tier.");
     const { products } = normalizeCatalogContent(await readPublishedCatalogContent());
     const available = products.filter((product) => product.available);
     const prices = await db.productPrice.findMany({
@@ -30,7 +30,8 @@ export async function getAvailableCatalogForCustomer(): Promise<CustomerCatalogR
     for (const product of available) {
       const price = amounts.get(product.catalogKey);
       if (price === undefined || price === null) continue;
-      result.push({ catalogKey: product.catalogKey, sku: product.sku, name: product.name, category: product.category, description: product.description, image: product.image, price });
+      result.push({ catalogKey: product.catalogKey, sku: product.sku, name: product.name, category: product.category,
+        description: product.description, brand: product.brand, packing: product.packing, image: product.image, price });
     }
     result.sort((a, b) => a.name.localeCompare(b.name) || a.catalogKey.localeCompare(b.catalogKey));
     return { status: "ready", products: result };

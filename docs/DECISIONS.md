@@ -5,13 +5,13 @@
 ## Current priority
 
 **Optimize for:**  
-Complete Milestone 5A catalog onboarding tooling, preserving completed
+Complete Milestone 5A.1 case catalog, configurable pricing tiers and BoxHero mapping, preserving completed
 Milestone 1/2A/2B/3A/3B/3C/4A security invariants.
 
 **Waiting on:**
 
-- Confirmed staff order-notification inbox and currency/unit wording
-- Authoritative product/pricing data
+- Confirmed staff order-notification inbox and currency wording
+- Tier 1 per-product source and review of received BoxHero anomalies
 - Customer import details
 - Final production-domain / launch details
 
@@ -26,6 +26,33 @@ Milestone 1/2A/2B/3A/3B/3C/4A security invariants.
 ---
 
 ## Decision log
+
+### 2026-09-07 — Milestone 5A.1 confirmed BoxHero and case model
+
+**Source:** User request and read-only inspection of the supplied workbook.
+**Status:** Implemented locally; remote migration/import remains deferred.
+
+Item Number is customer-facing SKU; catalogKey remains permanent identity.
+Item Name/Type/Brand/Packing map to public product content. Brand/packing are
+optional. Customers order full cases; Selling Price is Tier 2 case price. Unit
+Cost is confidential internal case cost and is discarded, never a tier price.
+Inventory counts are diagnostic only; mapped visibility starts false. No live
+BoxHero integration exists. Tier 1 is cheapest; higher ranks indicate more
+expensive groups, with prices independently supplied per product and no formula.
+
+Use unique positive PricingTier ranks, dynamic tier columns and CSV headers
+`price:<rank>:<exact name>`. Require all configured columns; resolve SQL identities
+server-side and reject stale tier metadata before confirmation. New nullable
+brand/packing order snapshots keep historical requests readable. The operator
+mapper supports bounded XLSX/CSV, reviewed category mapping and source-bound row
+fixes/exclusions/acknowledgements. It never silently merges, deletes, rounds,
+publishes, derives Tier 1 prices or writes remote data. Workbook contents stay
+untracked; fixtures are fictional. Migration/limitations: ONBOARDING/CATALOG docs.
+
+**Supersedes:** Exactly-two-tier logic, unconfirmed case semantics, absent source
+format and the original eight-column onboarding/private-pricing headers.
+
+---
 
 ### 2026-09-07 — Milestone 5A canonical catalog onboarding
 

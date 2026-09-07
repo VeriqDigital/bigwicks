@@ -24,11 +24,12 @@ it("drops duplicate identities even when unavailable or incorrectly capitalized"
 });
 it("excludes drafts/releases and strips extra CMS fields while degrading optional content safely", () => {
   const { products } = normalizeCatalogContent([
-    fictionalProduct({ category: null, image: { url: "https://evil.example/image.png" }, description: undefined, price: "forged", role: "ADMIN" }),
+    fictionalProduct({ category: null, image: { url: "https://evil.example/image.png" }, description: undefined, brand: undefined, packing: undefined, unitCost: "847263.51", price: "forged", role: "ADMIN" }),
     fictionalProduct({ _id: "drafts.other" }), fictionalProduct({ _id: "versions.release.other" }),
   ]);
   expect(products).toHaveLength(1);
-  expect(products[0]).toMatchObject({ category: null, image: null, description: null });
+  expect(products[0]).toMatchObject({ category: null, image: null, description: null, brand: null, packing: null });
+  expect(JSON.stringify(products)).not.toContain("847263.51");
   expect(products[0]).not.toHaveProperty("price"); expect(products[0]).not.toHaveProperty("role");
 });
 it("keeps catalog identity stable across SKU/name/category edits", () => {
@@ -44,15 +45,15 @@ it("audit reports drift and optional-content warnings without returning private 
     { catalogKey: catalogKeys.one, pricingTierId: "tier1", price: "1234567.89" },
     { catalogKey: catalogKeys.one, pricingTierId: "tier2", price: "-1" },
     { catalogKey: catalogKeys.orphan, pricingTierId: "unsupported", price: "25.00" },
-  ], [{ id: "tier1", name: "Tier 1" }, { id: "tier2", name: "Tier 2" }, { id: "unsupported", name: "Other tier" }]);
+  ], [{ id: "tier1", name: "Tier 1", rank: 1 }, { id: "tier2", name: "Tier 2", rank: 2 }, { id: "third", name: "Other tier", rank: 3 }]);
   const codes = report.issues.map((issue) => issue.code);
-  for (const code of ["duplicate_catalog_key", "missing_or_invalid_catalog_key", "orphaned_price", "unsupported_pricing_tier", "unsupported_price_tier", "invalid_price", "available_product_missing_valid_price", "missing_category", "missing_image", "missing_description"]) expect(codes).toContain(code);
+  for (const code of ["duplicate_catalog_key", "missing_or_invalid_catalog_key", "orphaned_price", "unsupported_price_tier", "invalid_price", "available_product_missing_valid_price", "missing_category", "missing_image", "missing_description"]) expect(codes).toContain(code);
   expect(JSON.stringify(report)).not.toContain("1234567.89");
   expect(report.issues).toContainEqual({ code: "available_product_missing_valid_price", catalogKey: catalogKeys.one, pricingTierId: "tier2" });
 });
 it("audit detects missing supported tiers and does not demand prices for unavailable products", () => {
   const report = analyzeCatalog([fictionalProduct({ available: false })], [], []);
-  expect(report.issues).toEqual([{ code: "missing_tier_1" }, { code: "missing_tier_2" }]);
+  expect(report.issues).toEqual([{ code: "invalid_or_missing_pricing_tiers" }]);
 });
 it("a malformed upstream response fails rather than being reported as a healthy empty catalog", () => {
   expect(() => normalizeCatalogContent({ error: "upstream" })).toThrow();

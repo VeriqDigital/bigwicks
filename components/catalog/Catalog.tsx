@@ -88,7 +88,7 @@ export default function Catalog({ products }: { products: CustomerCatalogProduct
         <label htmlFor="catalog-sort">Sort by</label>
         <select id="catalog-sort" value={sort} onChange={(event) => setSort(event.target.value as CatalogSort)} className={control}>
           <option value="name-asc">Name A–Z</option><option value="name-desc">Name Z–A</option>
-          <option value="price-asc">Price low–high</option><option value="price-desc">Price high–low</option>
+          <option value="price-asc">Case price low–high</option><option value="price-desc">Case price high–low</option>
         </select>
       </div>
     </div>
@@ -106,15 +106,17 @@ export default function Catalog({ products }: { products: CustomerCatalogProduct
           <div className="flex flex-1 flex-col p-5">
             <p className="mb-2 wrap-anywhere text-xs font-semibold uppercase tracking-wide text-(--muted)">{product.category?.name ?? "Uncategorized"}</p>
             <h2 className="wrap-anywhere font-heading text-xl leading-tight font-bold">{product.name}</h2>
-            <p className="mt-2 wrap-anywhere text-xs text-(--muted)">SKU: {product.sku}</p>
+            <p className="mt-2 wrap-anywhere text-xs text-(--muted)">Item: {product.sku}</p>
+            {product.brand && <p className="mt-1 text-sm wrap-anywhere">Brand: {product.brand}</p>}
+            {product.packing && <p className="mt-1 text-sm wrap-anywhere">Packing: {product.packing}</p>}
             {product.description && <p className="mt-3 line-clamp-3 wrap-anywhere text-sm leading-relaxed text-(--muted)">{product.description}</p>}
             <div className="mt-auto pt-5">
               <div className="border-t border-(--border) pt-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-(--muted)">Your wholesale price</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-(--muted)">Case price</p>
                 <p className="mt-1 wrap-anywhere font-heading text-3xl font-bold tabular-nums" data-testid="product-price">{product.price}</p>
               </div>
             </div>
-            <label htmlFor={`quantity-${product.catalogKey}`} className="mt-4 text-sm font-semibold">Quantity <span className="sr-only">for {product.name}</span></label>
+            <label htmlFor={`quantity-${product.catalogKey}`} className="mt-4 text-sm font-semibold">Cases <span className="sr-only">for {product.name}</span></label>
             <input id={`quantity-${product.catalogKey}`} type="text" inputMode="numeric" pattern="[0-9]*" maxLength={4} placeholder="0"
               value={quantities[product.catalogKey] ?? ""} disabled={pending} aria-invalid={quantityValue(quantities[product.catalogKey] ?? "") === null}
               aria-describedby="quantity-help" className={control}
@@ -127,8 +129,8 @@ export default function Catalog({ products }: { products: CustomerCatalogProduct
     <div aria-label="Current order summary" className="fixed inset-x-0 bottom-0 z-30 border-t border-(--border) bg-white px-5 py-3 shadow-sm">
       <div className="mx-auto flex max-w-[1536px] flex-wrap items-center justify-between gap-3">
         <div className="min-w-0"><p className="text-sm font-semibold">{selected.length} selected products · Estimated total: <span className="wrap-anywhere tabular-nums">{estimate}</span></p>
-          <p id="quantity-help" className="mt-1 text-xs text-(--muted)">Whole quantities 0–999. Review before submitting.</p>
-          {invalidQuantity && <p role="alert" className="mt-1 text-sm">Correct invalid quantities: enter a whole number from 0 to 999.</p>}
+          <p id="quantity-help" className="mt-1 text-xs text-(--muted)">Complete cases only, 0–999. Review before submitting.</p>
+          {invalidQuantity && <p role="alert" className="mt-1 text-sm">Correct invalid case counts: enter a whole number from 0 to 999.</p>}
           {selected.length > MAX_ORDER_LINES && <p role="alert" className="mt-1 text-sm">Select at most 250 products.</p>}
         </div>
         <button type="button" onClick={reviewRequest} disabled={pending || invalidQuantity || selected.length === 0 || selected.length > MAX_ORDER_LINES} className="min-h-12 rounded-sm bg-(--red) px-5 py-3 font-semibold text-white hover:bg-(--red-hover) disabled:opacity-50">{pending ? "Preparing review…" : "Review order"}</button>

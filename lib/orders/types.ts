@@ -1,4 +1,4 @@
-export type OrderLine = { catalogKey: string; sku: string; name: string; quantity: number; unitPrice: string; lineTotal: string };
+export type OrderLine = { catalogKey: string; sku: string; name: string; brand: string | null; packing: string | null; quantity: number; unitPrice: string; lineTotal: string };
 export type OrderReview = { items: OrderLine[]; total: string; token: string };
 export type OrderState =
   | { status: "idle" }

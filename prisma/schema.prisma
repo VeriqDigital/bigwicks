@@ -46,6 +46,7 @@ model Customer {
 model PricingTier {
   id        String     @id @default(cuid())
   name      String     @unique @db.VarChar(100)
+  rank      Int        @unique
   customers Customer[]
   productPrices ProductPrice[]
 }
@@ -113,6 +114,8 @@ model OrderItem {
   catalogKey           String @db.Uuid
   skuSnapshot          String @db.VarChar(100)
   productNameSnapshot  String @db.VarChar(200)
+  brandSnapshot        String? @db.VarChar(100)
+  packingSnapshot      String? @db.VarChar(100)
   unitPriceSnapshot    Decimal @db.Decimal(12, 2)
   quantity             Int
   lineTotalSnapshot    Decimal @db.Decimal(18, 2)

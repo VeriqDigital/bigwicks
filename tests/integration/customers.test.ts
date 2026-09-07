@@ -78,18 +78,18 @@ it("safely rejects duplicate normalized email without creating another business"
   expect(await db.customer.findUnique({ where: { customerNumber: "M2-OTHER" } })).toBeNull();
 });
 
-it("rejects missing and unsupported tiers on create and edit", async () => {
+it("rejects forged tiers on create and edit", async () => {
   const missing = "c1234567890123456789012345";
-  const extra = await db.pricingTier.create({ data: { name: "Test unsupported tier" } });
-  try {
-    for (const pricingTierId of [missing, extra.id]) {
+
+  {
+    for (const pricingTierId of [missing]) {
       expect((await createCustomer({}, form(fields({ pricingTierId })))).errors?.pricingTierId).toBeDefined();
       expect(await db.user.findUnique({ where: { email } })).toBeNull();
     }
     const user = await fixture();
     expect((await editCustomer({}, form(fields({ customerId: user.customer!.id, pricingTierId: missing })))).errors?.pricingTierId).toBeDefined();
     expect((await db.customer.findUniqueOrThrow({ where: { id: user.customer!.id } })).pricingTierId).toBe(tier1);
-  } finally { await db.pricingTier.delete({ where: { id: extra.id } }); }
+  }
 });
 
 it("changes business details and tiers without revoking a session or changing account status", async () => {

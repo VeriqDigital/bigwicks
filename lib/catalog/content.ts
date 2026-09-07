@@ -5,7 +5,7 @@ import { sanityApiVersion, sanityEnvironment } from "@/sanity/environment";
 // All published products, including unavailable ones, are needed to detect a
 // duplicate key before joining prices. Never spread arbitrary CMS document fields.
 export const catalogContentQuery = `*[_type == "product" && !(_id in path("drafts.**")) && !(_id in path("versions.**"))] {
-  _id, catalogKey, sku, name, available, description,
+  _id, catalogKey, sku, name, available, description, brand, packing,
   "category": category->{_id, name},
   "image": image {alt, "url": asset->url}
 }`;

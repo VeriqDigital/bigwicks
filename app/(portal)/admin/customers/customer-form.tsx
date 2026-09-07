@@ -39,7 +39,7 @@ export default function CustomerForm({ customer, tiers }: {
         {tiers.map((tier) => <option key={tier.id} value={tier.id}>{tier.name}</option>)}
       </select>
       {errors("pricingTierId")}
-      {tiers.length === 0 && <p className="mt-2">No pricing tiers are configured. Customer changes require Tier 1 or Tier 2.</p>}
+      {tiers.length === 0 && <p className="mt-2">No pricing tiers are configured. Configure a pricing tier before changing customers.</p>}
     </div>
     {!customer && <div>
       <label htmlFor="status" className="font-semibold">Account status</label>
