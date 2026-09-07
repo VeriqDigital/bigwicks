@@ -211,7 +211,9 @@ already-running isolated test server, use `npx playwright test --project=firefox
 
 Deferred: Excel customer ordering, payments/checkout, tax/shipping, live inventory,
 BoxHero, stock reservation, invoicing, customer history/edit/reorder, admin repricing,
-substitutions, cancellation/completion states, fulfillment, real imports and deployment.
+substitutions, cancellation/completion states, fulfillment and deployment.
+Non-production catalog/pricing imports are complete; production imports and real
+customer onboarding remain pending. See [current onboarding status](ONBOARDING.md#current-status).
 
 ## Verification record
 

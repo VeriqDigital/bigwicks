@@ -1,5 +1,15 @@
 # Catalog content, private pricing and customer browsing
 
+## Current status
+
+The user confirms 302 real products and 17 categories in non-production Sanity
+`sim96pgy` / `development`, with import verification returning 302 unchanged /
+0 new / 0 updates / 0 errors. Preview Postgres has 280 Tier 2 ProductPrice rows;
+22 Tier 2 prices remain unresolved/blank, and Tier 1 has 0 prices awaiting the
+client source. All 302 products remain `available=false`; descriptions and images
+are missing. No production catalog/pricing imports, real customer imports or real
+invitations have occurred. See [onboarding status](ONBOARDING.md#current-status).
+
 ## Responsibility split
 
 - **Sanity** owns non-secret product content: permanent catalogKey, editable SKU,
@@ -13,8 +23,9 @@
 Product content is deliberately separate from protected commercial data. A public
 Sanity dataset is suitable because it contains no private data. Availability is
 manual visibility, not inventory, stock reservation or a promise of availability.
-Public site categories remain implementation context; no real products or categories
-have been imported or invented by this milestone.
+Public site categories remain implementation context. The Milestone 3A foundation
+task imported or invented no real products or categories; subsequent non-production
+onboarding is recorded above.
 
 ## Studio and configuration
 
@@ -351,8 +362,9 @@ submitting never changes Sanity, ProductPrice or stock. Admin price imports stil
 apply only to future reads/reviews, never to saved order snapshots.
 
 Milestone 4A supersedes the earlier deferral of managed website ordering. Excel
-ordering, inventory, payment, customer history/editing and real imports remain
-deferred. See `docs/ORDERING.md` for quantities, exact totals, review integrity,
+ordering, inventory, payment and customer history/editing remain deferred.
+For current import status, see [onboarding](ONBOARDING.md#current-status).
+See `docs/ORDERING.md` for quantities, exact totals, review integrity,
 duplicate prevention, notifications, admin visibility, setup and verification.
 
 ## Freshness and data failures
@@ -398,7 +410,7 @@ orphan. Run before/after future imports and after content identity repairs. Sani
 and PostgreSQL are separate snapshots, so rerun if a concurrent edit caused a
 transient issue; this is a practical audit, not a distributed transaction.
 
-## Onboarding tooling and future client mapping
+## Onboarding tooling and client mapping
 
 Milestone 5A implements CLI-only canonical CSV preparation, dry-run planning and
 explicit Sanity content apply. Preparation assigns missing permanent UUIDs once
@@ -407,7 +419,8 @@ or writes ProductPrice. Products match only catalogKey, normalized category name
 must be unambiguous, existing images/omitted products are preserved, and production
 is guarded by default. See `docs/ONBOARDING.md` for the content and dynamic-tier contract,
 two-transaction category/product strategy, revision checks, concurrency limits and
-isolated verification. No real remote imports have been performed.
+isolated verification. Real non-production catalog/pricing imports have since
+been completed as recorded in [current status](#current-status).
 
 The BoxHero source is now confirmed; the following earlier logical import sketch is superseded by `docs/ONBOARDING.md`. Mapping reconciles
 records resembling the following logical shape, after actual client columns and
@@ -434,10 +447,11 @@ The user reports Milestone 3A merged and manually verified with three fictional
 published preview products and six price rows; audit issues were empty. This is
 user-reported context, not a new remote verification performed during 3B.
 
-Deferred: real product import, direct per-product price editing and orphan repair,
+Deferred: production catalog/pricing imports, real customer imports/invitations,
+direct per-product price editing and orphan repair,
 currency confirmation, Excel ordering, inventory integration,
 payments, order history, announcements, and deployment. No remote records,
-environment variables or Sanity settings are changed during 3B/3C. The 3C CSV
+environment variables or Sanity settings were changed during the 3B/3C implementation tasks. The 3C CSV
 workflow maintains prices for existing Sanity products; it is not a content import.
 
 ## Verification and dependency review

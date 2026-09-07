@@ -1,4 +1,8 @@
-# Catalog onboarding — Milestone 5A.1
+# Catalog and customer onboarding
+
+Milestones through 5A.2 are complete and merged per the user. Milestone 5B adds
+the separate [customer import and invitation workflow](#customer-onboarding--milestone-5b)
+below. Catalog mapping behavior is unchanged by 5B.
 
 Milestones through 5A are complete and merged per the user. These are operator
 tools, not application endpoints. The real BoxHero XLSX was inspected read-only
@@ -6,7 +10,27 @@ for 5A.1; no real source or product rows are committed. Customers order complete
 cases. Selling Price is the Tier 2 case price; Unit Cost is confidential internal
 case cost. Item Number supplies the customer-facing SKU, never permanent identity.
 Currency and Tier 1 source still need confirmation. No remote writes or deployment
-were performed.
+were performed during the 5A.1 implementation task; subsequent onboarding is recorded below.
+
+## Current status
+
+User-confirmed state following the Milestone 5B implementation, before PR #13 merge:
+
+- **Non-production Sanity:** project `sim96pgy`, dataset `development` contains
+  302 real Big Wicks products and 17 real categories. Catalog import verification
+  returned **302 unchanged / 0 new / 0 updates / 0 errors**.
+- **Preview Postgres:** 280 real Tier 2 ProductPrice rows are imported;
+  22 Tier 2 prices remain unresolved/blank. Tier 1 has 0 prices and awaits the
+  client source. No replacement prices are derived.
+- **Content readiness:** all 302 imported products remain `available=false`.
+  Descriptions and images remain missing.
+- **Production:** no Sanity catalog import or Postgres pricing import has been performed.
+- **Customers:** no real customer import has been performed and no real customer
+  invitations have been sent.
+
+The verification records below describe earlier implementation tasks, not this
+subsequent non-production onboarding. This status correction records the user's
+report; it performs no remote verification or writes.
 
 ## Canonical file
 
@@ -154,8 +178,10 @@ The original raw-text mapper also reported 14 `invalid_selling_price` false
 positives caused by XLSX floating storage artifacts, confirmed by the user's
 investigation. Milestone 5A.2 corrects that interpretation with numeric parsing;
 these are not established source pricing errors. Four suspected operational
-records also require review. Categories have not been approved/normalized.
-These are diagnostics, not decisions to delete, merge, round or publish products.
+records also required review, and categories had not yet been approved/normalized
+at that inspection. These historical diagnostics are not decisions to delete,
+merge, round or publish products; see [current status](#current-status) for the
+subsequent onboarding outcome.
 
 ## Dynamic tier contract
 
@@ -356,8 +382,114 @@ offline dry-run commands passed. Generated/source working paths are ignored,
 the diff is clean, and application/domain code and dependencies are unchanged.
 Sanity mutation tests exclude prices; the production client bundles contain
 neither `SANITY_API_WRITE_TOKEN` nor the fictional token marker used for the scan.
-No remote apply, remote database changes or deployment was performed.
+No remote apply, remote database changes or deployment was performed during that
+Milestone 5A verification task.
 
-Deferred: operator source corrections/exclusions, real data import, customer onboarding,
-images, live remote apply verification, deletion, taxonomy redesign, inventory,
-payments, deployments and changes to customer ordering.
+Currently pending: production catalog/pricing imports, the 22 unresolved Tier 2
+prices, the Tier 1 client source, descriptions/images, real customer imports and
+real invitations. Non-production catalog/pricing onboarding is recorded in
+[current status](#current-status). Deletion, taxonomy redesign, inventory,
+payments, deployments and changes to customer ordering remain outside this tooling's scope.
+
+## Customer onboarding — Milestone 5B
+
+ADMIN-only `/admin/customers/import` creates new wholesale accounts from CSV.
+Download the header-only UTF-8 template from that page. Canonical columns:
+
+```csv
+companyName,customerNumber,email,pricingTier,active
+Fictional Fireworks LLC,FF-001,buyer@example.test,Tier 1,true
+Demo Retail Group,DR-002,orders@example.test,Tier 2,false
+```
+
+All five fields are required. Company names trim using individual creation's
+200-character limit. Customer numbers trim, remain case-sensitive, and use the
+existing 100-character limit; never invent missing numbers. Emails use the existing
+trim/lowercase/auth email validator and 254-character limit. Tier names trim and
+must match exactly one current database name, case-sensitively. IDs and roles are
+never accepted from the file. Future configured tiers work without code changes.
+Active accepts exactly `true` or `false`. Maximum 128 KiB, 250 data rows and 2,048
+characters per record; UTF-8, comma-separated with normal CSV quoting. Field
+limits also bound raw input. Inappropriate controls/bidi overrides are rejected.
+No password, hash, token, sessionVersion or other extra columns are allowed.
+
+Duplicate normalized emails/customer numbers within the file, collisions with
+any existing User (including ADMIN) or Customer, invalid fields, and unknown tiers
+block the whole batch. This is **create-only**: matching existing data never
+authorizes an update. Use individual customer management for edits. Preview shows
+row/field errors, proposed recipients and counts; it performs no database writes.
+The only CSV download is the header-only template, so no customer text is exported
+as spreadsheet formulas. Preview text is rendered as escaped React text.
+
+Confirmation requires a checked acknowledgement and an AES-256-GCM preview sealed
+with a separate domain and existing AUTH_SECRET. It binds normalized rows, the
+current ADMIN/sessionVersion, a ten-minute expiry and a deterministic snapshot of
+current tiers plus user/customer identities, account/business state and update timestamps. Changes to any
+user/customer or tier require a fresh preview. Snapshot reads fail closed above
+5,000 users/customers. All creation occurs in one SERIALIZABLE transaction with
+an in-transaction ADMIN recheck/lock, fresh snapshot and tier resolution. It uses
+the shared individual-creation primitive. Unique constraints and serialization
+failures roll back the entire batch. Successful replay fails on changed state;
+concurrent confirmation creates at most one batch. A lost response requires
+checking the customer list before re-uploading, never assuming nothing committed.
+
+New User records always have CUSTOMER role, null passwordHash and default
+sessionVersion 0. User.active and Customer.active agree. **No invitations or
+AccountTokens are created during import.** The result explicitly reports accounts,
+tiers, active/inactive counts and zero invitations.
+
+### Separate invitation operation
+
+`/admin/customers/invitations` lists active CUSTOMER accounts with active Customer
+records and null password hashes. Nothing is preselected. Select up to **25** per
+batch, review company/customer number/email, then explicitly confirm sending.
+Existing accepted setup links are indicated; resending supersedes older links.
+Disabled accounts may still be invited individually under the existing policy,
+but are intentionally excluded from bulk invitations. The list is capped at 500;
+use individual management for accounts outside that list.
+
+An encrypted ten-minute recipient preview binds admin/session, selected IDs and
+current recipient/token state. Before sending, the service rechecks the snapshot,
+claims a one-use preview bucket atomically across instances, and re-resolves admin
+and recipient state for every send. Changed/ineligible recipients fail closed.
+Issuance rechecks expected email, active flags and session version under the
+existing User lock. Existing AccountToken and Resend delivery semantics apply:
+raw tokens never enter staff UI/logs, and deliveredAt means provider acceptance,
+not inbox delivery. Failed sends remain unusable and are reported per recipient.
+
+Sends are sequential with 600 ms between attempts, at most 100 bulk attempts/hour
+globally, sharing the existing 3-per-customer/15-minute bucket with individual
+invitations. The existing individual global cap remains 30/hour. Limits use
+PostgreSQL, not browser headers or in-memory counters. No background job or automatic
+retry exists. The page requests a 300-second action duration; verify deployment
+platform support before live use. After interruption, refresh, inspect accepted
+link status, and explicitly review any retry; the original preview cannot replay.
+Accounts are retained regardless of email outcome. Smaller batches reduce timeout
+risk. Real delivery and hosting limits remain separately verified operational work.
+
+### Initial customer onboarding steps
+
+1. With separate authorization for the target environment, obtain the real customer
+   list and current tier names. Keep real CSVs untracked and outside public assets.
+2. Fill the downloaded template, explicitly choosing active state and matching
+   exact current tier names. About 50 customers fit one import batch.
+3. Upload, resolve all errors, review every proposed identity/tier, and confirm.
+4. Verify the created customer list and the result showing no invitations sent.
+5. Separately select/review/confirm invitations in batches of up to 25. Check each
+   result; handle unconfirmed sends through a fresh review. Customers choose their
+   own passwords via existing setup links.
+
+No new environment variables, dependencies, schema changes or migrations. Tests
+use fictional fixtures and isolated PostgreSQL; email is mocked/intercepted at the
+transport boundary. This implementation task does not import real customers, send
+real email, mutate remote data, change deployment settings or deploy. Bulk updates,
+deletion, automatic invitation blasts and public registration remain excluded.
+
+Milestone 5B verification: lint, typecheck/Prisma generation, 269 unit tests,
+133 isolated database tests and 39 Playwright executions (34 Chromium, 5 Firefox)
+passed. All six existing migrations applied to a fresh isolated database. Both
+configured and unconfigured production builds passed. The new browser flows run
+in both catalog modes, including fictional 50-customer imports and a future tier,
+no-mail import assertions, direct unauthorized action replay, and invitation
+failure/retry. Phone/tablet/desktop previews were inspected at 390/768/1440px.
+Email remained mocked/intercepted; no remote writes or real customer imports ran.

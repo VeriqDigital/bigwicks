@@ -13,6 +13,7 @@ export default async function CustomersPage() {
       <Link href="/admin/customers/new" className="rounded bg-[var(--red)] px-5 py-3 font-semibold text-white hover:bg-[var(--red-hover)]">Create customer</Link>
     </div>
     <p className="mt-3 text-[var(--muted)]">Manage wholesale account details, pricing tiers, and access.</p>
+    <div className="mt-4 flex flex-wrap gap-5"><Link href="/admin/customers/import" className="underline">Import customers</Link><Link href="/admin/customers/invitations" className="underline">Send setup invitations</Link></div>
     {customers.length === 0 ? <p className="mt-8">No wholesale customers yet.</p> : <div className="mt-7 overflow-x-auto rounded border border-[var(--border)] bg-white" tabIndex={0} role="region" aria-label="Customer accounts">
       <table className="w-full min-w-[640px] text-left text-sm">
         <caption className="sr-only">Wholesale customer accounts. Open a company name to edit.</caption>

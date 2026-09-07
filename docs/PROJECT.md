@@ -5,14 +5,14 @@
 **Client / business name:** Big Wicks Fireworks LLC
 **Public-facing name:** Big Wicks Fireworks
 **Project type:** Retail marketing website + protected wholesale customer portal
-**Current stage:** Managed website ordering is functionally complete through Milestone 4A (merged per user); Milestone 5A.1 aligns case metadata, configurable tiers and BoxHero mapping; real import remains unapproved
+**Current stage:** Milestones through 5A.2 are complete and merged per user. Milestone 5B adds create-only bulk customer onboarding and separately confirmed invitations and awaits PR #13 merge. Real catalog onboarding is complete in non-production only; production catalog/pricing imports, real customer imports and real invitations have not occurred. See [current onboarding status](ONBOARDING.md#current-status).
 **Primary Veriq contact:** Mick Enev
 
 ### Project summary
 
 Big Wicks needs a polished public website that strengthens its digital presence, improves local search visibility, and gives retail shoppers a clear reason to visit the store.
 
-The project also includes a protected wholesale customer portal for roughly 50 existing customers and a catalog of roughly 200 products.
+The project also includes a protected wholesale customer portal for roughly 50 existing customers. The non-production catalog now contains 302 real products and 17 categories; all products remain unavailable, with descriptions and images missing. Preview Postgres has 280 Tier 2 prices, 22 unresolved/blank Tier 2 prices and 0 Tier 1 prices pending the client source.
 
 Both proposed ordering options include:
 
@@ -220,7 +220,7 @@ Do not assume Tier 2 is always a fixed percentage discount unless Big Wicks expl
 
 ### Product catalog
 
-Approximately 200 products are expected.
+The non-production catalog contains 302 imported products; all remain `available=false`.
 
 Products may include:
 
@@ -960,7 +960,8 @@ Encrypted ten-minute previews bind to the admin/session version and reject tampe
 or catalog/tier/price drift. Internal navigation links Customers, Pricing, Catalog
 Studio, Public website and Sign out; public navigation is unchanged. Sanity retains
 content/availability ownership. No new schema, migration or environment variable.
-Manual per-product editing, real-data imports and inventory stay deferred.
+Manual per-product editing and inventory stay deferred. Non-production catalog
+and Tier 2 pricing imports are now complete; production imports remain pending.
 Website ordering is implemented in Milestone 4A below.
 See `docs/CATALOG.md` for workflow, operational limits and local-only verification.
 
@@ -987,6 +988,16 @@ Big Wicks owns final availability review, substitutions, payment, invoicing and
 fulfillment outside the website. See `docs/ORDERING.md` for exact architecture,
 notification recovery limits, setup and verification.
 
+### Milestone 5B — Bulk customer onboarding
+
+Milestone 5B now adds `/admin/customers/import` and `/admin/customers/invitations`
+without changing this catalog workflow. Customer imports use a strict five-column
+CSV, dynamic current tiers, encrypted previews, stale-state checks and atomic
+create-only writes. Imported accounts are passwordless and receive no automatic
+email. Invitations require a separate selected-recipient review and confirmation,
+using existing secure setup tokens. No real customer/remote data/email operations
+are authorized by implementation. See `docs/ONBOARDING.md` for the 5B workflow.
+
 ### Milestone 5A.1 — Real case catalog, configured tiers and BoxHero mapping
 
 5A is complete and merged per user. Brand/packing are optional public catalog
@@ -1012,8 +1023,10 @@ Add only operator tooling: canonical CSV preparation into a preserved UUID mappi
 explicit target-aware Sanity dry-run/apply, and a compatible pricing CSV for the
 existing admin validation/confirmation workflow. No client columns or products are
 invented, no ProductPrice writes replace that workflow, and no customer UI changes.
-Real data and images remain pending. No remote apply or deployment is authorized
-during implementation. See `docs/ONBOARDING.md` for safeguards and limitations.
+Real data and images were pending during the Milestone 5A implementation, which
+authorized no remote apply or deployment. Non-production catalog/pricing onboarding
+has since occurred; see [current onboarding status](ONBOARDING.md#current-status)
+for the remaining pricing/content gaps and production/customer boundaries.
 
 ### Earlier admin catalog controls
 
@@ -1122,13 +1135,13 @@ Test:
 
 ### What Codex should optimize for right now
 
-Complete and verify Milestone 5A.1's real catalog model, dynamic pricing tiers and offline BoxHero mapping. Milestones 1, 2A,
-2B, 3A, 3B, 3C and 4A are complete and merged per the user.
-Do not deploy, modify remote data/settings, or invent/import real products.
+Complete and verify Milestone 5B's create-only customer import and separately
+confirmed invitation workflow. Milestones through 5A.2 are merged per the user.
+Do not deploy, modify remote data/settings, send real email or import real customers.
 
 The first meaningful milestone is:
 
-> An operator can prepare a permanent catalog identity file, review a safe Sanity content-import plan and generate the existing private pricing-import CSV without touching remote data during development.
+> An admin can preview and atomically create a fictional customer batch without email, then separately select, review and confirm setup invitations using the existing secure token flow.
 
 ### Do not work on yet
 

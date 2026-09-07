@@ -13,8 +13,9 @@ must never appear in customer content or pricing artifacts. Item Number is the
 customer-facing SKU; catalogKey remains permanent identity. Brand is optional
 customer-visible metadata. Tier 1 is cheapest; higher ranks represent more
 expensive customer groups with independently supplied prices per product and no
-percentage formula. BoxHero quantities are not website availability. Tier 1 source,
-source cleanup/category mapping and initial visibility still require review.
+percentage formula. BoxHero quantities are not website availability. Tier 1 source
+and initial visibility still require review; current non-production onboarding
+and remaining pricing/content gaps are recorded in [ONBOARDING.md](ONBOARDING.md#current-status).
 These rules supersede earlier unconfirmed unit/source/tier notes.
 
 **Public business name:** Big Wicks Fireworks  
@@ -105,7 +106,8 @@ The existing site presents:
 7. Novelties
 8. Assortments & Kits
 
-These are category-level marketing groupings, not yet the authoritative ~200-product portal catalog.
+These are category-level marketing groupings, separate from the 302-product,
+17-category catalog now imported into non-production Sanity.
 
 ---
 
@@ -114,7 +116,7 @@ These are category-level marketing groupings, not yet the authoritative ~200-pro
 Current discussed requirements:
 
 - Approximately 50 initial customer accounts
-- Approximately 200 products
+- 302 real products imported into non-production Sanity, all `available=false`
 - Customer accounts are approved/provisioned rather than open public registration
 - Product prices are hidden until login
 - Two pricing tiers
@@ -242,9 +244,11 @@ Do not state without confirmation:
 ## 12. Content gaps
 
 - [x] Website Ordering authorized for Milestone 4A implementation by the user
-- [ ] Authoritative product list
-- [ ] Product SKUs/categories/descriptions/images
-- [ ] Tier 1 and Tier 2 price source
+- [x] Real product list, SKUs and categories imported into non-production (302 products, 17 categories)
+- [ ] Product descriptions/images and availability review
+- [x] 280 real Tier 2 prices imported into Preview Postgres
+- [ ] 22 unresolved/blank Tier 2 prices and client Tier 1 source (currently 0 Tier 1 prices)
+- [ ] Production Sanity catalog and Postgres pricing imports
 - [ ] Customer import fields
 - [ ] Order notification recipient
 - [ ] Password/invitation wording

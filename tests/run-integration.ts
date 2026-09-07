@@ -116,7 +116,7 @@ async function main() {
     await run(["node_modules/next/dist/bin/next", "build"], true);
     app = start(["--import", "./tests/email-interceptor.mjs", "--import", "./tests/catalog-interceptor.mjs", "node_modules/next/dist/bin/next", "start", "--port", "3107", "--hostname", "localhost"], true);
     await waitForApp();
-    await run(["node_modules/@playwright/test/cli.js", "test", "catalog-ui.spec.ts", "pricing.spec.ts", "orders.spec.ts"]);
+    await run(["node_modules/@playwright/test/cli.js", "test", "catalog-ui.spec.ts", "pricing.spec.ts", "orders.spec.ts", "customer-batch.spec.ts"]);
   } finally {
     await stopApp();
     if (started) await postgres.stop();

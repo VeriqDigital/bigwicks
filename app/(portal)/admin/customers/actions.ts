@@ -7,6 +7,7 @@ import { requireAdmin } from "@/lib/auth/authorization";
 import { getDb } from "@/lib/db";
 import { invalidateAccountTokens } from "@/lib/auth/account-tokens";
 import { validTier } from "@/lib/pricing/tiers";
+import { insertCustomer } from "@/lib/admin/customer-create";
 import { createCustomerSchema, editCustomerSchema, customerStatusSchema } from "@/lib/admin/customer-validation";
 import type { CustomerField, CustomerFormState } from "./form-state";
 
@@ -72,12 +73,7 @@ export async function createCustomer(_state: CustomerFormState, formData: FormDa
     const data = parsed.data;
     id = await getDb().$transaction(async (tx) => {
       await verifyTier(tx, data.pricingTierId);
-      const active = data.status === "active";
-      const user = await tx.user.create({ data: { email: data.email, role: "CUSTOMER", active, passwordHash: null } });
-      const customer = await tx.customer.create({ data: {
-        userId: user.id, companyName: data.companyName, customerNumber: data.customerNumber,
-        pricingTierId: data.pricingTierId, active,
-      }, select: { id: true } });
+      const customer = await insertCustomer(tx, data);
       return customer.id;
     }, { isolationLevel: "Serializable" });
   } catch (error) { return { ...mutationError(error), values }; }

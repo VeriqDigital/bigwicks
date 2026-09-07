@@ -21,20 +21,21 @@ export function tokenDigest(raw: unknown): string | null {
 // serializes with staff email/status updates and simultaneous token consumption.
 async function lockUser(tx: Prisma.TransactionClient, id: string) {
   await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${id} FOR UPDATE`;
-  return tx.user.findUnique({ where: { id }, include: { customer: { select: { id: true } } } });
+  return tx.user.findUnique({ where: { id }, include: { customer: { select: { id: true, active: true } } } });
 }
 
 export async function invalidateAccountTokens(tx: Prisma.TransactionClient, userId: string) {
   await tx.accountToken.updateMany({ where: { userId, consumedAt: null }, data: { consumedAt: new Date() } });
 }
 
-export async function issueAccountToken(userId: string, purpose: AccountTokenPurpose, expectedEmail?: string): Promise<boolean> {
+export async function issueAccountToken(userId: string, purpose: AccountTokenPurpose, expectedEmail?: string, activeSessionVersion?: number): Promise<boolean> {
   // Check configuration before superseding anything. Raw token stays server-only.
   accountEmailConfig();
   const raw = randomBytes(32).toString("hex");
   const token = await getDb().$transaction(async (tx) => {
     const user = await lockUser(tx, userId);
     if (!user || user.role !== "CUSTOMER" || !user.customer ||
+        (activeSessionVersion !== undefined && (!user.active || !user.customer.active || user.sessionVersion !== activeSessionVersion)) ||
         (expectedEmail !== undefined && user.email !== expectedEmail) ||
         (purpose === "ACCOUNT_SETUP" ? user.passwordHash !== null : !user.passwordHash)) return null;
     await tx.accountToken.updateMany({ where: { userId, purpose, consumedAt: null }, data: { consumedAt: new Date() } });
