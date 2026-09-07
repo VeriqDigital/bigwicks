@@ -5,14 +5,14 @@
 ## Current priority
 
 **Optimize for:**  
-Complete Milestone 5A.1 case catalog, configurable pricing tiers and BoxHero mapping, preserving completed
-Milestone 1/2A/2B/3A/3B/3C/4A security invariants.
+Complete Milestone 5B bulk customer onboarding and separate invitations, preserving
+the completed milestones through 5A.2 and their security invariants.
 
 **Waiting on:**
 
 - Confirmed staff order-notification inbox and currency wording
 - Tier 1 per-product source and review of received BoxHero anomalies
-- Customer import details
+- Real customer list and invitation timing
 - Final production-domain / launch details
 
 **Do not work on yet:**
@@ -26,6 +26,27 @@ Milestone 1/2A/2B/3A/3B/3C/4A security invariants.
 ---
 
 ## Decision log
+
+### 2026-09-07 — Milestone 5B bulk customer onboarding
+
+**Source:** User; milestones through 5A.2 complete and merged.
+
+Use ADMIN-only create-only CSV import, required customer numbers, existing email
+normalization and exact current tier names. No passwords or roles in files, no
+overwrites, no import-triggered email. Encrypt ten-minute previews bound to the
+admin/session and SQL snapshot; confirm with SERIALIZABLE all-or-nothing creation.
+Reuse individual creation invariants. Imported active flags agree; passwords stay null.
+
+Invitation selection/review/confirmation is separate, active/passwordless CUSTOMER
+only for bulk. Choose 25 recipients per batch, sequential 600 ms pacing, existing
+AccountToken delivery guarantees and per-recipient limits, a 100/hour bulk global
+cap and atomic replay guard. This keeps the initial ~50 recipients to two batches
+and bounds synchronous work without adding jobs. Individual disabled-account
+setup policy stays unchanged. Interrupted/partial batches need fresh status review.
+No schema/dependency/env changes, real data, real email or deployment. Operational
+details and deferred hosting/delivery verification: `docs/ONBOARDING.md`.
+
+---
 
 ### 2026-09-07 — Milestone 5A.1 confirmed BoxHero and case model
 

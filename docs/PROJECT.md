@@ -5,7 +5,7 @@
 **Client / business name:** Big Wicks Fireworks LLC
 **Public-facing name:** Big Wicks Fireworks
 **Project type:** Retail marketing website + protected wholesale customer portal
-**Current stage:** Managed website ordering is functionally complete through Milestone 4A (merged per user); Milestone 5A.1 aligns case metadata, configurable tiers and BoxHero mapping; real import remains unapproved
+**Current stage:** Milestones through 5A.2 are complete and merged per user. Milestone 5B adds create-only bulk customer onboarding and separately confirmed invitations; real imports remain unapproved.
 **Primary Veriq contact:** Mick Enev
 
 ### Project summary
@@ -987,6 +987,16 @@ Big Wicks owns final availability review, substitutions, payment, invoicing and
 fulfillment outside the website. See `docs/ORDERING.md` for exact architecture,
 notification recovery limits, setup and verification.
 
+### Milestone 5B — Bulk customer onboarding
+
+Milestone 5B now adds `/admin/customers/import` and `/admin/customers/invitations`
+without changing this catalog workflow. Customer imports use a strict five-column
+CSV, dynamic current tiers, encrypted previews, stale-state checks and atomic
+create-only writes. Imported accounts are passwordless and receive no automatic
+email. Invitations require a separate selected-recipient review and confirmation,
+using existing secure setup tokens. No real customer/remote data/email operations
+are authorized by implementation. See `docs/ONBOARDING.md` for the 5B workflow.
+
 ### Milestone 5A.1 — Real case catalog, configured tiers and BoxHero mapping
 
 5A is complete and merged per user. Brand/packing are optional public catalog
@@ -1122,13 +1132,13 @@ Test:
 
 ### What Codex should optimize for right now
 
-Complete and verify Milestone 5A.1's real catalog model, dynamic pricing tiers and offline BoxHero mapping. Milestones 1, 2A,
-2B, 3A, 3B, 3C and 4A are complete and merged per the user.
-Do not deploy, modify remote data/settings, or invent/import real products.
+Complete and verify Milestone 5B's create-only customer import and separately
+confirmed invitation workflow. Milestones through 5A.2 are merged per the user.
+Do not deploy, modify remote data/settings, send real email or import real customers.
 
 The first meaningful milestone is:
 
-> An operator can prepare a permanent catalog identity file, review a safe Sanity content-import plan and generate the existing private pricing-import CSV without touching remote data during development.
+> An admin can preview and atomically create a fictional customer batch without email, then separately select, review and confirm setup invitations using the existing secure token flow.
 
 ### Do not work on yet
 

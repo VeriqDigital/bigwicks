@@ -6,6 +6,24 @@ adds admin customer management. Milestone 2B adds customer invitations, password
 setup and password reset. Milestone 3A adds a server-only catalog/private-pricing
 foundation; Milestone 3B adds protected customer catalog browsing. Milestone 3C
 adds ADMIN-only pricing operations. Milestone 4A adds managed website order requests.
+Milestone 5B adds create-only CSV customer import and separately confirmed bulk
+setup invitations. See [customer onboarding](ONBOARDING.md#customer-onboarding--milestone-5b)
+for the contract, limits and operator workflow.
+
+All new pages, template reads, actions and services independently require ADMIN.
+Import creates passwordless CUSTOMER/User pairs transactionally with matching
+active flags; no mail is sent. It reuses individual creation validation and the
+shared `insertCustomer` primitive. AES-GCM previews bind ADMIN/sessionVersion,
+expiry, rows and current SQL state. Confirmation locks/rechecks the ADMIN and
+creates the whole batch under SERIALIZABLE isolation; existing accounts never update.
+
+Bulk invitations deliberately exclude disabled/configured accounts and require a
+separate recipient preview and confirmation. Existing individual setup policy
+(including disabled customers) is unchanged. The AccountToken issuer accepts an
+optional expected active session version for bulk sends and rechecks it under the
+User lock alongside expected email. Existing supersession/deliveredAt semantics
+remain unchanged. Bulk sends share per-customer throttling, add a 100/hour global
+bulk cap and an atomic one-use preview guard. No raw token is exposed to staff.
 
 ## Architecture
 

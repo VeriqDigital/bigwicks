@@ -15,6 +15,10 @@ and read-only admin order visibility. Real catalog import remains deferred;
 currency and the staff notification recipient still need confirmation. Milestone
 5A.1 adds case-based catalog/order wording, optional brand/packing snapshots,
 ranked configurable tiers and read-only-first BoxHero XLSX/CSV mapping.
+Milestones through 5A.2 are merged per user. Milestone 5B adds ADMIN-only,
+create-only customer CSV import at `/admin/customers/import` and separately
+reviewed setup invitations at `/admin/customers/invitations`. Imports create no
+passwords and send no email. See the [customer onboarding workflow](docs/ONBOARDING.md#customer-onboarding--milestone-5b).
 
 ## Stack
 
