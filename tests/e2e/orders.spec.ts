@@ -33,6 +33,92 @@ async function review(page: Page) {
   await page.getByRole("button", { name: "Review order", exact: true }).click(); await expect(page.getByRole("heading", { name: "Review order request" })).toBeVisible();
 }
 
+for (const interrupted of [false, true]) {
+  test(`submission navigates without a global error flash${interrupted ? " after recovering a lost response" : ""}`, async ({ page }) => {
+    // Mutation-time observation catches flashes shorter than locator polling.
+    // Console events survive the old document being replaced.
+    const flashes: string[] = [];
+    const departures: unknown[] = [];
+    page.on("console", (message) => {
+      if (message.text() === "ORDER_TEST_GLOBAL_ERROR_VISIBLE") flashes.push(message.text());
+      if (message.text().startsWith("ORDER_TEST_DEPARTURE:")) departures.push(JSON.parse(message.text().slice("ORDER_TEST_DEPARTURE:".length)));
+    });
+    await page.addInitScript(() => {
+      const check = () => {
+        if (document.body?.innerText.includes("This page couldn't load")) console.debug("ORDER_TEST_GLOBAL_ERROR_VISIBLE");
+      };
+      new MutationObserver(check).observe(document, { subtree: true, childList: true, characterData: true, attributes: true });
+      document.addEventListener("DOMContentLoaded", check);
+      window.addEventListener("beforeunload", () => {
+        const review = document.getElementById("order-review-title");
+        if (review) console.debug("ORDER_TEST_DEPARTURE:" + JSON.stringify({
+          pending: Array.from(document.querySelectorAll("button")).some((button) => button.textContent === "Submitting…" && button.disabled),
+          reviewVisible: Boolean(review.getClientRects().length),
+        }));
+      });
+    });
+    await login(page);
+    // A known prior document makes replace-vs-assign history behavior explicit.
+    await page.goto("/contact"); await page.goto("/portal");
+    await page.getByLabel("Quantity for Alpha fictional order product", { exact: true }).fill("2");
+    await review(page);
+
+    const submissions: string[] = [];
+    let releaseAction!: () => void;
+    const actionGate = new Promise<void>((resolve) => { releaseAction = resolve; });
+    let first = true;
+    await page.route((url) => url.pathname === "/portal", async (route) => {
+      if (!route.request().headers()["next-action"]) return route.continue();
+      submissions.push(route.request().postData()!);
+      if (!first) return route.continue();
+      first = false;
+      const response = await route.fetch(); // Real persistence and mocked notification.
+      await actionGate;
+      if (interrupted) await route.abort("failed");
+      else await route.fulfill({ response });
+    });
+    const confirmationRequests: Request[] = [];
+    page.on("request", (request) => {
+      if (new URL(request.url()).pathname.startsWith("/portal/confirmation/")) confirmationRequests.push(request);
+    });
+    try {
+      await page.getByRole("button", { name: "Submit order request", exact: true }).click();
+      await expect(page.getByRole("button", { name: "Submitting…", exact: true })).toBeDisabled();
+      await expect(page.getByRole("button", { name: "Back to quantities", exact: true })).toBeDisabled();
+      await expect.poll(() => db.order.count({ where: { customerId } })).toBe(1);
+      releaseAction();
+      if (interrupted) {
+        await expect(page.getByRole("status")).toContainText("Submission was interrupted. Retry this submission to recover the same order");
+        await expect(page).toHaveURL(/\/portal$/);
+        await expect(page.getByTestId("order-total")).toHaveText("39.98");
+        await expect(page.getByRole("button", { name: "Back to quantities", exact: true })).toBeEnabled();
+        await page.getByRole("button", { name: "Submit order request", exact: true }).click();
+      }
+      await expect(page).toHaveURL(/\/portal\/confirmation\/BW-/);
+      await expect(page.getByRole("heading", { name: "Order request submitted", exact: true })).toBeVisible();
+      expect(confirmationRequests).toHaveLength(1);
+      expect(confirmationRequests[0].isNavigationRequest()).toBe(true);
+      expect(confirmationRequests[0].resourceType()).toBe("document");
+      expect(departures).toEqual([{ pending: true, reviewVisible: true }]);
+      const reference = await page.getByTestId("order-reference").innerText();
+      expect(submissions).toHaveLength(interrupted ? 2 : 1);
+      if (interrupted) expect(submissions[1]).toBe(submissions[0]);
+      expect(await db.order.count({ where: { customerId } })).toBe(1);
+      const mails = await Promise.all((await readdir(process.env.TEST_ACCOUNT_MAIL_DIR!)).filter((name) => name.endsWith(".json")).map(async (name) => JSON.parse(await readFile(join(process.env.TEST_ACCOUNT_MAIL_DIR!, name), "utf8"))));
+      expect(mails.filter((mail) => mail.subject === `Wholesale order request ${reference}`)).toHaveLength(1);
+      await page.goBack(); await expect(page).toHaveURL(/\/contact$/);
+      await expect(page.getByRole("heading", { name: "Review order request" })).toHaveCount(0);
+      await page.goForward(); await expect(page).toHaveURL(`/portal/confirmation/${reference}`);
+      await expect(page.getByTestId("order-reference")).toHaveText(reference);
+      expect(await db.order.count({ where: { customerId } })).toBe(1);
+      expect(flashes).toEqual([]);
+    } finally {
+      releaseAction();
+      await page.unrouteAll({ behavior: "wait" });
+    }
+  });
+}
+
 test("quantity entry, review, persisted confirmation, staff notification and order snapshots work end to end", async ({ page, browser, playwright }) => {
   await login(page);
   const quantity = page.getByLabel("Quantity for Alpha fictional order product", { exact: true });

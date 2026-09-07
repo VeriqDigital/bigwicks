@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import type { CustomerCatalogProduct } from "@/lib/catalog/service";
 import { browseCatalog, type CatalogSort } from "./browse";
 import ProductImage from "./ProductImage";
@@ -19,6 +19,8 @@ export default function Catalog({ products }: { products: CustomerCatalogProduct
   const [review, setReview] = useState<Review | null>(null);
   const [orderMessage, setOrderMessage] = useState("");
   const [pending, startTransition] = useTransition();
+  const [submitPending, setSubmitPending] = useState(false);
+  const submitting = useRef(false);
   const invalidQuantity = Object.values(quantities).some((value) => quantityValue(value) === null);
   const selected = products.flatMap((product) => {
     const quantity = quantityValue(quantities[product.catalogKey] ?? "");
@@ -35,17 +37,28 @@ export default function Catalog({ products }: { products: CustomerCatalogProduct
       } catch { setOrderMessage("Unable to review this order. Check your connection or sign in again, then retry."); }
     });
   }
-  function submitRequest() {
-    if (!review) return;
+  async function submitRequest() {
+    if (!review || submitting.current) return;
+    submitting.current = true;
+    setSubmitPending(true);
     setOrderMessage("");
-    startTransition(async () => {
-      try {
-        const result = await submitOrderAction(review.token);
-        if (result.status === "submitted") window.location.assign(`/portal/confirmation/${result.reference}`);
-        else if (result.status === "review") { setReview(result.review); setOrderMessage(result.message ?? "Review the refreshed values."); }
-        else if (result.status === "invalid") setOrderMessage(result.message);
-      } catch { setOrderMessage("Submission was interrupted. Retry this submission to recover the same order, or sign in again if your session ended."); }
-    });
+    let navigating = false;
+    try {
+      const result = await submitOrderAction(review.token);
+      if (result.status === "submitted") {
+        // Leave outside an async React transition, replacing the stale review.
+        // Keep controls pending until the new document takes over.
+        window.location.replace(`/portal/confirmation/${result.reference}`);
+        navigating = true;
+      } else if (result.status === "review") { setReview(result.review); setOrderMessage(result.message ?? "Review the refreshed values."); }
+      else if (result.status === "invalid") setOrderMessage(result.message);
+    } catch { setOrderMessage("Submission was interrupted. Retry this submission to recover the same order, or sign in again if your session ended."); }
+    finally {
+      if (!navigating) {
+        submitting.current = false;
+        setSubmitPending(false);
+      }
+    }
   }
   const categories = [...new Map(products.flatMap((product) => product.category ? [[product.category.id, product.category] as const] : [])).values()]
     .sort((a, b) => a.name.localeCompare(b.name, "en-US") || a.id.localeCompare(b.id));
@@ -53,7 +66,7 @@ export default function Catalog({ products }: { products: CustomerCatalogProduct
   const filtered = Boolean(search.trim() || category);
   function clearFilters() { setSearch(""); setCategory(""); }
 
-  if (review) return <OrderReview review={review} message={orderMessage} pending={pending} onBack={() => { setReview(null); setOrderMessage(""); }} onSubmit={submitRequest} />;
+  if (review) return <OrderReview review={review} message={orderMessage} pending={pending || submitPending} onBack={() => { setReview(null); setOrderMessage(""); }} onSubmit={submitRequest} />;
 
   if (products.length === 0) return <section className="border border-(--border) bg-white p-8" aria-labelledby="catalog-empty">
     <p className="mb-3 text-sm text-(--muted)">0 products</p>

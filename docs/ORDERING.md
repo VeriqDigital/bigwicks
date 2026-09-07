@@ -100,6 +100,16 @@ it is not deduplicated by identical product contents, which may be legitimate.
 There is no durable draft or customer order-history list. If a browser is closed
 and loses its review/confirmation URL, staff can locate the saved request.
 
+Final submission uses an async event handler with explicit pending state, separate
+from the React transition used to prepare a review. On `submitted`, native
+`window.location.replace()` loads the protected confirmation as a new document
+and removes the stale review entry from browser history. Controls stay disabled
+with **Submitting…** until that document takes over. Errors or refreshed reviews
+release pending state and retain the existing recovery behavior. This follows the
+installed Next.js 16.2.9 guide's direct event-handler Server Function pattern;
+the application no longer wraps successful document navigation in an async React
+transition. Next.js still manages its own internal Server Action dispatch.
+
 The existing shared PostgreSQL/HMAC limiter allows 30 review/new-submission attempts
 per user per minute, bounding malformed requests and content work. Inside the
 transaction, a customer-indexed count enforces 10 successfully persisted orders
@@ -175,6 +185,17 @@ BoxHero, stock reservation, invoicing, customer history/edit/reorder, admin repr
 substitutions, cancellation/completion states, fulfillment, real imports and deployment.
 
 ## Verification record
+
+Navigation follow-up on 2026-09-07: lint, typecheck, 151 unit tests, 261 combined
+unit/database tests, all five isolated migrations and the ordinary production
+build passed. Playwright passed 15 unconfigured and 14 intercepted-content
+scenarios (29 total). Two new scenarios monitor DOM mutations for the global error
+text, assert pending controls at document departure, verify native confirmation
+navigation and Back/Forward history, and count one saved order/notification.
+One deliberately loses the successful action response and retries the same token.
+Existing stale-review, rejection, notification-failure and responsive tests pass.
+No global error flash was observed locally; the reported preview deployment has
+not been retested. No service, security, schema, dependency or environment changes.
 
 Milestone 4A checks on 2026-09-06 passed: Prisma generation, all five migrations on
 a fresh isolated PostgreSQL database, lint, typecheck, `npm test` (151 unit tests),
