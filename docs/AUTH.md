@@ -18,7 +18,7 @@ adds ADMIN-only pricing operations. Milestone 4A adds managed website order requ
   company name, optional customer number, active flag and required pricing tier.
   One login per customer is the initial choice; multi-user businesses can be
   introduced deliberately later. No unconfirmed business fields are required.
-- `PricingTier` contains a unique name and ID, with Tier 1 and Tier 2 development
+- `PricingTier` contains a unique name, ID and positive unique rank, with Tier 1 and Tier 2 development
   records. `ProductPrice` now holds private decimal prices per catalogKey/tier;
   Sanity holds non-secret content only. No discount formula is implemented.
 - Both identity and customer default inactive. A CUSTOMER must have an active
@@ -177,7 +177,7 @@ Each create, edit and status action independently calls `requireAdmin()` before
 validation or database access. The list, detail and tier read helpers also check
 admin authorization. Actions allowlist submitted fields, validate CUIDs and input
 lengths with Zod, share login's email normalization, resolve the target Customer's
-CUSTOMER user server-side, and accept only existing Tier 1/Tier 2 records. Browser
+CUSTOMER user server-side, and accept only current valid configured tier records. The selector sorts by rank. Browser
 role, user ID, password hash and session-version fields are ignored.
 
 User and Customer writes use serializable PostgreSQL transactions. Database

@@ -1,14 +1,30 @@
 import "server-only";
 import { config } from "dotenv";
 import { createClient } from "@sanity/client";
+import { extname } from "node:path";
 import { sanityApiVersion } from "../../sanity/environment";
-import { OnboardingError, prepare, readCanonical } from "./csv";
-import { boundedFile, writeArtifacts } from "./files";
+import { OnboardingError, prepare, readCanonical, canonicalCsv } from "./csv";
+import { boundedFile, writeArtifacts, writeMapped } from "./files";
 import { assertTarget, authorizeApply, importCatalog, MAX_DOCUMENTS, type Boundary, type ApplyOptions } from "./plan";
 
 export async function run(args: string[]) {
   const [command, input, ...rest] = args;
   if (!input || input.startsWith("--")) throw new OnboardingError("Use catalog:prepare input.csv data/onboarding/resolved.csv, or catalog:import resolved.csv --project ID --dataset NAME [--snapshot file.json].");
+  if (command === "boxhero") {
+    const [configuration, ...options] = rest;
+    if (!configuration || (options.length !== 0 && (options.length !== 4 || options[0] !== "--write" || options[2] !== "--reviewed"))) throw new OnboardingError("Use catalog:map-boxhero input.xlsx config.json [--write data/onboarding/mapped.csv --reviewed PLAN_HASH].");
+    const { readBoxHero, mapBoxHero, sourceHash } = await import("./boxhero");
+    const bytes = await boundedFile(input);
+    const config = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(await boundedFile(configuration)));
+    const result = mapBoxHero(await readBoxHero(bytes, extname(input).toLowerCase()), config, sourceHash(bytes));
+    console.log(JSON.stringify({ mode: options.length ? "write-mapped" : "dry-run", ...result.report }, null, 2));
+    if (options.length) {
+      if (options[3] !== result.report.planHash || !result.writable) throw new OnboardingError("Mapping is not approved: resolve blocked rows, acknowledge each warning, and use the exact reviewed plan hash.");
+      const csv = canonicalCsv(result.rows); readCanonical(Buffer.from(csv));
+      console.log(JSON.stringify({ mappedCatalog: await writeMapped(options[1], csv), next: "Run catalog:prepare to assign permanent identities and create the pricing CSV." }));
+    }
+    return;
+  }
   if (command === "prepare") {
     if (rest.length !== 1) throw new OnboardingError("Prepare requires exactly input and output paths.");
     const result = prepare(await boundedFile(input));
@@ -42,7 +58,7 @@ export async function run(args: string[]) {
     if (!token?.trim()) throw new OnboardingError("CLI-only SANITY_API_WRITE_TOKEN is required, including for full draft-aware remote dry-runs.");
     const client = createClient({ ...target, token, apiVersion: sanityApiVersion, useCdn: false, perspective: "raw", maxRetries: 0, timeout: 30000 });
     boundary = {
-      read: () => client.fetch(`*[_type in ["product", "category"]] | order(_id asc) [0...${MAX_DOCUMENTS + 1}]{_id,_rev,_type,catalogKey,sku,name,description,available,category{_type,_ref}}`, {}, { cache: "no-store" }),
+      read: () => client.fetch(`*[_type in ["product", "category"]] | order(_id asc) [0...${MAX_DOCUMENTS + 1}]{_id,_rev,_type,catalogKey,sku,name,brand,packing,description,available,category{_type,_ref}}`, {}, { cache: "no-store" }),
       commit: (mutations) => client.mutate(mutations, { visibility: "sync", returnDocuments: true, returnFirst: false, autoGenerateArrayKeys: false }),
     };
   }

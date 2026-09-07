@@ -6,7 +6,7 @@ import { categoryIdentity, OnboardingError, readCanonical, skuIdentity, type Row
 
 export const MAX_DOCUMENTS = 1500;
 const MAX_MUTATION_BYTES = 3 * 1024 * 1024;
-export type Document = { _id: string; _rev: string; _type: "product" | "category"; catalogKey?: string; name?: string; sku?: string; description?: string; available?: boolean; category?: { _type?: string; _ref?: string } };
+export type Document = { _id: string; _rev: string; _type: "product" | "category"; catalogKey?: string; name?: string; sku?: string; brand?: string; packing?: string; description?: string; available?: boolean; category?: { _type?: string; _ref?: string } };
 export type Target = { projectId: string; dataset: string };
 export type Boundary = { read(): Promise<unknown>; commit(mutations: Mutation[]): Promise<unknown> };
 const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
@@ -32,11 +32,11 @@ export function snapshot(value: unknown): Document[] {
     }
     // Explicit projection also prevents accidental propagation of unexpected data.
     return { _id: item._id, _rev: item._rev, _type: item._type, catalogKey: item.catalogKey, name: item.name, sku: item.sku,
-      description: item.description, available: item.available, category: item.category ? { _type: item.category._type, _ref: item.category._ref } : undefined };
+      brand: item.brand ?? "", packing: item.packing ?? "", description: item.description, available: item.available, category: item.category ? { _type: item.category._type, _ref: item.category._ref } : undefined };
   }), (d) => d._id);
 }
-const publicRow = (r: Row) => ({ catalogKey: r.catalogKey, sku: r.sku, name: r.name, category: categoryIdentity(r.category), description: r.description, available: r.available });
-const fields = (r: Row, categoryId: string) => ({ catalogKey: r.catalogKey, sku: r.sku, name: r.name, description: r.description, available: r.available, category: { _type: "reference", _ref: categoryId } });
+const publicRow = (r: Row) => ({ catalogKey: r.catalogKey, sku: r.sku, name: r.name, category: categoryIdentity(r.category), brand: r.brand, packing: r.packing, description: r.description, available: r.available });
+const fields = (r: Row, categoryId: string) => ({ catalogKey: r.catalogKey, sku: r.sku, name: r.name, brand: r.brand, packing: r.packing, description: r.description, available: r.available, category: { _type: "reference", _ref: categoryId } });
 export function plan(rows: Row[], documents: Document[], target: Target) {
   const products = new Map(documents.filter((d) => d._type === "product").map((d) => [d.catalogKey!, d]));
   const categories = new Map(documents.filter((d) => d._type === "category").map((d) => [categoryIdentity(d.name!), d]));
@@ -74,7 +74,7 @@ export function plan(rows: Row[], documents: Document[], target: Target) {
   return { hash, mutations, categoryMutations, newCategories,
     summary: { productsInFile: rows.length, newProducts: created, existingProductsToUpdate: updated, unchangedProducts: unchanged,
       newCategories: newCategories.length, existingCategoriesReused: names.size - newCategories.length,
-      warnings: rows.filter((r) => r.available && (r.tier1Price === null || r.tier2Price === null)).length, errors: 0 } };
+      warnings: rows.filter((r) => r.available && Object.values(r.prices).some((price) => price === null)).length, errors: 0 } };
 }
 export type ApplyOptions = { applyHash?: string; confirm?: string; allowProduction?: boolean };
 type GuardEnvironment = Record<string, string | undefined>;

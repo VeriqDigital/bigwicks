@@ -3,7 +3,7 @@
 ## Responsibility split
 
 - **Sanity** owns non-secret product content: permanent catalogKey, editable SKU,
-  name, category, description, image and manual wholesale visibility. Categories
+  name, category, optional brand/packing, description, image and manual wholesale visibility. Categories
   are reusable documents with editable names. There are no price fields.
 - **PostgreSQL/Prisma** owns User/Customer identities, pricing tiers and authoritative
   tier-specific ProductPrice rows. Later orders must snapshot their own values.
@@ -79,6 +79,38 @@ the audit detects drift. PostgreSQL cannot enforce a foreign key into Sanity.
 Drafts/releases are not served; this milestone supports normal published content,
 not draft previews or a release workflow.
 
+## Configured tiers and case metadata (Milestone 5A.1)
+
+PricingTier has a unique positive integer rank and human-readable name. All
+configured valid rows, ordered by rank, populate customer selectors, pricing
+columns and audit checks. The server verifies selected IDs against current SQL.
+Tier 1 is cheapest; higher ranks describe progressively more expensive groups.
+Per-product prices are independently supplied, never computed from another tier.
+No Tier 3 is created by the migration or development seed; tests create one only
+inside an isolated database and remove it afterward.
+
+The new `20260907050000_case_catalog_tier_rank` migration assigns existing Tier 1/2
+ranks 1/2 without changing their IDs or relationships. Any other existing tiers
+receive deterministic ranks above 2. Review that ordering before a future remote
+migration. Unique/positive database constraints prevent invalid rank configuration.
+The migration also adds nullable OrderItem brand/packing snapshots; old order rows
+retain their stored amounts and metadata remains null. Prior migrations are untouched.
+
+Brand and packing are optional single-line strings, max 100 characters, projected
+and explicitly normalized into the customer DTO. Missing/invalid values degrade
+to null. Packing notation describes one complete case; no parsing/arithmetic is
+performed. Cards and saved orders show metadata only when present. Item Number is
+the customer SKU; immutable catalogKey remains identity. Unit Cost, BoxHero IDs,
+inventory counts and private tier prices never enter Sanity content.
+
+The CSV contract is `price:<rank>:<exact name>`. All current columns are required;
+unknown/missing/duplicate columns fail. Tier renames/rank/ID changes invalidate
+staged previews. Both ID and mutable tier metadata are bound in the server hash.
+The sealed preview uses version 2, so outstanding old-format previews expire on
+upgrade. Existing eight-column onboarding files need deliberate header conversion
+and blank brand/packing fields with their existing keys preserved. See
+`docs/ONBOARDING.md` for BoxHero mapping, safeguards and source review.
+
 ## PostgreSQL prices
 
 `20260906030000_product_prices` adds only ProductPrice and its relation to PricingTier.
@@ -99,8 +131,8 @@ two-decimal strings, never JavaScript floating-point amounts. The server rejects
 non-finite, negative, excessive or over-scale values and does not derive one tier
 from another. Future import/write tools must validate decimal text before saving:
 PostgreSQL NUMERIC(12,2) rounds extra fractional digits, so do not rely on the column
-alone to reject excessive input scale. Currency, unit/case/pack meaning and source
-columns must be confirmed with the real catalog; none are invented here.
+alone to reject excessive input scale. Prices are per complete case; currency
+still needs confirmation. BoxHero Selling Price supplies rank 2 only.
 
 ## Protected catalog service
 
@@ -146,8 +178,8 @@ strings by integer length then digits, with deterministic name/key tie-breaking.
 No floating-point money conversion, totals, per-card reads, fetch-on-search, local
 storage, tier selector, catalog mutation or public pricing API is added.
 
-Currency and case/pack/unit meaning remain unconfirmed. Display the exact supplied
-two-decimal amount under “Your wholesale price”, without an assumed USD/$ or unit.
+Case meaning is confirmed: customers order complete cases. Currency remains unconfirmed. Display the exact supplied
+two-decimal amount under “Case price”, without an assumed USD/$ currency symbol.
 Confirm those semantics before customer release. No discounts, stock counts or
 availability guarantees are implied.
 
@@ -189,10 +221,10 @@ keyboard controls and responsive screenshots. They never use the live preview da
 
 `/admin/pricing` joins published Sanity content with all private PostgreSQL prices
 on the server. It shows completeness counts, existing audit issues and a product
-pricing table. Counts include both visible and hidden valid products; the audit's
-missing-price warnings still apply only to available products. Orphaned SQL rows
+pricing table. Completeness and per-tier missing-price counts apply only to
+available products; hidden products do not need full pricing. Orphaned SQL rows
 are reported but never exported, matched or silently deleted. Content remains in
-Sanity; no product table, schema change or migration is introduced.
+Sanity; ProductPrice remains keyed by catalogKey and pricingTierId.
 
 Internal ADMIN navigation includes Customers, Pricing, Catalog Studio, Public
 website and POST Sign out. The pricing page, export handler, both Server Actions
@@ -205,17 +237,17 @@ the `/account` dispatcher and customer catalog behavior remain unchanged.
 
 1. Open **Pricing** and review completeness/audit issues.
 2. Download the current export from `/admin/pricing/export`.
-3. Edit only the two price columns in Excel or another spreadsheet application.
+3. Edit only the configured price columns in Excel or another spreadsheet application.
 4. Save as comma-separated CSV UTF-8 and upload for validation/preview.
 5. Review per-tier create/update/remove/unchanged counts, warnings and exact
    before/after values. Resolve any errors; an invalid upload cannot be confirmed.
 6. Acknowledge removals when applicable and explicitly confirm the import.
 7. Customers refresh `/portal` to read their current tier price without logging in again.
 
-The exact seven unique headers are required; their order may vary:
+All five context headers plus every current tier column are required; order may vary. Example:
 
 ```csv
-catalogKey,sku,productName,category,available,tier1Price,tier2Price
+catalogKey,sku,productName,category,available,price:1:Tier 1,price:2:Tier 2
 ```
 
 Export includes valid published products whether visible or hidden, exact decimal
@@ -240,14 +272,14 @@ Number conversion, currency symbols, grouping commas, negatives, exponent notati
 NaN or Infinity. Outer price whitespace is trimmed; blank/whitespace means no price
 for that tier. It removes an existing row only after explicit removal acknowledgment.
 Blank never means `0.00`; explicit zero is valid. Products omitted from the CSV stay
-unchanged. No automatic Tier 2 calculation, currency or case/pack/unit assumption.
+unchanged. No automatic tier calculation. Prices are per complete case; packing is descriptive only.
 
 Files must be nonempty, at most **256 KiB**, **500 product rows**, and **4,096
 characters per record**. Empty lines are skipped. Extra/missing/duplicate headers,
 unequal field counts, malformed quoting, NUL and invalid UTF-8 are rejected.
 `csv-parse@7.0.2` supplies bounded in-memory sync parsing rather than custom CSV
 tokenization. No raw upload is logged, written to disk, stored in SQL or exposed
-through a URL. No XLSX upload is supported.
+through a URL. The admin pricing upload remains CSV-only; XLSX is read only by the operator BoxHero mapper.
 
 ### Preview integrity and writes
 
@@ -266,15 +298,15 @@ serializable PostgreSQL transaction. It locks the admin User row for share and
 rechecks active ADMIN, no Customer association and the current session version.
 It rereads all tier/price rows, checks expiry again and recomputes the snapshot.
 The fingerprint covers document IDs/catalogKeys, normalized SKU/name/category/
-visibility, all tier identities/names and all SQL prices/updatedAt versions.
+visibility, all tier identities/names/ranks and all SQL prices/updatedAt versions.
 Description/image edits do not invalidate it. Unrelated price changes conservatively
 invalidate the whole preview; staff must upload again instead of overwriting them.
 
 Invalid/duplicate catalog identities or required content, invalid SQL prices and
-missing/unsupported tiers block export, preview and confirmation. Optional content
+missing/invalid tier configuration block export, preview and confirmation. Optional content
 warnings and orphaned SQL prices remain visible without inventing matches. A Sanity
 failure blocks all operations with a fixed safe message; export returns 503 without
-fabricated rows. The existing read-only `catalog:audit` stays unchanged.
+fabricated rows. The read-only `catalog:audit` evaluates all configured tiers ordered by rank.
 
 After drift validation, the server recalculates changes. An explicit blank-removal
 acknowledgment is enforced server-side. One bulk delete and one parameterized bulk
@@ -373,11 +405,11 @@ explicit Sanity content apply. Preparation assigns missing permanent UUIDs once
 and generates the existing admin-pricing CSV; apply never generates catalogKeys
 or writes ProductPrice. Products match only catalogKey, normalized category names
 must be unambiguous, existing images/omitted products are preserved, and production
-is guarded by default. See `docs/ONBOARDING.md` for the exact eight-column contract,
+is guarded by default. See `docs/ONBOARDING.md` for the content and dynamic-tier contract,
 two-transaction category/product strategy, revision checks, concurrency limits and
 isolated verification. No real remote imports have been performed.
 
-No real catalog/source format has been supplied. Future client mapping should reconcile
+The BoxHero source is now confirmed; the following earlier logical import sketch is superseded by `docs/ONBOARDING.md`. Mapping reconciles
 records resembling the following logical shape, after actual client columns and
 currency/unit meaning are confirmed:
 
@@ -388,8 +420,8 @@ category         resolve/create an approved Category reference
 description      optional plain text
 image            authorized source asset + optional accurate alt text
 available        explicit manual visibility boolean
-tier1Price       validated decimal text -> PostgreSQL Tier 1 row only
-tier2Price       validated decimal text -> PostgreSQL Tier 2 row only
+price:1:Tier 1  separate per-product source -> PostgreSQL Tier 1 row only
+price:2:Tier 2  BoxHero Selling Price -> PostgreSQL Tier 2 case-price row only
 ```
 
 Split content and prices before writing either system. Do not send a combined
@@ -403,7 +435,7 @@ published preview products and six price rows; audit issues were empty. This is
 user-reported context, not a new remote verification performed during 3B.
 
 Deferred: real product import, direct per-product price editing and orphan repair,
-currency/unit confirmation, Excel ordering, inventory integration,
+currency confirmation, Excel ordering, inventory integration,
 payments, order history, announcements, and deployment. No remote records,
 environment variables or Sanity settings are changed during 3B/3C. The 3C CSV
 workflow maintains prices for existing Sanity products; it is not a content import.

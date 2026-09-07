@@ -25,8 +25,21 @@ clamping. Malformed/duplicate keys and empty orders fail. UUIDv4 keys use the
 existing canonical lowercase representation. Only catalogKey/quantity pairs are
 sent to review; caller-supplied customer/tier/price/total fields are ignored.
 
-Prices retain the neutral two-decimal convention. Currency and case/pack/unit
-semantics are still unconfirmed. No tax, shipping, discounts or fees are inferred.
+Customers order complete cases. Prices are per case and totals are case price ×
+number of cases; packing is descriptive and never a multiplier/divisor. Currency
+remains unconfirmed. No tax, shipping, discounts or fees are inferred.
+
+## Case metadata update (Milestone 5A.1)
+
+The new `20260907050000_case_catalog_tier_rank` migration adds nullable
+`brandSnapshot` and `packingSnapshot` to OrderItem. Current metadata is included
+in the reviewed hash and final stored lines, so changing it requires refreshed
+review before submission. Confirmation, staff order details and plain-text email
+use the saved snapshot without querying Sanity. Historical rows remain nullable;
+their quantity/price/total columns are not rewritten. Existing field names such
+as unitPriceSnapshot and quantity are retained internally, with case terminology
+in the UI/email. Idempotency, interrupted-submit recovery and navigation remain
+unchanged. All currently valid configured tiers are supported.
 
 ## Schema and exact arithmetic
 
@@ -37,8 +50,8 @@ OrderStatus and OrderNotificationStatus. Earlier migrations are unchanged.
   customer and submitting-user relations; submission UUID/review hash; SUBMITTED
   status; company/customer-number/email/tier-ID/tier-name snapshots; exact total;
   created timestamp; notification status and optional provider-acceptance timestamp.
-- **OrderItem:** internal CUID; order relation; catalogKey, SKU, name, unit-price,
-  quantity and line-total snapshots. Each catalogKey is unique within its order.
+- **OrderItem:** internal CUID; order relation; catalogKey, SKU, name, optional brand/packing, case-price,
+  case-count and line-total snapshots. Each catalogKey is unique within its order.
   There is no Sanity or ProductPrice foreign key required to render history.
 - Unit prices use NUMERIC(12,2). Line/order totals use NUMERIC(18,2), sufficient for
   250 products × 999 × 9999999999.99 = 2497499999997502.50. Quantity and finite,
@@ -57,7 +70,7 @@ Every action/service independently calls `requireCustomer()`. ADMIN cannot submi
 as a customer. Review reads current PostgreSQL identity/association/tier and the
 published Sanity origin through the existing uncached content reader/normalizer.
 Requested products must be unambiguous, available and validly priced for the
-current supported Tier 1 or Tier 2. Missing or failed content/prices fail safely;
+customer's current configured pricing tier. Missing or failed content/prices fail safely;
 no fallback to browser data or another tier is allowed.
 
 A server-generated AES-256-GCM envelope binds requested keys/quantities, customer,
@@ -72,7 +85,7 @@ persisted identical submission and otherwise reads current Sanity. A serializabl
 PostgreSQL transaction locks User before Customer, rechecks current role, active
 flags, association and session version, resolves the current tier and prices, and
 recalculates all amounts. It compares the reviewed hash with customer/tier context,
-requested product document IDs/keys/SKUs/names, quantities and exact current prices.
+requested product document IDs/keys/SKUs/names/brand/packing, case counts and exact current prices.
 Any meaningful difference returns refreshed values and requires a second explicit
 review/submit; no order is created. Unavailable/missing-price products reject and
 require returning to/reloading the catalog. Description/image/category edits do
@@ -177,7 +190,7 @@ requests; already-delivered browser data cannot be recalled.
 Use Node 24 and existing dependencies. Run `npm run db:generate`, and apply the
 new migration with `npm run db:deploy` only against an intended local database.
 The build generates Prisma but never migrates/seeds. Before any separately
-authorized release, confirm the staff inbox/verified sender, currency/unit wording,
+authorized release, confirm the staff inbox/verified sender, currency wording,
 migration/backup plan, direct-notification operational monitoring and existing
 dependency advisories. No production routing or credentials are changed here.
 

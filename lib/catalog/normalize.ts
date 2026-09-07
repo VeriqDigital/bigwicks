@@ -6,7 +6,7 @@ export type CatalogIssue = { code: string; documentId?: string; catalogKey?: str
 export type CatalogContent = {
   catalogKey: string; sku: string; name: string; available: boolean;
   category: { id: string; name: string } | null;
-  description: string | null; image: { url: string; alt: string } | null;
+  description: string | null; brand: string | null; packing: string | null; image: { url: string; alt: string } | null;
 };
 const documentsSchema = z.array(z.object({ _id: z.string().min(1) }).catchall(z.unknown())).max(10000);
 function text(value: unknown, max: number): string | null {
@@ -48,7 +48,9 @@ export function normalizeCatalogContent(raw: unknown) {
     if (!categoryId || !categoryName) issues.push({ code: "missing_category", documentId, catalogKey });
     if (!description) issues.push({ code: "missing_description", documentId, catalogKey });
     if (!image) issues.push({ code: "missing_image", documentId, catalogKey });
-    products.push({ catalogKey, sku, name, available: row.available, category: categoryId && categoryName ? { id: categoryId, name: categoryName } : null, description, image });
+    const optionalText = (value: unknown) => typeof value === "string" && !/[\u0000-\u001f\u007f-\u009f]/u.test(value) ? text(value, 100) : null;
+    products.push({ catalogKey, sku, name, available: row.available, category: categoryId && categoryName ? { id: categoryId, name: categoryName } : null,
+      description, image, brand: optionalText(row.brand), packing: optionalText(row.packing) });
   }
   return { products, issues, knownKeys: new Set(keyCounts.keys()), documentCount: rows.length };
 }

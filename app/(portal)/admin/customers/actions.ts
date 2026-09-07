@@ -6,7 +6,8 @@ import { Prisma } from "@/generated/prisma/client";
 import { requireAdmin } from "@/lib/auth/authorization";
 import { getDb } from "@/lib/db";
 import { invalidateAccountTokens } from "@/lib/auth/account-tokens";
-import { createCustomerSchema, editCustomerSchema, customerStatusSchema, supportedTierNames } from "@/lib/admin/customer-validation";
+import { validTier } from "@/lib/pricing/tiers";
+import { createCustomerSchema, editCustomerSchema, customerStatusSchema } from "@/lib/admin/customer-validation";
 import type { CustomerField, CustomerFormState } from "./form-state";
 
 class CustomerInputError extends Error {
@@ -42,8 +43,8 @@ function mutationError(error: unknown): CustomerFormState {
 }
 
 async function verifyTier(tx: Prisma.TransactionClient, id: string) {
-  const tier = await tx.pricingTier.findFirst({ where: { id, name: { in: supportedTierNames } }, select: { id: true } });
-  if (!tier) throw new CustomerInputError("Select an available Tier 1 or Tier 2 pricing tier.", "pricingTierId");
+  const tier = await tx.pricingTier.findUnique({ where: { id }, select: { id: true, rank: true, name: true } });
+  if (!tier || !validTier(tier)) throw new CustomerInputError("Select a currently configured pricing tier.", "pricingTierId");
 }
 
 async function findCustomer(tx: Prisma.TransactionClient, id: string) {

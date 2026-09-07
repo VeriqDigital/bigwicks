@@ -1,3 +1,4 @@
+const configuredTiers = [{ id: "t1", name: "Tier 1", rank: 1 }, { id: "t2", name: "Tier 2", rank: 2 }];
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { randomUUID } from "node:crypto";
 import type { Mutation } from "@sanity/client";
@@ -6,25 +7,25 @@ import { authorizeApply, importCatalog, plan, snapshot, type Boundary, type Docu
 import { csvHeaders, parsePricingCsv } from "@/lib/pricing/csv";
 
 const key = (n = 1) => `be000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
-const row = (change: Partial<Row> = {}): Row => ({ catalogKey: key(), sku: "FICTIONAL-A", name: "Fictional product", category: "Fictional category", description: "", available: true, tier1Price: "19.99", tier2Price: null, ...change });
+const row = (change: Partial<Row> = {}): Row => ({ catalogKey: key(), sku: "FICTIONAL-A", name: "Fictional product", category: "Fictional category", brand: "", packing: "", description: "", available: true, prices: { "price:1:Tier 1": "19.99", "price:2:Tier 2": null }, ...change });
 const bytes = (...rows: Row[]) => Buffer.from(canonicalCsv(rows));
 const target = { projectId: "testonly", dataset: "test" };
 const env = { SANITY_CATALOG_NON_PRODUCTION_TARGET: "testonly/test" };
 const category = (): Document => ({ _id: "category-original", _rev: "rev-1", _type: "category", name: "Fictional category" });
-const product = (change: Partial<Document> = {}): Document => ({ _id: "product-original", _rev: "rev-1", _type: "product", catalogKey: key(), sku: "FICTIONAL-A", name: "Fictional product", description: "", available: true, category: { _type: "reference", _ref: "category-original" }, ...change });
+const product = (change: Partial<Document> = {}): Document => ({ _id: "product-original", _rev: "rev-1", _type: "product", catalogKey: key(), sku: "FICTIONAL-A", name: "Fictional product", brand: "", packing: "", description: "", available: true, category: { _type: "reference", _ref: "category-original" }, ...change });
 afterEach(() => { vi.unstubAllGlobals(); });
 
 describe("canonical preparation", () => {
   it("generates missing UUIDs once, preserves supplied identities and exact prices, and exports the existing pricing contract", () => {
-    const result = prepare(bytes(row({ catalogKey: "" }), row({ catalogKey: key(2), sku: "FICTIONAL-B", tier1Price: "000.10", tier2Price: "9999999999.99" })));
+    const result = prepare(bytes(row({ catalogKey: "" }), row({ catalogKey: key(2), sku: "FICTIONAL-B", prices: { "price:1:Tier 1": "000.10", "price:2:Tier 2": "9999999999.99" } })));
     expect(result.rows[0].catalogKey).toMatch(/^[a-f0-9-]{14}4[a-f0-9-]{21}$/);
     expect(result.rows[1].catalogKey).toBe(key(2));
-    expect(result.summary.generatedCatalogKeys).toBe(1); expect(result.rows[1].tier1Price).toBe("0.10");
+    expect(result.summary.generatedCatalogKeys).toBe(1); expect(result.rows[1].prices["price:1:Tier 1"]).toBe("0.10");
     expect(prepare(Buffer.from(result.resolvedCsv)).resolvedCsv).toBe(result.resolvedCsv);
     expect(prepare(Buffer.from(result.resolvedCsv)).summary.generatedCatalogKeys).toBe(0);
-    expect(result.pricingCsv.replace(/^\uFEFF/, "").split("\r\n")[0]).toBe(csvHeaders.join(","));
-    const parsed = parsePricingCsv(Buffer.from(result.pricingCsv));
-    expect(parsed.errors).toEqual([]); expect(parsed.rows[1]).toMatchObject({ catalogKey: key(2), tier1Price: "0.10", tier2Price: "9999999999.99" });
+    expect(result.pricingCsv.replace(/^\uFEFF/, "").split("\r\n")[0]).toBe([...csvHeaders, "price:1:Tier 1", "price:2:Tier 2"].map((v) => `"${v}"`).join(","));
+    const parsed = parsePricingCsv(Buffer.from(result.pricingCsv), configuredTiers);
+    expect(parsed.errors).toEqual([]); expect(parsed.rows[1]).toMatchObject({ catalogKey: key(2), prices: { "price:1:Tier 1": "0.10", "price:2:Tier 2": "9999999999.99" } });
   });
   it.each(["bad", key().toUpperCase(), "00000000-0000-1000-8000-000000000001"])("rejects malformed/noncanonical key %s", (catalogKey) => {
     expect(() => prepare(bytes(row({ catalogKey })))).toThrow(/catalogKey/);
@@ -40,14 +41,14 @@ describe("canonical preparation", () => {
   });
   it("normalizes explicit booleans, whitespace and optional content", () => {
     const input = canonicalCsv([row({ sku: " A ", category: " Fictional   category ", description: "Line one\r\nLine two" })]).replace('"true"', '" TRUE "');
-    expect(prepare(Buffer.from(input)).rows[0]).toMatchObject({ sku: "A", category: "Fictional category", description: "Line one\nLine two", available: true, tier2Price: null });
-    expect(prepare(bytes(row({ available: false, description: "", tier1Price: null }))).rows[0]).toMatchObject({ available: false, tier1Price: null });
+    expect(prepare(Buffer.from(input)).rows[0]).toMatchObject({ sku: "A", category: "Fictional category", description: "Line one\nLine two", available: true, prices: { "price:2:Tier 2": null } });
+    expect(prepare(bytes(row({ available: false, description: "", prices: { "price:1:Tier 1": null, "price:2:Tier 2": null } }))).rows[0]).toMatchObject({ available: false, prices: { "price:1:Tier 1": null, "price:2:Tier 2": null } });
   });
   it.each(["-1", "1.001", "1e2", "NaN", "Infinity", "$1.00", "1,000", "10000000000"])("rejects invalid price %s without printing the amount", (value) => {
-    expect(() => prepare(bytes(row({ tier1Price: value })))).toThrow(/tier1Price: invalid/);
+    expect(() => prepare(bytes(row({ prices: { "price:1:Tier 1": value, "price:2:Tier 2": null } })))).toThrow(/price:1:Tier 1: invalid/);
   });
   it("rejects malformed quoting, headers, column counts, UTF-8, controls and limits", () => {
-    for (const input of [Buffer.from([0xff]), Buffer.from(headers.join(",") + '\n"unterminated'), Buffer.from(headers.join(",") + '\nx,y'), Buffer.from(canonicalCsv([row()]).replace("sku,name", "sku,sku")), bytes(row({ name: "bad\0text" })), bytes(row({ sku: "bad\ntext" })), bytes(row({ name: "hidden\u202e" })), Buffer.alloc(MAX_BYTES + 1), bytes(row({ description: "x".repeat(MAX_RECORD + 1) }))]) {
+    for (const input of [Buffer.from([0xff]), Buffer.from(headers.join(",") + '\n"unterminated'), Buffer.from(headers.join(",") + '\nx,y'), Buffer.from(canonicalCsv([row()]).replace('"sku","name"', '"sku","sku"')), bytes(row({ name: "bad\0text" })), bytes(row({ sku: "bad\ntext" })), bytes(row({ name: "hidden\u202e" })), Buffer.alloc(MAX_BYTES + 1), bytes(row({ description: "x".repeat(MAX_RECORD + 1) }))]) {
       expect(() => prepare(input)).toThrow();
     }
     expect(() => prepare(bytes(...Array.from({ length: 501 }, (_, i) => row({ catalogKey: key(i + 1), sku: `F-${i}` }))))).toThrow(/500/);
@@ -166,7 +167,7 @@ describe("production safeguards", () => {
   });
   it("binds a deterministic plan to target/content/revisions, not prices", () => {
     const docs = snapshot([category()]); const first = plan([row()], docs, target);
-    expect(plan([row({ tier1Price: "0.01" })], docs, target).hash).toBe(first.hash);
+    expect(plan([row({ prices: { "price:1:Tier 1": "0.01", "price:2:Tier 2": null } })], docs, target).hash).toBe(first.hash);
     expect(plan([row()], docs, { ...target, dataset: "production" }).hash).not.toBe(first.hash);
     expect(plan([row()], snapshot([{ ...category(), _rev: "another" }]), target).hash).not.toBe(first.hash);
   });

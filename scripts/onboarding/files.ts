@@ -18,7 +18,7 @@ function inside(root: string, path: string) {
   const rel = relative(root, path);
   return Boolean(rel) && !isAbsolute(rel) && rel !== ".." && !rel.startsWith("..\\") && !rel.startsWith("../");
 }
-export async function writeArtifacts(resolvedPath: string, resolvedCsv: string, pricingCsv: string) {
+async function outputPaths(resolvedPath: string) {
   // Restrict outputs to one ignored directory, not public/ or arbitrary paths.
   const workspace = await realpath(process.cwd());
   const data = resolve(workspace, "data");
@@ -29,6 +29,18 @@ export async function writeArtifacts(resolvedPath: string, resolvedCsv: string, 
   const target = resolve(resolvedPath);
   if (!inside(root, target) || dirname(target) !== root || !/^[a-zA-Z0-9_-]+\.csv$/.test(basename(target))) throw new OnboardingError("Write artifacts directly under data/onboarding/ using a simple .csv filename.");
   const pricing = target.slice(0, -4) + ".pricing.csv";
+  return { workspace, target, pricing };
+}
+export async function writeMapped(path: string, csv: string) {
+  const { workspace, target } = await outputPaths(path);
+  const file = await open(target, "wx", 0o600);
+  try { await file.writeFile(csv, "utf8"); await file.sync(); }
+  catch (error) { await file.close(); await unlink(target); throw error; }
+  finally { await file.close(); }
+  return relative(workspace, target);
+}
+export async function writeArtifacts(resolvedPath: string, resolvedCsv: string, pricingCsv: string) {
+  const { workspace, target, pricing } = await outputPaths(resolvedPath);
   const created: string[] = [];
   try {
     for (const [path, body] of [[target, resolvedCsv], [pricing, pricingCsv]]) {

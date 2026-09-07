@@ -1,3 +1,4 @@
+const configuredTiers = [{ id: "t1", name: "Tier 1", rank: 1 }, { id: "t2", name: "Tier 2", rank: 2 }];
 import { afterAll, beforeEach, expect, it, vi } from "vitest";
 const mock = vi.hoisted(() => ({ auth: vi.fn(), content: vi.fn() }));
 vi.mock("@/auth", () => ({ auth: mock.auth }));
@@ -15,7 +16,7 @@ const one = "d4000000-0000-4000-8000-000000000001"; const two = "d4000000-0000-4
 const keys = [one, two, orphan];
 let admin: { id: string; sessionVersion: number }; let customer: { id: string; sessionVersion: number }; let tier1: string; let tier2: string;
 const products = () => [fictionalProduct({ _id: "pricing-one", catalogKey: one }), fictionalProduct({ _id: "pricing-two", catalogKey: two, name: "Hidden fixture", available: false })];
-const file = (price = "21.23", second = "7.89") => new File([`${csvHeaders.join(",")}\n${one},TEST-ONLY-001,Fictional test product one,,true,${price},${second}\n${two},TEST-ONLY-001,Hidden fixture,,false,,\n`], "fixture.csv");
+const file = (price = "21.23", second = "7.89") => new File([`${[...csvHeaders, "price:1:Tier 1", "price:2:Tier 2"].join(",")}\n${one},TEST-ONLY-001,Fictional test product one,,true,${price},${second}\n${two},TEST-ONLY-001,Hidden fixture,,false,,\n`], "fixture.csv");
 async function staged(upload = file()) {
   const result = await previewPricingImport(upload); expect(result.status).toBe("preview");
   if (result.status !== "preview") throw new Error("No test preview"); return result;
@@ -40,8 +41,8 @@ it("exports current keys, exact prices and hidden products with private/no-store
   const response = await exportRoute(); expect(response.status).toBe(200);
   expect(response.headers.get("cache-control")).toContain("private, no-store");
   expect(response.headers.get("content-disposition")).toContain("attachment");
-  const csv = await response.text(); const parsed = parsePricingCsv(new TextEncoder().encode(csv));
-  expect(parsed.rows).toHaveLength(2); expect(parsed.rows[0]).toMatchObject({ catalogKey: one, tier1Price: "19.95", tier2Price: "17.13" });
+  const csv = await response.text(); const parsed = parsePricingCsv(new TextEncoder().encode(csv), configuredTiers);
+  expect(parsed.rows).toHaveLength(2); expect(parsed.rows[0]).toMatchObject({ catalogKey: one, prices: { "price:1:Tier 1": "19.95", "price:2:Tier 2": "17.13" } });
   expect(csv).toContain('"false"');
 });
 it.each(["anonymous", "customer", "disabled", "revoked"])("rejects %s for dashboard/export/upload/confirm", async (kind) => {
@@ -56,7 +57,7 @@ it.each(["anonymous", "customer", "disabled", "revoked"])("rejects %s for dashbo
 });
 it("preview writes nothing and confirmation explicitly removes blanks while updating both independent tiers", async () => {
   const before = await prices(); const stage = await staged(); expect(await prices()).toEqual(before);
-  expect(stage.preview.summary).toMatchObject({ tier1: { update: 1, unchanged: 1 }, tier2: { update: 1, remove: 1 } });
+  expect(stage.preview.summary).toMatchObject([{ update: 1, unchanged: 1 }, { update: 1, remove: 1 }]);
   expect((await confirmPricingImport(stage.token, false)).status).toBe("invalid"); expect(await prices()).toEqual(before);
   expect((await confirmPricingImport(stage.token, true)).status).toBe("success");
   expect((await prices()).map((row) => row.price.toFixed(2)).sort()).toEqual(["21.23", "7.89"]);
@@ -66,12 +67,12 @@ it("preview writes nothing and confirmation explicitly removes blanks while upda
 });
 it("creates absent prices, preserves omitted products and recognizes unchanged amounts", async () => {
   await db.productPrice.deleteMany({ where: { catalogKey: one } });
-  const stage = await staged(new File([`${csvHeaders.join(",")}\n${one},,,,,0.00,9999999999.99`], "fixture.csv"));
-  expect(stage.preview.summary.tier1.create).toBe(1); expect(stage.preview.summary.tier2.create).toBe(1);
+  const stage = await staged(new File([`${[...csvHeaders, "price:1:Tier 1", "price:2:Tier 2"].join(",")}\n${one},,,,,0.00,9999999999.99`], "fixture.csv"));
+  expect(stage.preview.summary[0].create).toBe(1); expect(stage.preview.summary[1].create).toBe(1);
   expect((await confirmPricingImport(stage.token, false)).status).toBe("success");
   expect((await prices()).find((row) => row.catalogKey === two)?.price.toFixed(2)).toBe("8.01");
-  const again = await staged(new File([`${csvHeaders.join(",")}\n${one},,,,,0,9999999999.99`], "fixture.csv"));
-  expect(again.preview.summary.tier1.unchanged).toBe(1); expect(again.preview.summary.tier2.unchanged).toBe(1);
+  const again = await staged(new File([`${[...csvHeaders, "price:1:Tier 1", "price:2:Tier 2"].join(",")}\n${one},,,,,0,9999999999.99`], "fixture.csv"));
+  expect(again.preview.summary[0].unchanged).toBe(1); expect(again.preview.summary[1].unchanged).toBe(1);
 });
 it.each(["-1", "1.001", "NaN", "1e2"])("invalid price %s cannot generate a confirmable preview or write", async (amount) => {
   const before = await prices(); const result = await previewPricingImport(file(amount));
@@ -101,13 +102,13 @@ it.each(["price", "delete", "insert", "identity", "product removal", "duplicate"
   if (kind === "SKU") mock.content.mockResolvedValue(products().map((row) => ({ ...row, sku: "Changed SKU" })));
   const before = await prices(); expect((await confirmPricingImport(stage.token, true)).status).toBe("invalid"); expect(await prices()).toEqual(before);
 });
-it("rejects changed tiers and reports unsupported-tier audit state", async () => {
+it("rejects stale previews after tier renaming while allowing the renamed configured tier", async () => {
   const stage = await staged();
   try {
     await db.pricingTier.update({ where: { id: tier2 }, data: { name: "Unsupported fixture tier" } });
     expect((await confirmPricingImport(stage.token, true)).status).toBe("invalid");
-    const dashboard = await getAdminPricing(); expect(dashboard).toMatchObject({ status: "ready", blocked: true });
-  } finally { await db.pricingTier.update({ where: { id: tier2 }, data: { name: "Tier 2" } }); }
+    const dashboard = await getAdminPricing(); expect(dashboard).toMatchObject({ status: "ready", blocked: false });
+  } finally { await db.pricingTier.update({ where: { id: tier2 }, data: { name: "Tier 2", rank: 2 } }); }
 });
 it("rolls back an earlier deletion when the bulk upsert fails", async () => {
   const stage = await staged(file("12345.67")); const before = await prices();
@@ -124,7 +125,7 @@ it("concurrent confirmations do not overwrite a newer successful import", async 
 it("surfaces orphan prices and missing-price counts without exporting orphan identities", async () => {
   await db.productPrice.create({ data: { catalogKey: orphan, pricingTierId: tier1, price: "9.87" } });
   const dashboard = await getAdminPricing();
-  expect(dashboard).toMatchObject({ status: "ready", counts: { total: 2, available: 1, fullyPriced: 1, missingTier1: 1, missingTier2: 0 }, issues: expect.arrayContaining([expect.objectContaining({ code: "orphaned_price", catalogKey: orphan })]) });
+  expect(dashboard).toMatchObject({ status: "ready", counts: { total: 2, available: 1, fullyPriced: 1, missing: [{ count: 0 }, { count: 0 }] }, issues: expect.arrayContaining([expect.objectContaining({ code: "orphaned_price", catalogKey: orphan })]) });
   expect(await getAdminPricingExport()).not.toContain(orphan);
 });
 it("Sanity failure is safe for dashboard/export/preview/confirm and never writes", async () => {

@@ -1,17 +1,19 @@
-# Catalog onboarding — Milestone 5A
+# Catalog onboarding — Milestone 5A.1
 
-Milestones 1 through 4A are complete and merged per the user. These are operator
-tools, not application endpoints. No real client spreadsheet, column mapping,
-product data, images or currency/unit semantics have been supplied. This milestone
-defines an internal contract; map the client's actual columns deliberately later.
-No remote writes or deployment were performed during implementation.
+Milestones through 5A are complete and merged per the user. These are operator
+tools, not application endpoints. The real BoxHero XLSX was inspected read-only
+for 5A.1; no real source or product rows are committed. Customers order complete
+cases. Selling Price is the Tier 2 case price; Unit Cost is confidential internal
+case cost. Item Number supplies the customer-facing SKU, never permanent identity.
+Currency and Tier 1 source still need confirmation. No remote writes or deployment
+were performed.
 
 ## Canonical file
 
-Use comma-separated UTF-8 CSV, with exactly these unique headers (order may vary):
+Use comma-separated UTF-8 CSV, with these content headers and dynamic tier columns (order may vary; example for the initial tiers):
 
 ```csv
-catalogKey,sku,name,category,description,available,tier1Price,tier2Price
+catalogKey,sku,name,category,brand,packing,description,available,price:1:Tier 1,price:2:Tier 2
 ```
 
 | Field | Contract |
@@ -20,17 +22,18 @@ catalogKey,sku,name,category,description,available,tier1Price,tier2Price
 | sku | Required, trimmed, at most 100 characters. Duplicate case/Unicode-normalized SKUs are errors, not identity matches. |
 | name | Required, trimmed, at most 200 characters. Editable content. |
 | category | Required name, at most 100 characters. Trim/collapse whitespace; category identity uses NFKC Unicode normalization and lowercase. |
+| brand / packing | Optional plain single-line text, at most 100 characters each. Packing describes one case; preserve notation without arithmetic. |
 | description | Optional plain text, at most 10,000 characters. Line endings normalize to LF; multiline quoted CSV is supported. |
 | available | Explicit `true` or `false`, case-insensitive with outer whitespace trimmed. Blank, yes/no, numbers and stock inference are rejected. |
-| tier1Price / tier2Price | Independent exact decimal text using existing `priceText()` rules, normalized to two decimals. Blank means no price. No symbols, negatives, exponents, excess scale or values above 9999999999.99. |
+| price:rank:name columns | Independent exact decimal text using existing `priceText()` rules, normalized to two decimals. Blank means no price. No symbols, negatives, exponents, excess scale or values above 9999999999.99. |
 
 Human text is normalized to NFC. NUL/control characters and bidi overrides are
-rejected; only description permits tabs/newlines. SKU/name/category are single-line.
+rejected; only description permits tabs/newlines. SKU/name/category/brand/packing are single-line.
 Limits: 2 MiB source, 500 product rows, 12,000 characters per CSV record. Invalid
 UTF-8, malformed quoting, unequal columns, repeated/missing/unknown headers,
 duplicate identities and missing required content reject the entire file.
 Errors identify logical CSV record number and field, never raw values. Up to 25
-errors print per run. Warning counts indicate available products missing either
+errors print per run. Warning counts indicate available products missing any configured
 tier price; those customers will not see them until prices exist.
 
 Generated CSV quotes fields and uses existing `spreadsheetText()` protection.
@@ -40,6 +43,123 @@ where it would otherwise be interpreted as that escape. This is a canonical CSV
 convention, not an inferred client spreadsheet convention. The writer/reader
 round-trip these escapes without adding apostrophes to Sanity content. Preserve
 UUIDs and exact text if editing files in spreadsheet software.
+
+
+## BoxHero mapping before preparation
+
+Use `catalog:map-boxhero` for the received ten-column BoxHero structure:
+SKU, Item Name, Unit Cost, Selling Price, Packing, Type, Brand, Item Number,
+Quantity, Qty(Warehouse). This is a file mapper, not a live BoxHero integration.
+
+Direct XLSX support uses pinned development dependencies `read-excel-file@9.3.10`
+and `fflate@0.8.3`. The small reader supports raw numeric text, avoiding a
+floating-point price conversion; the ZIP dependency provides archive preflight.
+They are imported only by operator code. The reader runs in a credential-free
+subprocess with a 128 MiB JS heap and 15-second deadline. Input is bounded to
+2 MiB, 64 ZIP entries, 4 MiB per expanded entry and 8 MiB total expansion. Require
+exactly one sheet named BoxHero, at most 500 rows/10 columns, and no formulas,
+DTD/entity declarations or oversized sparse cell coordinates. Parser errors never
+dump source contents. CSV UTF-8 with the same headers is also supported.
+See the [reader documentation](https://github.com/catamphetamine/read-excel-file)
+for the raw-number parsing API. The XLSX subprocess discards Unit Cost and BoxHero
+SKU before returning data; neither field participates in canonical mapping.
+
+Create an ignored operator JSON configuration. Start from the intended environment's
+current PricingTier ranks/names (check its admin export), not guessed tier definitions:
+
+```json
+{
+  "tiers": [{ "rank": 1, "name": "Tier 1" }, { "rank": 2, "name": "Tier 2" }],
+  "categories": {},
+  "rows": []
+}
+```
+
+```text
+npm run catalog:map-boxhero -- data/onboarding/source.xlsx data/onboarding/mapping.json
+```
+
+Mapping is dry-run by default and never opens Sanity or PostgreSQL. It prints a
+source hash, plan hash, counts and logical source row numbers with issue codes;
+no names, source IDs, costs or price lists. It maps Item Name/name, Item Number/sku,
+Type/category, Brand/brand, Packing/packing, and Selling Price/rank 2 case price.
+All other tiers stay blank. Available is always false, regardless of positive,
+zero, negative or mismatched inventory. Visibility is approved separately later.
+Zero BoxHero selling prices mean unresolved customer pricing: Tier 2 stays blank
+and the mapper emits `zero_selling_price`. Acknowledging that warning allows the
+row to proceed unpriced, never with `0.00`. Supply a positive explicit
+`sellingPrice` row override, exclude the row, or acknowledge that it remains
+unpriced. This source-specific rule does not change the shared ProductPrice rule
+allowing explicit zero elsewhere. Malformed/excess-scale prices block the row.
+No rounding, discount, margin, cost or packing-based price formula exists.
+
+Every source Type should be reviewed. `categories` maps exact source labels to
+approved display text; mapping a label to itself explicitly approves retaining it.
+Unmapped labels remain intact and produce an unacknowledged warning. No proposed
+500G/500 Gram or similar cleanup is built in.
+
+Missing item numbers/categories and duplicate normalized item numbers block rows.
+Duplicate names, missing brand/packing, zero price, negative/mismatched inventory,
+unmapped categories and suspected operational names require review. The mapper
+does not merge or silently exclude any record. Fix source data or add explicit
+row decisions bound to `sourceHash` from that exact file. A decision can supply
+sku/name/category/brand/packing/sellingPrice, acknowledge warning codes, or exclude
+the row with a nonempty reason. Example with fictional values:
+
+```json
+{
+  "row": 2,
+  "sku": "FICTIONAL-CORRECTION",
+  "acknowledge": ["missing_brand", "missing_packing"]
+}
+```
+
+Put decisions in the configuration's `rows` array and the exact `sourceHash`
+at the top level. An exclusion is `{"row":3,"exclude":"Reviewed operational record"}`.
+Line numbers are for this source review only, never product identity. Altering the
+workbook invalidates row decisions; altering either file changes the reviewed plan.
+When all included rows validate and every warning is acknowledged, review again:
+
+```text
+npm run catalog:map-boxhero -- data/onboarding/source.xlsx data/onboarding/mapping.json --write data/onboarding/mapped.csv --reviewed PLAN_HASH
+npm run catalog:prepare -- data/onboarding/mapped.csv data/onboarding/resolved.csv
+```
+
+Mapping writes only a canonical candidate with blank keys; prepare assigns UUIDs
+and creates the pricing CSV using the existing 5A workflow. Both commands refuse
+overwrites. Never re-map a later BoxHero export as an update with new blank keys:
+reconcile against the preserved resolved catalogKey mapping explicitly first.
+The mapper never matches existing products by BoxHero SKU, item number or row.
+
+Read-only inspection of the received workbook found 311 rows, 7 missing item
+numbers, 5 missing categories, 7 missing brands, 7 missing packing values,
+29 zero selling prices, 13 negative inventory rows, 3 duplicate item-number groups
+(6 rows), 3 duplicate-name groups (6 rows), and no warehouse quantity mismatches.
+The strict mapper additionally flags 14 noncanonical selling-price values and
+4 suspected operational records. Categories have not been approved/normalized.
+These are diagnostics, not decisions to delete, merge, round or publish products.
+
+## Dynamic tier contract
+
+Price columns are `price:<positive rank>:<exact current name>`, e.g.
+`price:1:Tier 1` and `price:2:Tier 2`; future configured tiers add columns.
+All CSV headers are quoted on output, including names containing commas. Tier 1
+is cheapest; higher ranks represent progressively more expensive groups. Each
+product's prices remain independently supplied; no automatic derivation or
+cross-tier numeric ordering rule is imposed by this import tool.
+
+Offline canonical preparation validates column syntax/uniqueness but never defines
+database tiers. The ADMIN importer resolves every column against current SQL tiers,
+requires every configured column exactly once and rejects unknown, omitted,
+duplicate, renamed or reordered-rank definitions. A name/rank/ID change after
+preview invalidates confirmation. Export again after tier configuration changes;
+old `tier1Price`/`tier2Price` files are rejected, not silently reinterpreted.
+Earlier eight-column resolved files must be deliberately converted with their
+existing catalogKeys preserved, adding blank brand/packing and new price headers.
+Keep a backup and prepare into a new filename. Brand/packing blanks intentionally
+clear those fields on import; omitted products and existing images are preserved.
+Pricing previews are capped at 512,000 token characters; split unusually large
+files across product rows if the bounded preview cannot be generated.
 
 ## Workflow
 
@@ -98,14 +218,14 @@ UUIDs and exact text if editing files in spreadsheet software.
    removals when needed and explicitly confirm. The exact output headers are:
 
    ```csv
-   catalogKey,sku,productName,category,available,tier1Price,tier2Price
+   catalogKey,sku,productName,category,available,price:1:Tier 1,price:2:Tier 2
    ```
 
    This reuses the existing pricing exporter/parser and exact-money utility.
    No ProductPrice mutation, database connection or alternate pricing importer
    exists in the onboarding tools. Blank prices mean no price/removal through the
    existing acknowledged workflow, never zero. Omitted products remain unchanged.
-7. Re-run the audit and verify the customer catalog for both tiers. Images are
+7. Re-run the audit and verify the customer catalog for every configured tier. Images are
    optional here: new products have none, and updates preserve existing images.
    Image onboarding depends on the client's eventual source and is deferred.
 
@@ -186,6 +306,19 @@ prepare it again to new filenames rather than generating keys from the original.
 
 ## Isolated verification
 
+Milestone 5A.1 local verification: 210 unit tests, 114 isolated database tests,
+all six migrations on a fresh isolated database, and 35 Playwright scenarios
+(30 Chromium, 5 Firefox). Lint, Prisma generation, typecheck and production build
+passed. Reviewed phone/tablet/desktop catalog, order-review and pricing screenshots.
+The fictional map → prepare → offline import dry-run passed. Source/artifact paths
+are ignored and no XLSX is tracked. Client bundle scans found no CLI parser,
+write-token marker or fictional internal-cost marker. Mutation/artifact/customer
+DTO tests exclude internal cost, and Sanity mutations exclude private prices.
+The real workbook was inspected in memory only; no remote writes or deployment.
+Dependency audit reports 15 advisories in existing stack packages (6 moderate,
+9 high), none in the added XLSX/ZIP parser packages. No unrelated dependency
+upgrades were made.
+
 ```text
 npm run catalog:prepare -- tests/fixtures/onboarding.csv data/onboarding/fictional-resolved.csv
 npm run catalog:import -- data/onboarding/fictional-resolved.csv --project testonly --dataset test --snapshot tests/fixtures/onboarding-empty.json
@@ -198,7 +331,7 @@ privacy, category/product planning, revision failures, zero-write rejection,
 safe reruns, output preservation and production safeguards. No live Sanity project
 or PostgreSQL database is required by these tests.
 
-Local verification on 2026-09-07 passed lint, typecheck, 194 unit tests (including
+Previous Milestone 5A verification on 2026-09-07 passed lint, typecheck, 194 unit tests (including
 43 onboarding checks), 110 isolated database tests, 34 Playwright scenarios
 (29 Chromium, 5 Firefox), and the production build. The fictional prepare and
 offline dry-run commands passed. Generated/source working paths are ignored,
@@ -207,6 +340,6 @@ Sanity mutation tests exclude prices; the production client bundles contain
 neither `SANITY_API_WRITE_TOKEN` nor the fictional token marker used for the scan.
 No remote apply, remote database changes or deployment was performed.
 
-Deferred: actual spreadsheet mapping, real data import, customer onboarding,
+Deferred: operator source corrections/exclusions, real data import, customer onboarding,
 images, live remote apply verification, deletion, taxonomy redesign, inventory,
 payments, deployments and changes to customer ordering.

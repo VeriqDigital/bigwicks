@@ -45,6 +45,21 @@ async function submit(token?: string) {
 }
 const saved = () => db.order.findMany({ where: { customerId: customer.customer!.id }, include: { items: true } });
 
+it("re-reviews changed case metadata and preserves brand/packing snapshots without future Sanity reads", async () => {
+  mock.content.mockResolvedValue([fictionalProduct({ catalogKey: key, brand: "Fictional original brand", packing: "18/6/6" })]);
+  const review = await stage();
+  mock.content.mockResolvedValue([fictionalProduct({ catalogKey: key, brand: "Fictional corrected brand", packing: "4/1" })]);
+  const refreshed = await submitOrder(review.token); expect(refreshed.status).toBe("review");
+  if (refreshed.status !== "review") throw Error("No refreshed review");
+  expect(await saved()).toHaveLength(0);
+  const reference = await submit(refreshed.review.token);
+  mock.content.mockRejectedValue(new Error("No historical CMS dependency"));
+  const receipt = await getCustomerConfirmation(reference);
+  expect(receipt.items[0]).toMatchObject({ brand: "Fictional corrected brand", packing: "4/1", quantity: 3, unitPrice: "19.99", lineTotal: "59.97" });
+  expect(mock.email).toHaveBeenCalledTimes(1);
+  expect(mock.email.mock.calls[0][0].items[0]).toMatchObject({ brand: "Fictional corrected brand", packing: "4/1" });
+});
+
 it.each(["anonymous", "admin", "disabled user", "disabled business", "revoked"])("denies %s review and submission", async (kind) => {
   const review = await stage();
   if (kind === "anonymous") mock.auth.mockResolvedValue(null);

@@ -12,7 +12,7 @@ export function pricingMessage(error: unknown) { return error instanceof Pricing
 async function readSql(tx: Prisma.TransactionClient, raw: unknown) {
   const [prices, tiers] = await Promise.all([
     tx.productPrice.findMany({ select: { catalogKey: true, pricingTierId: true, price: true, updatedAt: true } }),
-    tx.pricingTier.findMany({ select: { id: true, name: true } }),
+    tx.pricingTier.findMany({ select: { id: true, name: true, rank: true }, orderBy: { rank: "asc" } }),
   ]);
   return pricingSnapshot(raw, prices, tiers);
 }
@@ -24,26 +24,26 @@ export async function getAdminPricing() {
   await requireAdmin();
   try {
     const snapshot = await readSnapshot();
-    return { status: "ready" as const, rows: snapshot.rows, counts: snapshot.counts, issues: snapshot.audit.issues, blocked: snapshot.blocked };
+    return { status: "ready" as const, rows: snapshot.rows, tiers: snapshot.tiers, counts: snapshot.counts, issues: snapshot.audit.issues, blocked: snapshot.blocked };
   } catch { return { status: "unavailable" as const, message: pricingUnavailable }; }
 }
 export async function getAdminPricingExport() {
   await requireAdmin();
   const snapshot = await readSnapshot(); ensureWritable(snapshot);
-  return exportPricingCsv(snapshot.rows);
+  return exportPricingCsv(snapshot.rows, snapshot.tiers);
 }
 export async function previewPricingImport(file: unknown) {
   const admin = await requireAdmin();
   try {
     if (!(file instanceof File) || file.size === 0 || file.size > MAX_CSV_BYTES) throw new PricingError("Choose a nonempty CSV file no larger than 256 KiB.");
-    const parsed = parsePricingCsv(new Uint8Array(await file.arrayBuffer()));
-    if (parsed.errors.length) return { status: "invalid" as const, message: "No prices changed. Correct the CSV errors and upload again.", errors: parsed.errors, rowsRead: parsed.rowsRead };
     const snapshot = await readSnapshot(); ensureWritable(snapshot);
+    const parsed = parsePricingCsv(new Uint8Array(await file.arrayBuffer()), snapshot.tiers);
+    if (parsed.errors.length) return { status: "invalid" as const, message: "No prices changed. Correct the CSV errors and upload again.", errors: parsed.errors, rowsRead: parsed.rowsRead };
     const preview = planImport(parsed.rows, snapshot);
     if (preview.errors.length) return { status: "invalid" as const, message: "No prices changed. Correct the CSV errors and upload again.", errors: preview.errors, rowsRead: parsed.rowsRead };
     const expiresAt = Date.now() + 10 * 60 * 1000;
     const token = sealPreview({ adminId: admin.id, sessionVersion: admin.sessionVersion, expiresAt, snapshot: snapshot.fingerprint,
-      rows: parsed.rows.map(({ catalogKey, tier1Price, tier2Price }) => ({ catalogKey, tier1Price, tier2Price })),
+      rows: parsed.rows.map(({ catalogKey, prices }) => ({ catalogKey, prices })),
     });
     return { status: "preview" as const, preview, token, expiresAt };
   } catch (error) { return { status: "invalid" as const, message: pricingMessage(error), errors: [] }; }
@@ -68,10 +68,7 @@ export async function confirmPricingImport(token: unknown, acknowledgeRemovals: 
       });
       const plan = planImport(rows, snapshot);
       if (plan.errors.length) throw new PricingError("The import no longer validates. Upload the CSV again.");
-      const writes = plan.changes.flatMap((change) => [
-        { catalogKey: change.catalogKey, pricingTierId: snapshot.tier1!.id, ...change.tier1 },
-        { catalogKey: change.catalogKey, pricingTierId: snapshot.tier2!.id, ...change.tier2 },
-      ]);
+      const writes = plan.changes.flatMap((change) => change.prices.map((price) => ({ catalogKey: change.catalogKey, ...price })));
       const removals = writes.filter((change) => change.kind === "remove");
       if (removals.length && acknowledgeRemovals !== true) throw new PricingError("Confirm that blank cells remove existing prices before applying this import.");
       if (removals.length) await tx.productPrice.deleteMany({ where: { OR: removals.map(({ catalogKey, pricingTierId }) => ({ catalogKey, pricingTierId })) } });

@@ -5,7 +5,7 @@
 **Client / business name:** Big Wicks Fireworks LLC
 **Public-facing name:** Big Wicks Fireworks
 **Project type:** Retail marketing website + protected wholesale customer portal
-**Current stage:** Managed website ordering is functionally complete through Milestone 4A (merged per user); Milestone 5A prepares operator onboarding tooling while real client data is pending
+**Current stage:** Managed website ordering is functionally complete through Milestone 4A (merged per user); Milestone 5A.1 aligns case metadata, configurable tiers and BoxHero mapping; real import remains unapproved
 **Primary Veriq contact:** Mick Enev
 
 ### Project summary
@@ -936,7 +936,7 @@ remain a separately authorized release task.
 
 Complete and merged per user; fictional preview content/prices and a clean audit
 were manually verified by the developer. See `docs/CATALOG.md`. Real catalog/import
-columns and currency/unit meaning remain unconfirmed.
+columns and case semantics are now confirmed in Milestone 5A.1; currency remains unconfirmed.
 
 ### Milestone 3B — Protected wholesale catalog UI
 
@@ -986,6 +986,24 @@ and reuses the verified account sender. No remote writes, real orders or deploym
 Big Wicks owns final availability review, substitutions, payment, invoicing and
 fulfillment outside the website. See `docs/ORDERING.md` for exact architecture,
 notification recovery limits, setup and verification.
+
+### Milestone 5A.1 — Real case catalog, configured tiers and BoxHero mapping
+
+5A is complete and merged per user. Brand/packing are optional public catalog
+metadata. Customers order complete cases; Selling Price is Tier 2 case price,
+Unit Cost is confidential internal case cost, and Packing is descriptive only.
+Item Number supplies customer-facing SKU; BoxHero SKU is not identity. Never
+derive website availability from inventory counts. CatalogKey stays permanent.
+Tier 1 is cheapest, higher ranks describe more expensive groups; all per-product
+prices remain independently entered. Tier 1 source is still pending.
+
+Implement unique positive tier ranks, dynamic customer/pricing/audit paths,
+new nullable order metadata snapshots, dynamic pricing CSV and operator BoxHero
+XLSX/CSV mapping. Default mapped visibility is false. Source corrections,
+exclusions, category labels, zero/invalid prices and initial visibility require
+explicit operator review. No remote migration/import, tier creation, deployment
+or environment changes are authorized during this task. See ONBOARDING/CATALOG/
+ORDERING docs. Real workbook contents must not be committed or copied into tests.
 
 ### Milestone 5A — Product catalog onboarding tooling
 
@@ -1104,7 +1122,7 @@ Test:
 
 ### What Codex should optimize for right now
 
-Complete and verify Milestone 5A's catalog onboarding tooling. Milestones 1, 2A,
+Complete and verify Milestone 5A.1's real catalog model, dynamic pricing tiers and offline BoxHero mapping. Milestones 1, 2A,
 2B, 3A, 3B, 3C and 4A are complete and merged per the user.
 Do not deploy, modify remote data/settings, or invent/import real products.
 
@@ -1136,9 +1154,9 @@ Build and verify one vertical slice at a time.
 ### Blocks later implementation
 
 - [x] Website Ordering authorized by the user for Milestone 4A implementation.
-- [ ] What exact product-data source/format will Big Wicks provide?
-- [ ] What exact price data will be provided for Tier 1 and Tier 2?
-- [ ] Is Tier 2 individually priced per product or derived from a consistent rule?
+- [x] BoxHero XLSX export received and inspected read-only for 5A.1 (311 rows).
+- [ ] Tier 1 per-product source is pending; BoxHero Selling Price is confirmed as Tier 2 case price.
+- [x] All tiers are independently priced per product; no percentage formula.
 - [ ] What exact customer fields are included in the approximately 50-customer import?
 - [x] Initial customer setup: admin-issued, expiring single-use email links (Milestone 2B).
 - [ ] Which Big Wicks staff members need admin accounts?

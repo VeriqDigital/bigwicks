@@ -21,8 +21,8 @@ async function main() {
   const db = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
   try {
     await db.$transaction(async (tx) => {
-      const tiers = await Promise.all(["Tier 1", "Tier 2"].map((name) =>
-        tx.pricingTier.upsert({ where: { name }, update: {}, create: { name } }),
+      const tiers = await Promise.all(["Tier 1", "Tier 2"].map((name, index) =>
+        tx.pricingTier.upsert({ where: { name }, update: {}, create: { name, rank: index + 1 } }),
       ));
       for (const [index, fixture] of fixtures.entries()) {
         // Repeat seeds preserve existing passwords, status, roles and tier changes.

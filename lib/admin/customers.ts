@@ -2,7 +2,8 @@ import "server-only";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth/authorization";
 import { getDb } from "@/lib/db";
-import { customerIdSchema, supportedTierNames } from "./customer-validation";
+import { validTier } from "@/lib/pricing/tiers";
+import { customerIdSchema } from "./customer-validation";
 
 const customerSelect = {
   id: true, companyName: true, customerNumber: true, pricingTierId: true, active: true,
@@ -44,7 +45,8 @@ export async function getCustomer(id: string) {
 
 export async function listCustomerTiers() {
   await requireAdmin();
-  return getDb().pricingTier.findMany({ where: { name: { in: supportedTierNames } }, select: { id: true, name: true }, orderBy: { name: "asc" } });
+  const tiers = await getDb().pricingTier.findMany({ select: { id: true, name: true, rank: true }, orderBy: { rank: "asc" } });
+  return tiers.filter(validTier);
 }
 
 export async function hasPendingSetup(customerId: string) {

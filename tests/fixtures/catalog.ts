@@ -9,6 +9,7 @@ export function fictionalProduct(overrides: Record<string, unknown> = {}) {
   return {
     _id: "fictional-product-one", catalogKey: catalogKeys.one, sku: "TEST-ONLY-001", name: "Fictional test product one", available: true,
     category: { _id: "fictional-category", name: "Fictional category" },
+    brand: "Fictional brand", packing: "18/6/6",
     description: "Fictional content used only by automated tests.",
     image: { url: "https://cdn.sanity.io/images/testonly/test/fictional-100x100.png", alt: "Fictional test image" },
     ...overrides,

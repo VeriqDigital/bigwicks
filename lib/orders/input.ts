@@ -19,10 +19,10 @@ export function requestedItems(value: unknown): RequestedItem[] {
     if (seen.has(catalogKey)) throw new OrderError("Duplicate products are not allowed.");
     seen.add(catalogKey);
     const parsed = quantityValue(quantity);
-    if (parsed === null) throw new OrderError("Quantities must be whole numbers from 0 to 999.");
+    if (parsed === null) throw new OrderError("Case counts must be whole numbers from 0 to 999.");
     return { catalogKey, quantity: parsed };
   }).filter((item) => item.quantity > 0);
-  if (!rows.length) throw new OrderError("Select at least one product with a quantity greater than zero.");
+  if (!rows.length) throw new OrderError("Select at least one complete case.");
   return rows.sort((a, b) => a.catalogKey.localeCompare(b.catalogKey));
 }
 export function cents(amount: string): bigint {

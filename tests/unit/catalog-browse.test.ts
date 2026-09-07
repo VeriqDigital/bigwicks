@@ -6,8 +6,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import type { CustomerCatalogProduct } from "@/lib/catalog/service";
 
 const products: CustomerCatalogProduct[] = [
-  { catalogKey: "b", sku: "TEST-B", name: "Beta", category: null, image: null, description: null, price: "10.01" },
-  { catalogKey: "a", sku: "TEST-A", name: "Alpha", category: { id: "cat", name: "Test cakes" }, image: null, description: null, price: "9.99" },
+  { catalogKey: "b", sku: "TEST-B", name: "Beta", category: null, image: null, description: null, brand: null, packing: null, price: "10.01" },
+  { catalogKey: "a", sku: "TEST-A", name: "Alpha", category: { id: "cat", name: "Test cakes" }, image: null, description: null, brand: null, packing: null, price: "9.99" },
 ];
 describe("catalog browsing uses only the supplied authorized DTO", () => {
   it.each([[" ALPHA ", "a"], ["test-b", "b"], ["CAKES", "a"]])("searches trimmed case-insensitive name/SKU/category: %s", (query, key) => {
