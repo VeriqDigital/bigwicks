@@ -1,4 +1,4 @@
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { zipSync, strToU8 } from "fflate";
 import { parse } from "csv-parse/sync";
@@ -7,6 +7,7 @@ import { canonicalCsv, prepare } from "../../scripts/onboarding/csv";
 import { plan, snapshot } from "../../scripts/onboarding/plan";
 import { parsePricingCsv } from "@/lib/pricing/csv";
 import { normalizeCatalogContent } from "@/lib/catalog/normalize";
+import * as money from "@/lib/catalog/money";
 
 const tiers = [{ name: "Tier 1", rank: 1 }, { name: "Tier 2", rank: 2 }, { name: "Fictional future group", rank: 3 }];
 const config = { tiers, categories: { "Fictional Type": "Fictional category" } };
@@ -16,6 +17,49 @@ const row = (change: Record<string, string> = {}) => {
   return boxHeroHeaders.map((h) => data[h]);
 };
 const hash = "a".repeat(64);
+it("produces a deterministic reviewed plan hash for identical source, config and mapping", () => {
+  const source = [boxHeroHeaders, row(), row({ "Item Number": "OTHER-FICTIONAL", Brand: "" })];
+  expect(mapBoxHero(structuredClone(source), structuredClone(config), hash)).toEqual(mapBoxHero(source, config, hash));
+});
+it.each([
+  ["Selling Price", "125.67"], ["Item Number", "OTHER-FICTIONAL"], ["Item Name", "Other fictional product"],
+  ["Type", "Other fictional category"], ["Brand", "Other fictional brand"], ["Packing", "12/6"],
+])("binds derived %s even when the supplied source hash and config stay the same", (field, value) => {
+  const original = mapBoxHero([boxHeroHeaders, row()], config, hash);
+  const changed = mapBoxHero([boxHeroHeaders, row({ [field]: value })], config, hash);
+  expect(changed.report.planHash).not.toBe(original.report.planHash);
+});
+it.each([{ exclude: "Reviewed exclusion" }, { acknowledge: ["missing_brand"] }])("binds exclusion and acknowledgement decisions %j", (decision) => {
+  const source = [boxHeroHeaders, row({ Brand: "" })];
+  const original = mapBoxHero(source, config, hash);
+  const changed = mapBoxHero(source, { ...config, sourceHash: hash, rows: [{ row: 2, ...decision }] }, hash);
+  expect(changed.report.planHash).not.toBe(original.report.planHash);
+});
+it("binds review issues even when mapped product content is unchanged", () => {
+  const original = mapBoxHero([boxHeroHeaders, row()], config, hash);
+  const changed = mapBoxHero([boxHeroHeaders, row({ Quantity: "-1", "Qty(Warehouse)": "-1" })], config, hash);
+  expect(changed.rows).toEqual(original.rows);
+  expect(changed.report.issues).not.toEqual(original.report.issues);
+  expect(changed.report.planHash).not.toBe(original.report.planHash);
+});
+it("invalidates review after a simulated mapper price change with identical source and config", () => {
+  const source = [boxHeroHeaders, row()];
+  const original = mapBoxHero(source, config, hash);
+  const mappingChange = vi.spyOn(money, "priceText").mockReturnValue("123.46");
+  try {
+    const changed = mapBoxHero(source, config, hash);
+    expect(changed.rows[0].prices["price:2:Tier 2"]).toBe("123.46");
+    expect(changed.report.sourceHash).toBe(original.report.sourceHash);
+    expect(changed.report.planHash).not.toBe(original.report.planHash);
+  } finally { mappingChange.mockRestore(); }
+});
+it("discards Unit Cost and BoxHero SKU from the derived plan and output", () => {
+  const original = mapBoxHero([boxHeroHeaders, row()], config, hash);
+  const changed = mapBoxHero([boxHeroHeaders, row({ "Unit Cost": "987654.32", SKU: "OTHER-PRIVATE-BOXHERO-ID" })], config, hash);
+  // Hold the opaque file hash fixed to isolate the derived plan's inputs.
+  expect(changed).toEqual(original);
+  for (const value of [cost, "987654.32", "BOXHERO-NOT-IDENTITY", "OTHER-PRIVATE-BOXHERO-ID"]) expect(JSON.stringify(changed)).not.toContain(value);
+});
 it("maps item number and independent Tier 2 case price, leaves other tiers blank and availability manual; cost never leaves the source", () => {
   const result = mapBoxHero([boxHeroHeaders, row()], config, hash);
   expect(result.writable).toBe(true);
@@ -90,15 +134,62 @@ it("rejects malformed structure and forged configuration rather than accepting s
   expect(() => mapBoxHero([boxHeroHeaders, row()], { tiers: [{ rank: 1, name: "Tier 1" }] }, hash)).toThrow();
 });
 // Minimal fictional ZIP fixture exercises the actual XLSX reader, not a live file.
-function workbook(sheet = "BoxHero", formula = false) {
-  const data = [boxHeroHeaders, row()];
-  const worksheet = `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${data.map((cells, r) => `<row r="${r + 1}">${cells.map((v, c) => `<c r="${String.fromCharCode(65 + c)}${r + 1}" t="inlineStr">${formula ? '<f>1+1</f>' : ''}<is><t>${v}</t></is></c>`).join("")}</row>`).join("")}</sheetData></worksheet>`;
+function workbook(sheet = "BoxHero", formula = false, numeric: Record<string, string> = {}, text: Record<string, string> = {}) {
+  const data = [boxHeroHeaders, row({ ...text, ...numeric })];
+  const worksheet = `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${data.map((cells, r) => `<row r="${r + 1}">${cells.map((v, c) => {
+    const isNumeric = r > 0 && Object.hasOwn(numeric, boxHeroHeaders[c]);
+    return `<c r="${String.fromCharCode(65 + c)}${r + 1}" t="${isNumeric ? 'n' : 'inlineStr'}">${formula ? '<f>1+1</f>' : ''}${isNumeric ? `<v>${v}</v>` : `<is><t>${v}</t></is>`}</c>`;
+  }).join("")}</row>`).join("")}</sheetData></worksheet>`;
   return zipSync({
     "xl/workbook.xml": strToU8(`<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${sheet}" sheetId="1" r:id="rId1"/></sheets></workbook>`),
     "xl/_rels/workbook.xml.rels": strToU8('<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>'),
     "xl/worksheets/sheet1.xml": strToU8(worksheet),
   });
 }
+it.each([
+  ["75.489999999999995", "75.49", "75.49"],
+  ["71.569999999999993", "71.57", "71.57"],
+  ["153.61000000000001", "153.61", "153.61"],
+  ["156.80000000000001", "156.8", "156.80"],
+])("normalizes XLSX numeric storage %s before exact-money validation", async (raw, normalized, canonical) => {
+  const parsed = await readBoxHero(workbook("BoxHero", false, { "Selling Price": raw, "Unit Cost": cost }), ".xlsx");
+  expect(parsed[1][3]).toBe(normalized);
+  expect(parsed[1][2]).toBeNull(); expect(JSON.stringify(parsed)).not.toContain(cost);
+  const result = mapBoxHero(parsed, config, hash);
+  expect(result.writable).toBe(true);
+  expect(result.rows[0].prices).toEqual({ "price:1:Tier 1": null, "price:2:Tier 2": canonical, "price:3:Fictional future group": null });
+});
+it.each(["1.001", "75.491", "-1.25", "NaN", "Infinity", "10000000000"])("rejects XLSX numeric price %s without fixed-scale rounding", async (raw) => {
+  const parsed = await readBoxHero(workbook("BoxHero", false, { "Selling Price": raw }), ".xlsx");
+  expect(parsed[1][3]).toBe(raw);
+  const result = mapBoxHero(parsed, config, hash);
+  expect(result.writable).toBe(false);
+  expect(result.report.issues[0].errors).toContain("invalid_selling_price");
+});
+it.each(["0", "0.0", "0.00"])("keeps XLSX numeric zero %s unpriced even when acknowledged", async (raw) => {
+  const parsed = await readBoxHero(workbook("BoxHero", false, { "Selling Price": raw }), ".xlsx");
+  const result = mapBoxHero(parsed, { ...config, sourceHash: hash, rows: [{ row: 2, acknowledge: ["zero_selling_price"] }] }, hash);
+  expect(result.writable).toBe(true);
+  expect(result.rows[0].prices["price:2:Tier 2"]).toBeNull();
+  expect(result.report.issues[0].warnings).toContain("zero_selling_price");
+});
+it.each([
+  ["12.0", "12", []], ["-1", "-1", ["negative_inventory_quantity"]],
+  ["12", "11", ["warehouse_quantity_mismatch"]], ["1.001", "1", ["invalid_inventory_quantity"]],
+] as const)("retains XLSX quantity diagnostics and manual availability: %s / %s", async (quantity, warehouse, warnings) => {
+  const parsed = await readBoxHero(workbook("BoxHero", false, { Quantity: quantity, "Qty(Warehouse)": warehouse }), ".xlsx");
+  const result = mapBoxHero(parsed, config, hash);
+  expect(result.report.issues[0].warnings).toEqual(warnings);
+  expect(result.rows[0].available).toBe(false);
+});
+it("preserves textual numeric-looking cells and raw numeric identifiers without creating identity", async () => {
+  const parsed = await readBoxHero(workbook("BoxHero", false, { "Item Number": "9007199254740993" },
+    { "Selling Price": "75.489999999999995", Brand: "00123", Packing: "18/6/6" }), ".xlsx");
+  expect(parsed[1][3]).toBe("75.489999999999995");
+  const result = mapBoxHero(parsed, config, hash);
+  expect(result.rows[0]).toMatchObject({ sku: "9007199254740993", catalogKey: "", brand: "00123", packing: "18/6/6" });
+  expect(result.report.issues[0].errors).toContain("invalid_selling_price");
+});
 it("reads the fictional CSV and XLSX into the same privacy-safe mapping", async () => {
   const csv = readFileSync("tests/fixtures/boxhero.csv");
   const csvResult = mapBoxHero(await readBoxHero(csv, ".csv"), config, sourceHash(csv));

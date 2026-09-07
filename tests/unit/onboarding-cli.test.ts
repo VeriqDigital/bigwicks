@@ -1,6 +1,6 @@
 import { afterAll, expect, it } from "vitest";
 import { spawnSync } from "node:child_process";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { existsSync, readFileSync, unlinkSync, writeFileSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { readCanonical } from "../../scripts/onboarding/csv";
@@ -43,6 +43,11 @@ it("BoxHero CLI defaults to dry-run and requires a matching review before writin
   const path = prefix + "-mapped.csv";
   const dry = cli(...args); expect(dry.status, dry.stderr).toBe(0); expect(existsSync(path)).toBe(false);
   const report = JSON.parse(dry.stdout); expect(report).toMatchObject({ mode: "dry-run", validCandidates: 1, blockedCandidates: 0 });
+  const oldConfig = { ...JSON.parse(readFileSync(args[2], "utf8")), rows: [] };
+  const oldHash = createHash("sha256").update(JSON.stringify({ hash: report.sourceHash, config: oldConfig })).digest("hex");
+  expect(report.planHash).not.toBe(oldHash);
+  const stale = cli(...args, "--write", path, "--reviewed", oldHash);
+  expect(stale.status).toBe(1); expect(stale.stderr).toContain("exact reviewed plan hash"); expect(existsSync(path)).toBe(false);
   const denied = cli(...args, "--write", path, "--reviewed", "b".repeat(64));
   expect(denied.status).toBe(1); expect(existsSync(path)).toBe(false);
   const written = cli(...args, "--write", path, "--reviewed", report.planHash);

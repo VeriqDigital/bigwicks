@@ -26,14 +26,23 @@ try {
       }
     }
   }
-  const sheets = await readExcelFile(bytes, { trim: false, parseNumber: (value) => value });
+  // Mark numeric cells so textual cells and numeric identifiers retain their source text.
+  const sheets = await readExcelFile(bytes, { trim: false, parseNumber: (value) => ({ numeric: value }) });
   if (sheets.length !== 1 || sheets[0].sheet !== 'BoxHero' || sheets[0].data.length > 501) throw Error();
   // Cost and BoxHero IDs never leave this parser subprocess.
   const rows = sheets[0].data;
   const cost = rows[0].indexOf('Unit Cost'); const id = rows[0].indexOf('SKU');
+  const numericColumns = ['Selling Price', 'Quantity', 'Qty(Warehouse)'].map((name) => rows[0].indexOf(name));
   for (const row of rows.slice(1)) {
     if (cost >= 0) row[cost] = null;
     if (id >= 0) row[id] = null;
+    for (let column = 0; column < row.length; column++) {
+      const cell = row[column];
+      if (cell && typeof cell === 'object' && Object.hasOwn(cell, 'numeric')) {
+        // Shortest IEEE numeric representation only; never round to a fixed scale.
+        row[column] = numericColumns.includes(column) ? String(Number(cell.numeric)) : cell.numeric;
+      }
+    }
   }
   process.stdout.write(JSON.stringify(rows));
 } catch {

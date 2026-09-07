@@ -52,8 +52,13 @@ SKU, Item Name, Unit Cost, Selling Price, Packing, Type, Brand, Item Number,
 Quantity, Qty(Warehouse). This is a file mapper, not a live BoxHero integration.
 
 Direct XLSX support uses pinned development dependencies `read-excel-file@9.3.10`
-and `fflate@0.8.3`. The small reader supports raw numeric text, avoiding a
-floating-point price conversion; the ZIP dependency provides archive preflight.
+and `fflate@0.8.3`. In Milestone 5A.2, numeric XLSX cells in Selling Price,
+Quantity and Qty(Warehouse) are normalized through `Number(raw)` then
+`String(number)` before mapper validation. This uses the ordinary shortest numeric
+representation, not fixed-decimal rounding: `75.489999999999995` becomes `75.49`,
+while `1.001` remains invalid as a price. Text cells and CSV values are not
+numeric-coerced; numeric identifier cells retain raw text without guessed formatting
+or lost integer precision. CatalogKey remains identity. The ZIP dependency provides archive preflight.
 They are imported only by operator code. The reader runs in a credential-free
 subprocess with a 128 MiB JS heap and 15-second deadline. Input is bounded to
 2 MiB, 64 ZIP entries, 4 MiB per expanded entry and 8 MiB total expansion. Require
@@ -61,7 +66,7 @@ exactly one sheet named BoxHero, at most 500 rows/10 columns, and no formulas,
 DTD/entity declarations or oversized sparse cell coordinates. Parser errors never
 dump source contents. CSV UTF-8 with the same headers is also supported.
 See the [reader documentation](https://github.com/catamphetamine/read-excel-file)
-for the raw-number parsing API. The XLSX subprocess discards Unit Cost and BoxHero
+for the numeric parsing API. The XLSX subprocess discards Unit Cost and BoxHero
 SKU before returning data; neither field participates in canonical mapping.
 
 Create an ignored operator JSON configuration. Start from the intended environment's
@@ -118,6 +123,16 @@ Put decisions in the configuration's `rows` array and the exact `sourceHash`
 at the top level. An exclusion is `{"row":3,"exclude":"Reviewed operational record"}`.
 Line numbers are for this source review only, never product identity. Altering the
 workbook invalidates row decisions; altering either file changes the reviewed plan.
+The SHA-256 `planHash` binds the source hash, validated review configuration and
+actual derived plan: every candidate's canonical content and tier prices,
+exclusions, acknowledgements, warnings and errors. The domain is
+`big-wicks/boxhero-mapping/v2`; source row order and issue order are deterministic,
+with no timestamps or generated identities. Mapper output changes invalidate old
+reviews even when source and configuration are unchanged. Private prices are
+hashed internally, never printed. Unit Cost and BoxHero SKU are absent from the
+derived plan; changing any original file bytes still changes its opaque source hash.
+`--write` requires the exact current plan hash and all existing review checks;
+run a fresh dry-run after upgrading the mapper before writing.
 When all included rows validate and every warning is acknowledged, review again:
 
 ```text
@@ -135,8 +150,11 @@ Read-only inspection of the received workbook found 311 rows, 7 missing item
 numbers, 5 missing categories, 7 missing brands, 7 missing packing values,
 29 zero selling prices, 13 negative inventory rows, 3 duplicate item-number groups
 (6 rows), 3 duplicate-name groups (6 rows), and no warehouse quantity mismatches.
-The strict mapper additionally flags 14 noncanonical selling-price values and
-4 suspected operational records. Categories have not been approved/normalized.
+The original raw-text mapper also reported 14 `invalid_selling_price` false
+positives caused by XLSX floating storage artifacts, confirmed by the user's
+investigation. Milestone 5A.2 corrects that interpretation with numeric parsing;
+these are not established source pricing errors. Four suspected operational
+records also require review. Categories have not been approved/normalized.
 These are diagnostics, not decisions to delete, merge, round or publish products.
 
 ## Dynamic tier contract
