@@ -36,26 +36,20 @@ async function review(page: Page) {
 for (const interrupted of [false, true]) {
   test(`submission navigates without a global error flash${interrupted ? " after recovering a lost response" : ""}`, async ({ page }) => {
     // Mutation-time observation catches flashes shorter than locator polling.
-    // Console events survive the old document being replaced.
+    // Console events also survive a document replacement if Next needs one.
     const flashes: string[] = [];
-    const departures: unknown[] = [];
+    const interruptions: string[] = [];
     page.on("console", (message) => {
       if (message.text() === "ORDER_TEST_GLOBAL_ERROR_VISIBLE") flashes.push(message.text());
-      if (message.text().startsWith("ORDER_TEST_DEPARTURE:")) departures.push(JSON.parse(message.text().slice("ORDER_TEST_DEPARTURE:".length)));
+      if (message.text() === "ORDER_TEST_INTERRUPTION_VISIBLE") interruptions.push(message.text());
     });
     await page.addInitScript(() => {
       const check = () => {
         if (document.body?.innerText.includes("This page couldn't load")) console.debug("ORDER_TEST_GLOBAL_ERROR_VISIBLE");
+        if (document.body?.innerText.includes("Submission was interrupted.")) console.debug("ORDER_TEST_INTERRUPTION_VISIBLE");
       };
       new MutationObserver(check).observe(document, { subtree: true, childList: true, characterData: true, attributes: true });
       document.addEventListener("DOMContentLoaded", check);
-      window.addEventListener("beforeunload", () => {
-        const review = document.getElementById("order-review-title");
-        if (review) console.debug("ORDER_TEST_DEPARTURE:" + JSON.stringify({
-          pending: Array.from(document.querySelectorAll("button")).some((button) => button.textContent === "Submitting…" && button.disabled),
-          reviewVisible: Boolean(review.getClientRects().length),
-        }));
-      });
     });
     await login(page);
     // A known prior document makes replace-vs-assign history behavior explicit.
@@ -64,27 +58,34 @@ for (const interrupted of [false, true]) {
     await review(page);
 
     const submissions: string[] = [];
+    page.on("request", (request) => { if (request.headers()["next-action"]) submissions.push(request.postData()!); });
+    const redirects: { status: number; destination: string; revalidated?: string }[] = [];
+    page.on("response", (response) => {
+      const headers = response.headers();
+      if (response.request().headers()["next-action"] && headers["x-action-redirect"]) {
+        redirects.push({ status: response.status(), destination: headers["x-action-redirect"], revalidated: headers["x-action-revalidated"] });
+      }
+    });
     let releaseAction!: () => void;
     const actionGate = new Promise<void>((resolve) => { releaseAction = resolve; });
     let first = true;
-    await page.route((url) => url.pathname === "/portal", async (route) => {
+    // Leave normal success un-intercepted to exercise Next's original streaming
+    // response and router timing in both browsers. Only recovery buffers it.
+    if (interrupted) await page.route((url) => url.pathname === "/portal", async (route) => {
       if (!route.request().headers()["next-action"]) return route.continue();
-      submissions.push(route.request().postData()!);
       if (!first) return route.continue();
       first = false;
-      const response = await route.fetch(); // Real persistence and mocked notification.
+      const response = await route.fetch({ maxRedirects: 0 }); // Real persistence and mocked notification.
       await actionGate;
-      if (interrupted) await route.abort("failed");
-      else await route.fulfill({ response });
-    });
-    const confirmationRequests: Request[] = [];
-    page.on("request", (request) => {
-      if (new URL(request.url()).pathname.startsWith("/portal/confirmation/")) confirmationRequests.push(request);
+      expect(response.status()).toBe(303);
+      await route.abort("failed");
     });
     try {
       await page.getByRole("button", { name: "Submit order request", exact: true }).click();
-      await expect(page.getByRole("button", { name: "Submitting…", exact: true })).toBeDisabled();
-      await expect(page.getByRole("button", { name: "Back to quantities", exact: true })).toBeDisabled();
+      if (interrupted) {
+        await expect(page.getByRole("button", { name: "Submitting…", exact: true })).toBeDisabled();
+        await expect(page.getByRole("button", { name: "Back to quantities", exact: true })).toBeDisabled();
+      }
       await expect.poll(() => db.order.count({ where: { customerId } })).toBe(1);
       releaseAction();
       if (interrupted) {
@@ -92,15 +93,15 @@ for (const interrupted of [false, true]) {
         await expect(page).toHaveURL(/\/portal$/);
         await expect(page.getByTestId("order-total")).toHaveText("39.98");
         await expect(page.getByRole("button", { name: "Back to quantities", exact: true })).toBeEnabled();
+        interruptions.length = 0;
         await page.getByRole("button", { name: "Submit order request", exact: true }).click();
       }
       await expect(page).toHaveURL(/\/portal\/confirmation\/BW-/);
       await expect(page.getByRole("heading", { name: "Order request submitted", exact: true })).toBeVisible();
-      expect(confirmationRequests).toHaveLength(1);
-      expect(confirmationRequests[0].isNavigationRequest()).toBe(true);
-      expect(confirmationRequests[0].resourceType()).toBe("document");
-      expect(departures).toEqual([{ pending: true, reviewVisible: true }]);
       const reference = await page.getByTestId("order-reference").innerText();
+      expect(redirects).toEqual([{ status: 303, destination: `/portal/confirmation/${reference};replace`, revalidated: undefined }]);
+      // A framework redirect must never be mislabeled as an interrupted request.
+      expect(interruptions).toEqual([]);
       expect(submissions).toHaveLength(interrupted ? 2 : 1);
       if (interrupted) expect(submissions[1]).toBe(submissions[0]);
       expect(await db.order.count({ where: { customerId } })).toBe(1);
@@ -157,8 +158,8 @@ test("quantity entry, review, persisted confirmation, staff notification and ord
     }
     expect((await customerContext.request.get("/admin/orders")).status()).toBe(404);
     expect((await customerContext.request.get(`/admin/orders/${reference}`)).status()).toBe(404);
-    const replay = await page.request.post(submitRequest.url(), { data: submitRequest.postDataBuffer()!, headers: { "next-action": submitRequest.headers()["next-action"], "content-type": submitRequest.headers()["content-type"], origin: "http://localhost:3107", accept: "text/x-component" } });
-    expect(await replay.text()).toContain(reference); expect(await db.order.count({ where: { customerId } })).toBe(1);
+    const replay = await page.request.post(submitRequest.url(), { data: submitRequest.postDataBuffer()!, headers: { "next-action": submitRequest.headers()["next-action"], "content-type": submitRequest.headers()["content-type"], origin: "http://localhost:3107", accept: "text/x-component" }, maxRedirects: 0 });
+    expect(replay.status()).toBe(303); expect(replay.headers()["x-action-redirect"]).toBe(`/portal/confirmation/${reference};replace`); expect(await db.order.count({ where: { customerId } })).toBe(1);
     await db.productPrice.updateMany({ where: { catalogKey: key(1) }, data: { price: "999.99" } }); await content([], true);
     await page.reload(); await expect(page.getByTestId("order-total")).toHaveText("60.17");
     await adminPage.getByRole("navigation", { name: "Administration navigation" }).getByRole("link", { name: "Orders", exact: true }).click();
@@ -175,6 +176,7 @@ test("price changes require a new review, unavailable items reject submission an
   await db.productPrice.updateMany({ where: { catalogKey: key(1), pricingTierId: tier1 }, data: { price: "20.99" } });
   await page.getByRole("button", { name: "Submit order request", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("changed before submission"); await expect(page.getByTestId("order-total")).toHaveText("41.98");
+  await expect(page).toHaveURL(/\/portal$/); await expect(page.getByRole("heading", { name: "Review order request" })).toBeVisible();
   expect(await db.order.count({ where: { customerId } })).toBe(0);
   await content(products().map((product) => ({ ...product, available: false })));
   await page.getByRole("button", { name: "Submit order request", exact: true }).click(); await expect(page.getByRole("status")).toContainText("no longer available");

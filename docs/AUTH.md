@@ -366,7 +366,7 @@ data changes are part of this milestone.
 - `npm run typecheck`
 - `npm test`: isolated credential validation, password hashing and authorization.
 - `npm run build`: production build; existing Google Fonts require network access.
-- `npx playwright install chromium` (once), then `npm run test:integration`:
+- `npx playwright install chromium firefox` (once), then `npm run test:integration`:
   creates an isolated real PostgreSQL cluster with random test credentials, applies
   the migration, seeds three users, runs database/limiter tests, builds production,
   and runs Playwright against `next start` on localhost:3107. It does not use the

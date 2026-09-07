@@ -1,7 +1,7 @@
 "use server";
 import { requireCustomer } from "@/lib/auth/authorization";
 import { reviewOrder, submitOrder } from "@/lib/orders/service";
-import { revalidatePath } from "next/cache";
+import { redirect, RedirectType } from "next/navigation";
 
 export async function reviewOrderAction(items: unknown) {
   await requireCustomer();
@@ -10,6 +10,8 @@ export async function reviewOrderAction(items: unknown) {
 export async function submitOrderAction(token: unknown) {
   await requireCustomer();
   const result = await submitOrder(token);
-  if (result.status === "submitted") revalidatePath("/admin/orders");
+  if (result.status === "submitted") {
+    redirect(`/portal/confirmation/${result.reference}`, RedirectType.replace);
+  }
   return result;
 }

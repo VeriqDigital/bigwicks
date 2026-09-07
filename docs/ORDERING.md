@@ -100,15 +100,23 @@ it is not deduplicated by identical product contents, which may be legitimate.
 There is no durable draft or customer order-history list. If a browser is closed
 and loses its review/confirmation URL, staff can locate the saved request.
 
-Final submission uses an async event handler with explicit pending state, separate
-from the React transition used to prepare a review. On `submitted`, native
-`window.location.replace()` loads the protected confirmation as a new document
-and removes the stale review entry from browser history. Controls stay disabled
-with **Submitting…** until that document takes over. Errors or refreshed reviews
-release pending state and retain the existing recovery behavior. This follows the
-installed Next.js 16.2.9 guide's direct event-handler Server Function pattern;
-the application no longer wraps successful document navigation in an async React
-transition. Next.js still manages its own internal Server Action dispatch.
+On `submitted`, the Server Action calls `redirect(confirmationPath,
+RedirectType.replace)` outside any catch block. Next.js supplies the 303 action
+redirect and manages the confirmation navigation/history replacement. The client
+handles only returned review/invalid results and ordinary transport failures;
+it never initiates success navigation itself. Its async React action transition
+keeps **Submitting…** active. The catch calls documented `unstable_rethrow()` first
+so Next's redirect signal reaches its RedirectBoundary, instead of being mislabeled
+as an interruption. Ordinary failures retain the review/token and permit retry.
+
+There is no `revalidatePath("/admin/orders")` after submission. The protected list
+uses request-time authentication and uncached PostgreSQL reads; the next server
+request reads current orders. An already-open staff page still needs navigation
+or refresh; this is not a live feed. In installed Next.js 16.2.9, action revalidation
+invalidates router caches and schedules navigation work even after resolving the
+action result. The previous browser `location.replace()` could race that work.
+The framework-owned redirect removes that competing navigation; no timing delay
+or custom error boundary is added.
 
 The existing shared PostgreSQL/HMAC limiter allows 30 review/new-submission attempts
 per user per minute, bounding malformed requests and content work. Inside the
@@ -173,12 +181,20 @@ authorized release, confirm the staff inbox/verified sender, currency/unit wordi
 migration/backup plan, direct-notification operational monitoring and existing
 dependency advisories. No production routing or credentials are changed here.
 
+Install both test browsers with `npx playwright install chromium firefox`.
 `npm run test:integration` creates a fresh isolated PostgreSQL cluster, applies
 all migrations, seeds fictional users and runs unit/database tests plus production
 Playwright passes with unconfigured and locally intercepted Sanity. Resend is
 mocked/intercepted and the staff recipient is `orders@example.test`. Test orders
 never touch preview/production SQL or remote Sanity. Run `npm run build` afterward
 to restore the ordinary local configuration before manual `npm start`.
+Playwright's `chromium` project runs the full suite; `firefox-orders` runs the five
+order scenarios, including successful/lost-response submission, stale reviews,
+notification failure, customer isolation and responsive views. Both run against
+the same isolated harness with one worker. Normal success uses the original
+unintercepted Server Action response; only lost-response recovery buffers/aborts
+that response. To select only Firefox against an
+already-running isolated test server, use `npx playwright test --project=firefox-orders`.
 
 Deferred: Excel customer ordering, payments/checkout, tax/shipping, live inventory,
 BoxHero, stock reservation, invoicing, customer history/edit/reorder, admin repricing,
@@ -186,7 +202,20 @@ substitutions, cancellation/completion states, fulfillment, real imports and dep
 
 ## Verification record
 
-Navigation follow-up on 2026-09-07: lint, typecheck, 151 unit tests, 261 combined
+Server Action redirect follow-up on 2026-09-07: lint, typecheck, 151 unit tests,
+261 combined unit/database tests, all five isolated migrations and the ordinary
+production build passed. Playwright passed 29 Chromium scenarios and all five
+Firefox order scenarios (34 total; Playwright Firefox 155.0). Normal submission
+retains the original response stream in both browsers. Tests observed a 303
+replacement redirect with no revalidation header and no visible global error or
+false interruption message. Recovery retries the identical token after losing a
+successful response, with one order and one captured notification. Stale reviews,
+rejections, email failure, isolation, Back/Forward and responsive checks passed.
+The production build restores ordinary local configuration after the test build.
+The reported deployed Firefox session was not retested; local results are not
+proof of deployed behavior. No order-service, schema, dependency or security changes.
+
+Earlier native-navigation follow-up on 2026-09-07: lint, typecheck, 151 unit tests, 261 combined
 unit/database tests, all five isolated migrations and the ordinary production
 build passed. Playwright passed 15 unconfigured and 14 intercepted-content
 scenarios (29 total). Two new scenarios monitor DOM mutations for the global error
@@ -194,8 +223,9 @@ text, assert pending controls at document departure, verify native confirmation
 navigation and Back/Forward history, and count one saved order/notification.
 One deliberately loses the successful action response and retries the same token.
 Existing stale-review, rejection, notification-failure and responsive tests pass.
-No global error flash was observed locally; the reported preview deployment has
-not been retested. No service, security, schema, dependency or environment changes.
+That coverage was Chromium-only. The user subsequently reproduced the flash in
+deployed Firefox, so it did not verify or resolve that browser-specific symptom.
+The Server Action redirect follow-up above supersedes that native-navigation fix.
 
 Milestone 4A checks on 2026-09-06 passed: Prisma generation, all five migrations on
 a fresh isolated PostgreSQL database, lint, typecheck, `npm test` (151 unit tests),
