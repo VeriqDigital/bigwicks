@@ -1,4 +1,4 @@
-// SEC-03 and REL-01 are remediation regressions; SEC-04 remains an audit observation.
+// SEC-03, REL-01 and SEC-04 reproductions retained as remediation regressions.
 import { beforeEach, afterAll, expect, it, vi } from "vitest";
 const mock = vi.hoisted(() => ({ auth: vi.fn(), mail: vi.fn() }));
 vi.mock("@/auth", () => ({ auth: mock.auth }));
@@ -69,7 +69,7 @@ it("REL-01 regression: distinct overlapping invitation previews claim one unchan
     expect(await db.accountToken.count({ where: { userId: user.id, consumedAt: null, deliveredAt: { not: null } } })).toBe(1);
   } finally { release(); spy.mockRestore(); }
 });
-it("AUDIT: revocation after the individual action guard does not prevent its SQL mutation", async () => {
+it("SEC-04 regression: revocation after the individual action guard prevents its SQL mutation", async () => {
   const user = await customer("revocation");
   const original = db.$transaction.bind(db);
   const spy = vi.spyOn(db, "$transaction").mockImplementationOnce(async (...args: unknown[]) => {
@@ -79,8 +79,8 @@ it("AUDIT: revocation after the individual action guard does not prevent its SQL
   const form = new FormData();
   for (const [key, value] of Object.entries({ customerId: user.customer!.id, companyName: "Changed after admin revocation", email: user.email, customerNumber: "", pricingTierId: tierId })) form.set(key, value);
   try {
-    expect((await editCustomer({}, form)).success).toBe(true);
-    expect((await db.customer.findUniqueOrThrow({ where: { id: user.customer!.id } })).companyName).toBe("Changed after admin revocation");
+    expect((await editCustomer({}, form)).success).not.toBe(true);
+    expect((await db.customer.findUniqueOrThrow({ where: { id: user.customer!.id } })).companyName).toBe("Fictional revocation");
   } finally { spy.mockRestore(); }
 });
 it("AUDIT: a different customer in the same tier cannot read an owner's confirmation", async () => {
@@ -118,7 +118,7 @@ it("REL-01 regression: overlapping individual and bulk invitations share one sta
   await sendSetupLink({}, form); await sendSetupLink({}, form); await sendSetupLink({}, form);
   expect(mock.mail).toHaveBeenCalledTimes(3); // Fourth is denied by the SHARED quota.
 });
-it("AUDIT: bulk admin revocation after its per-recipient check still permits that issuance", async () => {
+it("SEC-04 regression: bulk admin revocation before its claim blocks issuance", async () => {
   const user = await customer("bulk-revocation");
   const staged = await previewCustomerInvitations([user.customer!.id]);
   if (staged.status !== "preview") throw Error("Missing preview");
@@ -127,6 +127,11 @@ it("AUDIT: bulk admin revocation after its per-recipient check still permits tha
     await db.user.update({ where: { id: admin.id }, data: { active: false, sessionVersion: { increment: 1 } } });
     return original(...args);
   });
-  try { await confirmCustomerInvitations(staged.token, true); expect(mock.mail).toHaveBeenCalledTimes(1); }
+  try {
+    const result = await confirmCustomerInvitations(staged.token, true);
+    expect(result.status === "success" && result.results[0].status).toBe("admin_changed");
+    expect(mock.mail).not.toHaveBeenCalled();
+    expect(await db.accountToken.count({ where: { userId: user.id } })).toBe(0);
+  }
   finally { spy.mockRestore(); }
 });

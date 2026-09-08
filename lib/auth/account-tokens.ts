@@ -5,6 +5,7 @@ import type { AccountTokenPurpose, Prisma } from "@/generated/prisma/client";
 import { getDb } from "@/lib/db";
 import { hashPassword } from "./password";
 import { accountEmailConfig, sendAccountEmail } from "./account-email";
+import { lockAdminActor, AdminSessionChangedError, type AdminActor } from "./admin-transaction";
 import { consumeBucket } from "./rate-limit";
 
 export const invalidLinkMessage = "This link is invalid or no longer available. Request a new link or contact Big Wicks.";
@@ -35,12 +36,13 @@ export function setupStateFingerprint(user: SetupReview) {
 }
 
 export type AccountTokenRequest =
-  | { purpose: "ACCOUNT_SETUP"; expectedState: string; channel: "individual" | "bulk"; reviewExpiresAt?: number }
+  | { purpose: "ACCOUNT_SETUP"; actor: AdminActor; expectedState: string; channel: "individual" | "bulk"; reviewExpiresAt?: number }
   | { purpose: "PASSWORD_RESET"; expectedEmail?: string };
-export type AccountTokenIssueStatus = "accepted" | "stale" | "ineligible" | "rate_limited" | "not_confirmed";
+export type AccountTokenIssueStatus = "accepted" | "admin_changed" | "stale" | "ineligible" | "rate_limited" | "not_confirmed";
 
-// All token writers lock the identity first, then read current state. This also
-// serializes with staff email/status updates and simultaneous token consumption.
+// Token writers lock the recipient before reading current state. ADMIN setup
+// claims first lock the actor; reset/consumption/finalization never lock an actor.
+// This serializes with staff email/status updates and token consumption.
 async function lockUser(tx: Prisma.TransactionClient, id: string) {
   await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${id} FOR UPDATE`;
   return tx.user.findUnique({ where: { id }, select: setupReviewSelect });
@@ -56,6 +58,13 @@ export async function issueAccountToken(userId: string, request: AccountTokenReq
   const { purpose } = request;
   const raw = randomBytes(32).toString("hex");
   const claim = await getDb().$transaction(async (tx) => {
+    if (request.purpose === "ACCOUNT_SETUP") {
+      try { await lockAdminActor(tx, request.actor); }
+      catch (error) {
+        if (error instanceof AdminSessionChangedError) return { status: "admin_changed" as const };
+        throw error;
+      }
+    }
     const user = await lockUser(tx, userId);
     if (request.purpose === "ACCOUNT_SETUP" && (!user || setupStateFingerprint(user) !== request.expectedState ||
         (request.reviewExpiresAt !== undefined && request.reviewExpiresAt <= Date.now()))) return { status: "stale" as const };

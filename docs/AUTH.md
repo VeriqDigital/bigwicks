@@ -19,11 +19,54 @@ creates the whole batch under SERIALIZABLE isolation; existing accounts never up
 
 Bulk invitations deliberately exclude disabled/configured accounts and require a
 separate recipient preview and confirmation. Existing individual setup policy
-(including disabled customers) is unchanged. The AccountToken issuer accepts an
-optional expected active session version for bulk sends and rechecks it under the
-User lock alongside expected email. Existing supersession/deliveredAt semantics
+(including disabled customers) is unchanged. The AccountToken issuer requires a
+server-trusted recipient-state fingerprint
+and authenticated actor for every setup claim. It locks/rechecks the acting ADMIN
+first, then locks the recipient User and compares the reviewed state. Existing
+supersession/deliveredAt semantics
 remain unchanged. Bulk sends share per-customer throttling, add a 100/hour global
 bulk cap and an atomic one-use preview guard. No raw token is exposed to staff.
+
+## Acting-admin revocation at SQL boundaries (Milestone 6E)
+
+Request guards still resolve the current principal independently. For customer
+create/edit/status and individual/bulk setup claims, `lockAdminActor` in
+`lib/auth/admin-transaction.ts` also validates the authenticated `{ id, sessionVersion }`
+inside the authoritative transaction. It takes `User FOR SHARE`, then requires
+the same identity, active ADMIN role, matching version and no Customer association.
+No actor fields come from the browser. Customer import delegates its existing
+`verifyBatchAdmin` check to this helper; pricing confirmation retains its equivalent
+existing SHARE lock and checks. Read-only pages, previews, downloads/templates and
+admin order views keep request-time authorization; no admin order mutation exists.
+
+The successful locked recheck orders authorization against revocation, and the lock
+is retained until commit/rollback. SHARE conflicts with User updates/deletion,
+including non-key active/role/version updates, while concurrent same-admin actions
+can hold SHARE together. If revocation locks first, the action reads the changed
+state or safely fails on a SERIALIZABLE conflict, with no protected mutation. If
+the action locks and validates first, revocation waits and cannot undo its commit.
+
+Order: actor User SHARE, then target/domain writes. Existing customer edit/status
+write target User, invalidate AccountToken, then write Customer; create inserts
+User then Customer. Tier reads stay non-locking; foreign-key locks remain implicit.
+Setup claims take recipient User UPDATE, compare recipient state, consume global
+then recipient quota, and supersede/insert AccountToken. Reset/consumption and
+provider finalization/cleanup take recipient User first and never acquire an actor
+lock afterward. Valid actors are ADMIN with no Customer; protected targets are
+CUSTOMER. These flows never upgrade the actor lock or target another admin.
+
+REL-01 still linearizes the recipient state claim at token insertion under the
+recipient lock, durable at commit. SQL commits before provider I/O; no actor or
+recipient lock spans Resend. Revocation before the claim prevents tokens and mail.
+Revocation after it cannot recall accepted/in-flight provider work, even if it
+finishes after revocation. Fresh requests still fail normally.
+
+A changed actor receives a safe reload/sign-in message. Bulk `admin_changed` means
+not attempted: subsequent rows are skipped, earlier accepted rows remain accepted,
+and the batch summary reports each outcome. SQL/provider errors and versions are
+never exposed. Existing safe transaction-conflict responses still require a fresh
+retry/review. No schema, migration, dependency or configuration change. See the
+[SEC-04 verification and limitations](SECURITY-REMEDIATION.md#milestone-6e-admin-revocation-consistency--sec-04).
 
 ## Architecture
 

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { Prisma } from "@/generated/prisma/client";
+import { lockAdminActor, AdminSessionChangedError } from "@/lib/auth/admin-transaction";
 import { requireAdmin } from "@/lib/auth/authorization";
 import { getDb } from "@/lib/db";
 import { invalidateAccountTokens } from "@/lib/auth/account-tokens";
@@ -29,6 +30,7 @@ function formValues(raw: ReturnType<typeof readFields>): CustomerFormState["valu
 }
 
 function mutationError(error: unknown): CustomerFormState {
+  if (error instanceof AdminSessionChangedError) return { message: error.message };
   if (error instanceof CustomerInputError) {
     return { message: error.message, errors: error.field ? { [error.field]: [error.message] } : undefined };
   }
@@ -63,7 +65,7 @@ function refreshCustomer(id: string) {
 }
 
 export async function createCustomer(_state: CustomerFormState, formData: FormData): Promise<CustomerFormState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const raw = readFields(formData);
   const values = formValues(raw);
   const parsed = createCustomerSchema.safeParse(raw);
@@ -72,6 +74,7 @@ export async function createCustomer(_state: CustomerFormState, formData: FormDa
   try {
     const data = parsed.data;
     id = await getDb().$transaction(async (tx) => {
+      await lockAdminActor(tx, admin);
       await verifyTier(tx, data.pricingTierId);
       const customer = await insertCustomer(tx, data);
       return customer.id;
@@ -82,7 +85,7 @@ export async function createCustomer(_state: CustomerFormState, formData: FormDa
 }
 
 export async function editCustomer(_state: CustomerFormState, formData: FormData): Promise<CustomerFormState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const raw = readFields(formData);
   const values = formValues(raw);
   const parsed = editCustomerSchema.safeParse(raw);
@@ -90,6 +93,7 @@ export async function editCustomer(_state: CustomerFormState, formData: FormData
   const data = parsed.data;
   try {
     await getDb().$transaction(async (tx) => {
+      await lockAdminActor(tx, admin);
       const customer = await findCustomer(tx, data.customerId);
       await verifyTier(tx, data.pricingTierId);
       await tx.user.update({ where: { id: customer.userId }, data: {
@@ -107,13 +111,14 @@ export async function editCustomer(_state: CustomerFormState, formData: FormData
 }
 
 export async function setCustomerStatus(_state: CustomerFormState, formData: FormData): Promise<CustomerFormState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const parsed = customerStatusSchema.safeParse(readFields(formData));
   if (!parsed.success) return { message: "Invalid customer or account status. Reload the page and try again." };
   const { customerId, status } = parsed.data;
   const active = status === "active";
   try {
     await getDb().$transaction(async (tx) => {
+      await lockAdminActor(tx, admin);
       const customer = await findCustomer(tx, customerId);
       // One account-access operation owns both flags. Always revoke, including
       // repeated requests and re-enables, so no previously issued session revives.

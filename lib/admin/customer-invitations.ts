@@ -50,25 +50,30 @@ export async function confirmCustomerInvitations(token: unknown, confirmed: bool
     await getDb().$transaction((tx) => verifyBatchAdmin(tx, admin));
     if (!await consumeBucket(`customer-bulk-invite-preview:${batchFingerprint(token)}`, 1, 600)) throw new CustomerBatchError("This invitation batch was already attempted. Refresh and review delivery status before retrying.");
     const results: { id: string; companyName: string; email: string; status: AccountTokenIssueStatus }[] = [];
+    let adminChanged = false;
     for (const [index, row] of rows.entries()) {
-      if (index) await pause(600); // Sequential pacing below two provider calls/second.
+      if (index && !adminChanged) await pause(600); // Sequential pacing below two provider calls/second.
       let status: AccountTokenIssueStatus = "not_confirmed";
       try {
-        // Re-resolve authorization and recipient state for each outbound operation.
-        await getDb().$transaction((tx) => verifyBatchAdmin(tx, admin));
+        // Actor authorization belongs inside issuance, not a completed precheck.
+        if (adminChanged) {
+          results.push({ id: row.id, companyName: row.companyName, email: row.user.email, status: "admin_changed" });
+          continue;
+        }
         const current = await recipients([row.id]);
         if (staged.expiresAt <= Date.now() || batchFingerprint(current) !== batchFingerprint([row])) {
           status = "stale";
         } else {
           // rows matched the encrypted preview snapshot. Carry THAT state, never
           // silently adopt a newer token from the pre-loop/per-row rechecks.
-          status = await issueAccountToken(row.user.id, { purpose: "ACCOUNT_SETUP", channel: "bulk",
+          status = await issueAccountToken(row.user.id, { purpose: "ACCOUNT_SETUP", actor: admin, channel: "bulk",
             expectedState: setupStateFingerprint(row.user), reviewExpiresAt: staged.expiresAt });
         }
       } catch { /* Fixed result only: no provider errors or token material. */ }
+      if (status === "admin_changed") adminChanged = true;
       results.push({ id: row.id, companyName: row.companyName, email: row.user.email, status });
     }
     const count = (status: AccountTokenIssueStatus) => results.filter((r) => r.status === status).length;
-    return { status: "success" as const, results, message: `${count("accepted")} setup emails accepted for delivery; ${count("stale")} changed and not attempted; ${count("ineligible") + count("rate_limited")} other recipients not attempted; ${count("not_confirmed")} not confirmed. Acceptance is not inbox delivery.` };
+    return { status: "success" as const, results, message: `${count("accepted")} setup emails accepted for delivery; ${count("stale")} changed and not attempted; ${count("ineligible") + count("rate_limited")} other recipients not attempted; ${count("not_confirmed")} not confirmed.${adminChanged ? " Administrator session changed; " + count("admin_changed") + " not attempted. Reload and sign in again before retrying." : ""} Acceptance is not inbox delivery.` };
   } catch (error) { return { status: "invalid" as const, message: customerBatchMessage(error) }; }
 }
