@@ -1,4 +1,4 @@
-// Audit observations assert CURRENT behavior. They are not claims that it is safe.
+// SEC-03 is a remediation regression; remaining audit observations assert current behavior.
 import { beforeEach, afterAll, expect, it, vi } from "vitest";
 const mock = vi.hoisted(() => ({ auth: vi.fn(), mail: vi.fn() }));
 vi.mock("@/auth", () => ({ auth: mock.auth }));
@@ -12,6 +12,7 @@ import { editCustomer } from "@/app/(portal)/admin/customers/actions";
 import { sendSetupLink } from "@/app/(portal)/admin/customers/invite-action";
 import { submitContactForm } from "@/app/contact/actions";
 import { contactSubjects } from "@/app/contact/contact-form-state";
+import { CONTACT_EMAIL_LIMIT } from "@/lib/contact/policy";
 import { getCustomerConfirmation } from "@/lib/orders/reads";
 const db = getDb();
 let admin: { id: string; sessionVersion: number };
@@ -35,15 +36,15 @@ async function customer(suffix: string) {
   return db.user.create({ data: { email: `security-audit-${suffix}@example.test`, role: "CUSTOMER", active: true,
     customer: { create: { companyName: `Fictional ${suffix}`, active: true, pricingTierId: tierId } } }, include: { customer: true } });
 }
-it("AUDIT: six identical public contact submissions produce six outbound attempts", async () => {
+it("SEC-03 regression: six identical public contact submissions stop at the allowance", async () => {
   const transport = vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json({ id: "fictional" }));
   try {
     const form = new FormData();
     for (const [key, value] of Object.entries({ name: "Fictional Visitor", email: "visitor@example.test", subject: contactSubjects[0].value, message: "Fictional bounded security audit inquiry.", company: "" })) form.set(key, value);
-    for (let count = 0; count < 6; count++) expect((await submitContactForm({ status: "idle", message: "" }, form)).status).toBe("success");
-    expect(transport).toHaveBeenCalledTimes(6);
-    expect(new Set(transport.mock.calls.map(([, options]) => (options!.headers as Record<string, string>)["Idempotency-Key"])).size).toBe(6);
-    expect(transport.mock.calls.every(([, options]) => !options?.signal)).toBe(true);
+    for (let count = 0; count < 6; count++) expect((await submitContactForm({ status: "idle", message: "" }, form)).status).toBe(count < CONTACT_EMAIL_LIMIT ? "success" : "error");
+    expect(transport).toHaveBeenCalledTimes(CONTACT_EMAIL_LIMIT);
+    expect(new Set(transport.mock.calls.map(([, options]) => (options!.headers as Record<string, string>)["Idempotency-Key"])).size).toBe(CONTACT_EMAIL_LIMIT);
+    expect(transport.mock.calls.every(([, options]) => options?.signal instanceof AbortSignal)).toBe(true);
   } finally { transport.mockRestore(); }
 });
 it("AUDIT: distinct overlapping invitation previews both issue for one unchanged recipient", async () => {

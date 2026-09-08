@@ -26,13 +26,14 @@ const commands = {
   orders: ['--import', 'tsx', 'tests/security/focused.ts', '--orders'],
   unit: ['node_modules/vitest/vitest.mjs', 'run'],
   focused: ['--import', 'tsx', 'tests/security/focused.ts'],
+  contact: ['--import', 'tsx', 'tests/security/focused.ts', '--contact'],
 };
 const command = commands[process.argv[2]];
-if (!command) throw new Error('Choose lint, typecheck, integration, unit, or browsers/orders/focused with an existing isolated build directory.');
+if (!command) throw new Error('Choose lint, typecheck, integration, unit, contact, or browsers/orders/focused with an existing isolated build directory.');
 // Native build tools also see a source directory with NO private env files.
 mkdirSync('.test-runtime', { recursive: true });
 const stage = mkdtempSync(resolve('.test-runtime/security-source-'));
-const tracked = execFileSync('git', ['-c', `safe.directory=${sourceRoot.replaceAll('\\', '/')}`, 'ls-files', '-z'], { encoding: 'utf8', env, windowsHide: true }).split('\0').filter(Boolean);
+const tracked = execFileSync('git', ['-c', `safe.directory=${sourceRoot.replaceAll('\\', '/')}`, 'ls-files', '--cached', '--others', '--exclude-standard', '-z'], { encoding: 'utf8', env, windowsHide: true }).split('\0').filter(Boolean);
 const securityFiles = readdirSync('tests/security').map(name => `tests/security/${name}`);
 for (const file of new Set([...tracked, ...securityFiles])) {
   if (/(^|\/)\.env(?:\.|$)/.test(file) || file.startsWith('public/')) continue;

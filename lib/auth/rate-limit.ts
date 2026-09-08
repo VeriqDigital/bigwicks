@@ -23,10 +23,14 @@ export async function consumeBucket(identity: string, limit: number, seconds: nu
   return rows.length === 1;
 }
 
+export async function cleanupExpiredBuckets() {
+  await getDb().$executeRaw`DELETE FROM "LoginRateLimit" WHERE "expiresAt" < NOW()`;
+}
+
 export async function allowCredentialAttempt(email: string) {
   // Global cap also bounds random-email spraying and password-hash resource use.
   // No reliance on client-controlled IP/forwarding headers.
   if (!await consumeBucket("global", 100, 60)) return false;
-  await getDb().$executeRaw`DELETE FROM "LoginRateLimit" WHERE "expiresAt" < NOW()`;
+  await cleanupExpiredBuckets();
   return consumeBucket(`email:${email}`, 5, 15 * 60);
 }

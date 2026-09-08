@@ -5,8 +5,8 @@
 ## Current priority
 
 **Optimize for:**  
-Complete Milestone 6B framework security remediation from merged main, preserving
-the completed application behavior and the historical Milestone 6A audit.
+Complete Milestone 6C public contact abuse protection (SEC-03) from merged PR #15,
+preserving the public contact UX and historical Milestone 6A audit.
 
 **Waiting on:**
 
@@ -26,6 +26,31 @@ the completed application behavior and the historical Milestone 6A audit.
 ---
 
 ## Decision log
+
+### 2026-09-07 — Milestone 6C public contact abuse protection
+
+**Source:** User's Milestone 6C instruction. HEAD, local main, origin/main and a
+read-only remote main check agree on PR #15 merge
+`eba664ea4be5a2dfdcd6b5158cdac0fc53100c60`.
+
+**Decision:** Reuse atomic PostgreSQL/HMAC buckets: 30 contact attempts per hour
+globally, then three per validated, trimmed, lowercased email per 15 minutes.
+Global-first evaluation also bounds new identity rows. Invalid/honeypot bodies
+do no database work. Contact traffic runs the shared expired-row cleanup after
+global admission, independent of login traffic. Any limiter/cleanup failure
+blocks mail. Accepted attempts retain unique idempotency keys; transport failure
+does not refund quota. Resend uses a ten-second AbortSignal timeout and safe logs.
+
+No trusted source IP is established at this application's boundary; forwarding
+headers are not identities. Live ingress/WAF source throttling and direct-action
+coverage remain production gates. Application throttling is not DDoS protection
+or a guarantee of availability/spam prevention. REL-01 and SEC-04 remain open;
+dependencies and other application flows are outside this change.
+
+**Evidence and limitations:** [Milestone 6C remediation record](SECURITY-REMEDIATION.md#milestone-6c-public-contact-abuse-protection).
+No real mail, remote data/settings, deployment, push or merge.
+
+---
 
 ### 2026-09-07 — Milestone 6B framework security remediation
 
