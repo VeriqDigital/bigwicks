@@ -1,14 +1,15 @@
 import "server-only";
 import { createHmac } from "node:crypto";
 import { getDb } from "@/lib/db";
+import type { Prisma } from "@/generated/prisma/client";
 
-export async function consumeBucket(identity: string, limit: number, seconds: number) {
+export async function consumeBucket(identity: string, limit: number, seconds: number, db: Prisma.TransactionClient = getDb()) {
   const secret = process.env.AUTH_SECRET;
   if (!secret || secret.length < 32) throw new Error("AUTH_SECRET must contain at least 32 characters.");
   const key = createHmac("sha256", secret).update(identity).digest("hex");
   // Atomic, bounded counter: concurrent requests cannot exceed the allowance.
   // PostgreSQL time avoids differences between application-instance clocks.
-  const rows = await getDb().$queryRaw<{ attempts: number }[]>`
+  const rows = await db.$queryRaw<{ attempts: number }[]>`
     INSERT INTO "LoginRateLimit" ("key", "attempts", "expiresAt")
     VALUES (${key}, 1, NOW() + make_interval(secs => ${seconds}::int))
     ON CONFLICT ("key") DO UPDATE SET

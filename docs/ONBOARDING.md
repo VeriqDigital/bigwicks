@@ -452,20 +452,48 @@ An encrypted ten-minute recipient preview binds admin/session, selected IDs and
 current recipient/token state. Before sending, the service rechecks the snapshot,
 claims a one-use preview bucket atomically across instances, and re-resolves admin
 and recipient state for every send. Changed/ineligible recipients fail closed.
-Issuance rechecks expected email, active flags and session version under the
-existing User lock. Existing AccountToken and Resend delivery semantics apply:
+Milestone 6D adds an atomic claim of the reviewed setup-token state under the
+existing User lock. The server fingerprint includes user/customer identity,
+email, role, password-set state, both active flags, sessionVersion and the latest
+setup token's identity/lifecycle (or explicit no-token state). The bulk snapshot
+binds this projection; each recipient must still match it when issuance takes the
+lock, even after earlier recipients have sent. Only the winner can supersede/create
+a token and attempt email. Competing distinct previews and overlapping individual
+sends return stale/not-attempted results instead of replacing the winner's link.
+An individual action reviews current state server-side without a new review screen.
+Existing AccountToken and Resend delivery semantics apply:
 raw tokens never enter staff UI/logs, and deliveredAt means provider acceptance,
-not inbox delivery. Failed sends remain unusable and are reported per recipient.
+not inbox delivery. Results distinguish acceptance, account changed/not attempted,
+quota or ineligibility/not attempted, and acceptance not confirmed. Refresh and
+review changed accounts before retrying; a fresh intentional resend still works.
+Failed sends remain unusable, including when cleanup cannot be recorded; a fresh
+review can retry within quota. Earlier links may already have been superseded.
 
 Sends are sequential with 600 ms between attempts, at most 100 bulk attempts/hour
 globally, sharing the existing 3-per-customer/15-minute bucket with individual
-invitations. The existing individual global cap remains 30/hour. Limits use
+invitations. The existing individual global cap remains 30/hour. After comparing
+reviewed state and eligibility under the lock, issuance consumes the channel-global
+bucket, then the shared per-customer bucket, then creates the token in the same
+transaction. Stale losers spend no send quota. A global admission remains spent
+if the recipient is capped, so repeated capped requests remain bounded; this can
+underutilize global allowance. Provider failure does not refund committed quotas.
+SQL insertion failure rolls back quota and token changes. Limits use
 PostgreSQL, not browser headers or in-memory counters. No background job or automatic
 retry exists. The page requests a 300-second action duration; verify deployment
 platform support before live use. After interruption, refresh, inspect accepted
 link status, and explicitly review any retry; the original preview cannot replay.
 Accounts are retained regardless of email outcome. Smaller batches reduce timeout
 risk. Real delivery and hosting limits remain separately verified operational work.
+
+Provider I/O is outside every SQL transaction. Delivery marking/failed-token cleanup
+use short User-locked transactions. Only a still-current valid token can be marked
+delivered. A fresh action can review a newly committed token and intentionally
+resend while its previous provider call is in flight; the earlier email cannot be
+recalled and may contain a superseded link. Account changes after the claim have
+the same external boundary. This is not exactly-once delivery or an SQL/Resend
+distributed transaction. No migration is needed. See the [REL-01 design, regression
+evidence and limitations](SECURITY-REMEDIATION.md#milestone-6d-invitation-concurrency--rel-01).
+SEC-04 remains open; dependency and deployment gates are separate.
 
 ### Initial customer onboarding steps
 

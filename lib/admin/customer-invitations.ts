@@ -3,7 +3,7 @@ import { setTimeout as pause } from "node:timers/promises";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth/authorization";
 import { getDb } from "@/lib/db";
-import { issueAccountToken } from "@/lib/auth/account-tokens";
+import { issueAccountToken, setupReviewSelect, setupStateFingerprint, type AccountTokenIssueStatus } from "@/lib/auth/account-tokens";
 import { consumeBucket } from "@/lib/auth/rate-limit";
 import { customerIdSchema } from "./customer-validation";
 import { CustomerBatchError } from "./customer-import-csv";
@@ -15,8 +15,7 @@ const eligible = { active: true, user: { role: "CUSTOMER" as const, active: true
 async function recipients(ids?: string[]) {
   return getDb().customer.findMany({ where: { ...eligible, ...(ids ? { id: { in: ids } } : {}) }, take: 501, orderBy: { id: "asc" },
     select: { id: true, companyName: true, customerNumber: true, updatedAt: true,
-      user: { select: { id: true, email: true, sessionVersion: true, updatedAt: true,
-        accountTokens: { where: { purpose: "ACCOUNT_SETUP" }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 1, select: { id: true, consumedAt: true, deliveredAt: true, expiresAt: true } } } } } });
+      user: { select: { ...setupReviewSelect, updatedAt: true } } } });
 }
 function recipientDto(row: Awaited<ReturnType<typeof recipients>>[number]) {
   return { id: row.id, companyName: row.companyName, customerNumber: row.customerNumber ?? "", email: row.user.email,
@@ -50,22 +49,26 @@ export async function confirmCustomerInvitations(token: unknown, confirmed: bool
     // Atomic cross-instance replay guard. Interrupted batches require a fresh review.
     await getDb().$transaction((tx) => verifyBatchAdmin(tx, admin));
     if (!await consumeBucket(`customer-bulk-invite-preview:${batchFingerprint(token)}`, 1, 600)) throw new CustomerBatchError("This invitation batch was already attempted. Refresh and review delivery status before retrying.");
-    const results: { id: string; companyName: string; email: string; accepted: boolean }[] = [];
+    const results: { id: string; companyName: string; email: string; status: AccountTokenIssueStatus }[] = [];
     for (const [index, row] of rows.entries()) {
       if (index) await pause(600); // Sequential pacing below two provider calls/second.
-      let accepted = false;
+      let status: AccountTokenIssueStatus = "not_confirmed";
       try {
         // Re-resolve authorization and recipient state for each outbound operation.
         await getDb().$transaction((tx) => verifyBatchAdmin(tx, admin));
         const current = await recipients([row.id]);
-        if (staged.expiresAt > Date.now() && batchFingerprint(current) === batchFingerprint([row]) &&
-            await consumeBucket("account-bulk-invite:global", 100, 3600) &&
-            await consumeBucket(`account-invite:${row.user.id}`, 3, 900)) {
-          accepted = await issueAccountToken(row.user.id, "ACCOUNT_SETUP", row.user.email, row.user.sessionVersion);
+        if (staged.expiresAt <= Date.now() || batchFingerprint(current) !== batchFingerprint([row])) {
+          status = "stale";
+        } else {
+          // rows matched the encrypted preview snapshot. Carry THAT state, never
+          // silently adopt a newer token from the pre-loop/per-row rechecks.
+          status = await issueAccountToken(row.user.id, { purpose: "ACCOUNT_SETUP", channel: "bulk",
+            expectedState: setupStateFingerprint(row.user), reviewExpiresAt: staged.expiresAt });
         }
       } catch { /* Fixed result only: no provider errors or token material. */ }
-      results.push({ id: row.id, companyName: row.companyName, email: row.user.email, accepted });
+      results.push({ id: row.id, companyName: row.companyName, email: row.user.email, status });
     }
-    return { status: "success" as const, results, message: `${results.filter((r) => r.accepted).length} setup emails accepted for delivery; ${results.filter((r) => !r.accepted).length} not confirmed. Acceptance is not inbox delivery.` };
+    const count = (status: AccountTokenIssueStatus) => results.filter((r) => r.status === status).length;
+    return { status: "success" as const, results, message: `${count("accepted")} setup emails accepted for delivery; ${count("stale")} changed and not attempted; ${count("ineligible") + count("rate_limited")} other recipients not attempted; ${count("not_confirmed")} not confirmed. Acceptance is not inbox delivery.` };
   } catch (error) { return { status: "invalid" as const, message: customerBatchMessage(error) }; }
 }

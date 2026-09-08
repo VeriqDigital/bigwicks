@@ -87,7 +87,7 @@ test("bulk invitations require visible selection and confirmation, use existing 
   await responsive(page, "customer-invitation-preview");
   await page.getByLabel("Send setup invitations to these recipients.").check();
   await page.getByRole("button", { name: "Confirm and send invitations" }).click();
-  await expect(page.getByRole("status")).toContainText("2 setup emails accepted for delivery; 0 not confirmed");
+  await expect(page.getByRole("status")).toContainText("2 setup emails accepted for delivery; 0 changed and not attempted; 0 other recipients not attempted; 0 not confirmed");
   const messages = (await readdir(mailDir)).filter((f) => f.endsWith(".json") && !before.includes(f)); expect(messages).toHaveLength(2);
   for (const file of messages) {
     const mail = JSON.parse(await readFile(join(mailDir, file), "utf8"));
@@ -100,9 +100,63 @@ test("bulk invitations require visible selection and confirmation, use existing 
   await writeFile(join(mailDir, "fail"), "fictional failure");
   try {
     await page.getByRole("button", { name: "Confirm and send invitations" }).click();
-    await expect(page.getByRole("status")).toContainText("0 setup emails accepted for delivery; 1 not confirmed");
+    await expect(page.getByRole("status")).toContainText("0 setup emails accepted for delivery; 0 changed and not attempted; 0 other recipients not attempted; 1 not confirmed");
   } finally { await unlink(join(mailDir, "fail")); }
   await page.reload(); await page.getByRole("checkbox", { name: /Fictional invite 0/ }).check(); await page.getByRole("button", { name: "Review selected invitations" }).click();
   await page.getByLabel("Send setup invitations to these recipients.").check(); await page.getByRole("button", { name: "Confirm and send invitations" }).click();
-  await expect(page.getByRole("status")).toContainText("1 setup emails accepted for delivery; 0 not confirmed");
+  await expect(page.getByRole("status")).toContainText("1 setup emails accepted for delivery; 0 changed and not attempted; 0 other recipients not attempted; 0 not confirmed");
+});
+
+test("a recipient changed during the batch is clearly not attempted, and a fresh review can retry", async ({ page }) => {
+  test.setTimeout(60000);
+  const tier = await db.pricingTier.findUniqueOrThrow({ where: { name: "Tier 1" } });
+  const users = [];
+  for (let i = 0; i < 2; i++) users.push(await db.user.create({ data: {
+    email: `browser-m5b-rel01-${i}@example.test`, role: "CUSTOMER", active: true,
+    customer: { create: { companyName: `Fictional concurrency ${i}`, active: true, pricingTierId: tier.id } },
+  }, include: { customer: true } }));
+  users.sort((a, b) => a.customer!.id.localeCompare(b.customer!.id));
+  const later = users[1];
+  await login(page); await page.goto("/admin/customers/invitations");
+  for (const user of users) await page.getByRole("checkbox", { name: new RegExp(user.customer!.companyName) }).check();
+  await page.getByRole("button", { name: "Review selected invitations" }).click();
+  await expect(page.getByRole("heading", { name: "Review invitation recipients" })).toBeVisible();
+  const before = await readdir(mailDir);
+  let locked!: () => void; const ready = new Promise<void>(done => { locked = done; });
+  let release!: () => void; const gate = new Promise<void>(done => { release = done; });
+  // Hold recipient 2's User lock while recipient 1 sends. This is a controlled
+  // SQL boundary, independent of the browser's or provider's completion timing.
+  const mutation = db.$transaction(async tx => {
+    await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${later.id} FOR UPDATE`;
+    locked(); await gate;
+    await tx.user.update({ where: { id: later.id }, data: { email: "browser-m5b-rel01-new@example.test", sessionVersion: { increment: 1 } } });
+  }, { timeout: 15000 });
+  try {
+    await ready;
+    await page.getByLabel("Send setup invitations to these recipients.").check();
+    await page.getByRole("button", { name: "Confirm and send invitations" }).click();
+    await expect.poll(async () => (await readdir(mailDir)).filter(f => f.endsWith(".json") && !before.includes(f)).length).toBe(1);
+    release(); await mutation;
+    await expect(page.getByRole("status")).toContainText("1 setup emails accepted for delivery; 1 changed and not attempted");
+    const row = page.getByRole("listitem").filter({ hasText: later.email });
+    await expect(row).toContainText("Account changed; not attempted. Refresh and review again");
+    expect(await db.accountToken.count({ where: { userId: later.id } })).toBe(0);
+    const files = (await readdir(mailDir)).filter(f => f.endsWith(".json") && !before.includes(f));
+    expect(files).toHaveLength(1);
+    const mail = JSON.parse(await readFile(join(mailDir, files[0]), "utf8"));
+    expect(mail.to).toEqual([users[0].email]);
+    expect(await page.content()).not.toContain(mail.text.match(/token=([a-f0-9]{64})/)[1]);
+    await responsive(page, "customer-invitation-stale-result");
+  } finally { release(); await mutation; }
+  await page.reload();
+  await page.getByRole("checkbox", { name: new RegExp(later.customer!.companyName) }).check();
+  await page.getByRole("button", { name: "Review selected invitations" }).click();
+  await page.getByLabel("Send setup invitations to these recipients.").check();
+  await page.getByRole("button", { name: "Confirm and send invitations" }).click();
+  await expect(page.getByRole("status")).toContainText("1 setup emails accepted for delivery; 0 changed and not attempted");
+  expect(await db.accountToken.count({ where: { userId: later.id, deliveredAt: { not: null }, consumedAt: null } })).toBe(1);
+  const files = (await readdir(mailDir)).filter(f => f.endsWith(".json") && !before.includes(f));
+  expect(files).toHaveLength(2);
+  const recipients = await Promise.all(files.map(async file => JSON.parse(await readFile(join(mailDir, file), "utf8")).to[0]));
+  expect(recipients.sort()).toEqual([users[0].email, "browser-m5b-rel01-new@example.test"].sort());
 });
