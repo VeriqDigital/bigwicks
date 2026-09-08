@@ -5,7 +5,7 @@
 **Client / business name:** Big Wicks Fireworks LLC
 **Public-facing name:** Big Wicks Fireworks
 **Project type:** Retail marketing website + protected wholesale customer portal
-**Current stage:** Milestones through 6B are merged (PR #15). Milestone 6C implements public contact abuse protection locally for review; see [remediation and verification](SECURITY-REMEDIATION.md#milestone-6c-public-contact-abuse-protection). Real catalog onboarding is complete in non-production only; production catalog/pricing imports, real customer imports and real invitations have not occurred. See [current onboarding status](ONBOARDING.md#current-status).
+**Current stage:** Milestones through 6E / PR #18 are merged. Milestone 7A provides the [production readiness audit](PRODUCTION-READINESS.md) and authoritative [launch/rollback runbook](LAUNCH-RUNBOOK.md). Public SEO acceptance, production bootstrap/configuration, client data and live verification gates remain open. Real catalog onboarding is complete in non-production only; production catalog/pricing imports, real customer imports and real invitations have not occurred. See [current onboarding status](ONBOARDING.md#current-status).
 **Primary Veriq contact:** Mick Enev
 
 ### Project summary
@@ -1135,13 +1135,12 @@ Test:
 
 ### What Codex should optimize for right now
 
-Complete and verify Milestone 5B's create-only customer import and separately
-confirmed invitation workflow. Milestones through 5A.2 are merged per the user.
-Do not deploy, modify remote data/settings, send real email or import real customers.
-
-The first meaningful milestone is:
-
-> An admin can preview and atomically create a fictional customer batch without email, then separately select, review and confirm setup invitations using the existing secure token flow.
+Complete the release gates in [PRODUCTION-READINESS.md](PRODUCTION-READINESS.md).
+Milestones through 6E / PR #18 are merged. [LAUNCH-RUNBOOK.md](LAUNCH-RUNBOOK.md)
+supersedes the older illustrative milestone launch order above. Close the bounded
+SEO acceptance gaps and review/rehearse initial production tier/ADMIN provisioning
+while collecting client inputs. Production operations require a separately scoped
+authorization; 7A performs no deploy, remote mutation, real email or customer import.
 
 ### Do not work on yet
 
