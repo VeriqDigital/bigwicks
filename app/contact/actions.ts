@@ -6,6 +6,8 @@ import {
   type ContactFormState,
 } from "./contact-form-state";
 import { siteConfig } from "@/config/site";
+import { allowContactAttempt } from "@/lib/contact/rate-limit";
+import { CONTACT_EMAIL_TIMEOUT_MS } from "@/lib/contact/policy";
 
 const getString = (formData: FormData, name: string) => {
   const value = formData.get(name);
@@ -73,6 +75,21 @@ export async function submitContactForm(
     };
   }
 
+  try {
+    if (!await allowContactAttempt(email)) {
+      return {
+        status: "error",
+        message: "Too many messages have been submitted. Please wait and try again, or call the store.",
+      };
+    }
+  } catch {
+    console.error("Contact form abuse protection is unavailable.");
+    return {
+      status: "error",
+      message: `Online messaging is temporarily unavailable. Please call the store at ${siteConfig.contact.phone}.`,
+    };
+  }
+
   const emailText = [
     "New Big Wicks website inquiry",
     "",
@@ -103,6 +120,7 @@ export async function submitContactForm(
         text: emailText,
       }),
       cache: "no-store",
+      signal: AbortSignal.timeout(CONTACT_EMAIL_TIMEOUT_MS),
     });
 
     if (!response.ok) {
@@ -112,8 +130,8 @@ export async function submitContactForm(
         message: "We could not send your message right now. Please try again or call the store.",
       };
     }
-  } catch (error) {
-    console.error("Contact form email delivery failed.", error);
+  } catch {
+    console.error("Contact form email delivery failed.");
     return {
       status: "error",
       message: "We could not send your message right now. Please try again or call the store.",

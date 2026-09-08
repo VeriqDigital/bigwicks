@@ -1,0 +1,5 @@
+export const CONTACT_EMAIL_LIMIT = 3;
+export const CONTACT_EMAIL_WINDOW_SECONDS = 15 * 60;
+export const CONTACT_GLOBAL_LIMIT = 30;
+export const CONTACT_GLOBAL_WINDOW_SECONDS = 60 * 60;
+export const CONTACT_EMAIL_TIMEOUT_MS = 10_000;

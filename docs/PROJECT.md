@@ -5,7 +5,7 @@
 **Client / business name:** Big Wicks Fireworks LLC
 **Public-facing name:** Big Wicks Fireworks
 **Project type:** Retail marketing website + protected wholesale customer portal
-**Current stage:** Milestones through 5B and the Milestone 6A security audit are merged. Milestone 6B prepares the framework security update for review; see [remediation and verification](SECURITY-REMEDIATION.md). Real catalog onboarding is complete in non-production only; production catalog/pricing imports, real customer imports and real invitations have not occurred. See [current onboarding status](ONBOARDING.md#current-status).
+**Current stage:** Milestones through 6B are merged (PR #15). Milestone 6C implements public contact abuse protection locally for review; see [remediation and verification](SECURITY-REMEDIATION.md#milestone-6c-public-contact-abuse-protection). Real catalog onboarding is complete in non-production only; production catalog/pricing imports, real customer imports and real invitations have not occurred. See [current onboarding status](ONBOARDING.md#current-status).
 **Primary Veriq contact:** Mick Enev
 
 ### Project summary

@@ -1,4 +1,158 @@
-# Milestone 6B: framework security remediation
+# Security remediation record
+
+## Milestone 6C: public contact abuse protection
+
+Remediation date: **2026-09-07**. SEC-03 is implemented locally for review from
+PR #15's merged main, `eba664ea4be5a2dfdcd6b5158cdac0fc53100c60`. HEAD, local main,
+origin/main and read-only `git ls-remote origin refs/heads/main` agreed. No merge
+or deployment is part of this record. The [historical audit](SECURITY-AUDIT.md)
+is unchanged; the dated Milestone 6B record below describes its earlier state.
+
+### Abuse control and failure behavior
+
+| Dimension | Identity before existing HMAC-SHA256 | Allowance |
+| --- | --- | --- |
+| Aggregate contact | `contact:global` | 30 attempts / 3,600 seconds |
+| Validated email | `contact:email:` + trimmed, lowercased email | 3 attempts / 900 seconds |
+| Source/IP | None asserted by application | Live ingress configuration gate |
+
+Values and the **10,000 ms** transport timeout are centralized in
+`lib/contact/policy.ts`. `lib/contact/rate-limit.ts` reuses `consumeBucket` and
+the existing `LoginRateLimit` table; there is no schema, dependency, vendor or
+environment-variable addition. SQL upserts atomically arbitrate each allowance
+across processes sharing PostgreSQL and AUTH_SECRET. PostgreSQL time determines
+fixed windows beginning with the first admitted attempt. These are not rolling
+windows: adjacent windows permit a boundary burst. Three messages in 15 minutes
+permits ordinary followups; 30/hour gives a small local-business form headroom
+while bounding rotating-address transport attempts. Review against real usage
+before release; neither number is a claim about measured traffic or provider quota.
+
+Order is honeypot, unchanged field validation, mail configuration, global bucket,
+expired-row cleanup, normalized-email bucket, then Resend. Malformed forms and
+honeypots do **no database or transport work**. Missing mail configuration returns
+the existing unavailable response without spending buckets. Global admission
+counts even if the email bucket rejects, cleanup fails, or delivery fails. Counters
+are not refunded and the two bucket operations are intentionally not a combined
+transaction; this can underutilize allowances, never authorize extra sends.
+
+Database/cleanup failure or absent/invalid AUTH_SECRET fails closed with the safe
+unavailable response and existing phone fallback. A denied allowance returns the
+same non-technical wait/retry/call message for either dimension, without limits
+or bucket names. Existing field errors, honeypot apparent success, fixed configured
+sender/recipient, validated submitted reply_to and plain-text mail remain intact.
+Lowercasing applies to the limiter identity; reply_to retains the validated,
+trimmed submitted address. No submitted recipient/from/reply_to override is used.
+
+Resend uses `AbortSignal.timeout(10_000)`, matching account-mail convention. A
+stalled fetch aborts with the same generic failure as network/HTTP errors. The
+deadline covers outbound fetch, not total action time including database work;
+it cannot retract mail already accepted by the provider. The action logs only
+fixed messages or the numeric HTTP status, never caught Error objects/messages,
+response bodies, keys, limiter identities, customer payloads or message contents.
+Unique random idempotency keys remain for admitted messages and later followups;
+idempotency is not treated as abuse control. No automatic send retry was added.
+
+### Source trust, cleanup and production gates
+
+Installed Next.js 16.3.4 guides `01-app/02-guides/data-security.md` and
+`01-app/03-api-reference/04-functions/headers.md` were reviewed, together with
+`dist/server/app-render/action-handler.js`. Reading incoming headers does not
+establish trustworthy source identity. No live ingress configuration was inspected
+or changed; no assumption is made that Vercel or another proxy overwrites a
+particular IP header. The action consumes none of `x-forwarded-for`, `forwarded`
+or `x-real-ip`. HTTP tests rotate these forged values without bypassing allowance.
+
+Framework Origin protections/configuration are unchanged. Mismatched and literal
+`Origin: null` are rejected before bucket/mail work in the local production test.
+An omitted Origin is distinct: Next permits it with its existing warning path;
+the test checks that application throttling still applies. This is not a new
+Origin exemption and no `allowedOrigins` expansion was made.
+
+Previously, login's admitted global attempts performed indexed expired-row
+deletion. That exact SQL is now exported as `cleanupExpiredBuckets` and reused
+by contact after global admission, preserving login behavior. Global-first
+ordering limits contact email-row creation to at most 30/hour, even when addresses
+rotate, and bounds cleanup invocations to the same allowance. Contact-only traffic
+therefore cleans old rows without waiting for a login. On inactivity, a finite
+expired residue can remain until the next globally admitted contact/login; it does
+not grow without traffic. No scheduled cleanup or limiter rewrite is introduced.
+Cleanup errors deny sending; tests preserve unexpired unrelated buckets.
+
+Remaining limitations and release gates:
+
+- An attacker can spend the shared allowance or target another email's bucket,
+  temporarily denying legitimate inquiries. Email identity is not proof of mailbox
+  ownership. Rotating identities cannot evade the aggregate cap.
+- Rejected valid requests still cost application/database work. This bounds this
+  email path, not arbitrary request volume, all Resend usage, DDoS, bots or spam.
+  It guarantees neither availability nor inbox delivery.
+- Before production, separately verify ingress/WAF per-source limits covering
+  direct contact Server Action POSTs, trusted forwarding/host handling and Origin
+  behavior over actual TLS. Establish request/body/duration limits and monitoring
+  without customer payloads. No IP throttling is claimed here.
+- Verify shared PostgreSQL/AUTH_SECRET configuration across instances, stable
+  secret handling (rotation changes HMAC identities), provider quotas and confirmed
+  contact routing. Tune allowance headroom using approved operational evidence.
+- **REL-01 and SEC-04 remain open**, as do residual DEP-01 families, the Sanity
+  peer warning and unrelated release gates. Their observation tests still describe
+  those outstanding findings. No authentication, invitation, order or catalog
+  behavior was redesigned.
+- Existing UX limitation observed in browser verification: the uncontrolled form
+  resets after a resolved action, including the new rate-limit error. The form
+  component is unchanged; retaining drafts on failure is separate UX work.
+
+### Verification
+
+All application checks run through the existing isolated security wrapper with
+fictional data, a fresh disposable loopback PostgreSQL cluster, sanitized source
+copies/environment, intercepted email/Sanity and mocked build fonts. Browser egress
+uses the existing blocked proxy. No real email, private environment file, customer
+data, remote database/dataset, deployment, hosting/Resend/DNS configuration or
+remote environment variable was accessed or changed.
+
+- `node tests/security/run.mjs contact`: new scoped mode runs the existing full
+  unit/database configuration, a fresh configured production build and only the
+  contact HTTP/browser scenario. The database phase passed **433 tests in 24 files**,
+  including 25 new contact cases and the inverted six-request SEC-03 reproduction.
+  Login, reset, individual/bulk invitation and shared limiter tests passed.
+  Source copy: `.test-runtime/security-source-ZqfxTr`. Its configured Next 16.3.4
+  production build passed. The first browser run confirmed bounded HTTP replay
+  and both Origin rejections, then failed on a new test selector matching both
+  the form alert and Next's route announcer. Overall initial command exit was 1.
+- `node tests/security/run.mjs focused .test-runtime/security-source-ZqfxTr`:
+  **passed, exit 0**, final copy `.test-runtime/security-source-0kPvfy`. Reused the
+  checked, unchanged application build with a fresh disposable database; **31
+  security tests and all four HTTP/framework tests passed**. The selector is now
+  scoped to the form. One browser submit plus six simultaneous captured POSTs
+  yielded exactly three intercepted emails, then omitted-Origin and three
+  viewport form retries added zero. Mismatched/literal-null Origins produced
+  HTTP 500 without any bucket changes. Same-tier ownership/revoked admin reads
+  and the existing image/Studio checks also passed. No unrelated full browser
+  or Firefox order suite was rerun.
+- `node tests/security/run.mjs lint`: passed.
+- `node tests/security/run.mjs typecheck`: passed, including Prisma generation,
+  Next route types and `tsc --noEmit --incremental false`.
+- `git diff --check`: passed. Historical audit, package manifests/lockfile,
+  framework configuration and public form component are unchanged. Project docs
+  specify no previous-client identifier list for this patch; no brand assets or
+  public business facts changed.
+
+All three saved contact-alert screenshots (390/768/1440 widths) were visually
+inspected; text is readable and automated horizontal-overflow assertions passed.
+Existing Vite config-loader and nested-source workspace-root warnings remain.
+External fonts/maps/provider delivery and live ingress are not verified by this
+local intercepted harness. Build/test artifacts remain only under ignored paths.
+
+Regression coverage includes normalized HMAC identity, sequential and simultaneous
+same/rotating-email submissions with actual fetch-count assertions, validation,
+honeypot, all limiter failure stages, expired-row cleanup/window reuse, fixed
+recipient/reply_to, non-2xx/network safety, and an actual approximately ten-second
+stalled-transport abort. No fake clock or sleep-only concurrency assertion is used.
+The historical six-request reproduction now requires only three outbound attempts.
+The HTTP scenario uses a real captured production Server Action body, concurrent
+replays, Origin checks, and the existing rate-limit alert UI at 390/768/1440 widths.
+
+## Milestone 6B: framework security remediation
 
 ## 2026-09-07 — Next.js 16.3.4
 
