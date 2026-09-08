@@ -19,7 +19,7 @@ export async function requestPasswordReset(_state: { message?: string }, form: F
     after(async () => {
       try {
         const user = await getDb().user.findFirst({ where: { email: parsed.data, role: "CUSTOMER", passwordHash: { not: null }, customer: { isNot: null } }, select: { id: true } });
-        if (user && !await issueAccountToken(user.id, "PASSWORD_RESET", parsed.data)) console.error("Account reset email could not be confirmed.");
+        if (user && await issueAccountToken(user.id, { purpose: "PASSWORD_RESET", expectedEmail: parsed.data }) !== "accepted") console.error("Account reset email could not be confirmed.");
       } catch { console.error("Account reset request could not be completed."); }
     });
   } catch { /* Fail closed with the same public response. */ }

@@ -1,4 +1,4 @@
-// SEC-03 is a remediation regression; remaining audit observations assert current behavior.
+// SEC-03 and REL-01 are remediation regressions; SEC-04 remains an audit observation.
 import { beforeEach, afterAll, expect, it, vi } from "vitest";
 const mock = vi.hoisted(() => ({ auth: vi.fn(), mail: vi.fn() }));
 vi.mock("@/auth", () => ({ auth: mock.auth }));
@@ -47,7 +47,7 @@ it("SEC-03 regression: six identical public contact submissions stop at the allo
     expect(transport.mock.calls.every(([, options]) => options?.signal instanceof AbortSignal)).toBe(true);
   } finally { transport.mockRestore(); }
 });
-it("AUDIT: distinct overlapping invitation previews both issue for one unchanged recipient", async () => {
+it("REL-01 regression: distinct overlapping invitation previews claim one unchanged recipient once", async () => {
   const user = await customer("overlap");
   const one = await previewCustomerInvitations([user.customer!.id]);
   const two = await previewCustomerInvitations([user.customer!.id]);
@@ -61,8 +61,11 @@ it("AUDIT: distinct overlapping invitation previews both issue for one unchanged
     await barrier; return original(...args);
   });
   try {
-    await Promise.all([confirmCustomerInvitations(one.token, true), confirmCustomerInvitations(two.token, true)]);
-    expect(arrived).toBe(2); expect(mock.mail).toHaveBeenCalledTimes(2);
+    const results = await Promise.all([confirmCustomerInvitations(one.token, true), confirmCustomerInvitations(two.token, true)]);
+    expect(results.flatMap((r) => r.status === "success" ? r.results.map((row) => row.status) : []).sort()).toEqual(["accepted", "stale"]);
+    expect(arrived).toBe(2); expect(mock.mail).toHaveBeenCalledTimes(1);
+    expect(await db.accountToken.count({ where: { userId: user.id } })).toBe(1);
+    expect(await tokenService.accountTokenUsable(tokenService.tokenDigest(mock.mail.mock.calls[0][1])!, "ACCOUNT_SETUP")).toBe(true);
     expect(await db.accountToken.count({ where: { userId: user.id, consumedAt: null, deliveredAt: { not: null } } })).toBe(1);
   } finally { release(); spy.mockRestore(); }
 });
@@ -91,7 +94,7 @@ it("AUDIT: a different customer in the same tier cannot read an owner's confirma
   mock.auth.mockResolvedValue({ user: owner });
   expect((await getCustomerConfirmation(reference)).companyName).toBe("Fictional PRIVATE OWNER");
 });
-it("AUDIT: overlapping individual and bulk invitations share quota but can both issue", async () => {
+it("REL-01 regression: overlapping individual and bulk invitations share one state claim and quota", async () => {
   const user = await customer("individual-overlap");
   const staged = await previewCustomerInvitations([user.customer!.id]);
   if (staged.status !== "preview") throw Error("Missing preview");
@@ -103,11 +106,16 @@ it("AUDIT: overlapping individual and bulk invitations share quota but can both 
   });
   const form = new FormData(); form.set("customerId", user.customer!.id);
   try {
-    await Promise.all([confirmCustomerInvitations(staged.token, true), sendSetupLink({}, form)]);
-    expect(mock.mail).toHaveBeenCalledTimes(2);
+    const [bulk, individual] = await Promise.all([confirmCustomerInvitations(staged.token, true), sendSetupLink({}, form)]);
+    if (bulk.status !== "success") throw Error("Missing bulk results");
+    expect([bulk.results[0].status, individual.success ? "accepted" : "stale"].sort()).toEqual(["accepted", "stale"]);
+    if (!individual.success) expect(individual.message).toContain("No setup email was attempted");
+    expect(mock.mail).toHaveBeenCalledTimes(1);
+    expect(await db.accountToken.count({ where: { userId: user.id } })).toBe(1);
+    expect(await tokenService.accountTokenUsable(tokenService.tokenDigest(mock.mail.mock.calls[0][1])!, "ACCOUNT_SETUP")).toBe(true);
     expect(await db.accountToken.count({ where: { userId: user.id, consumedAt: null, deliveredAt: { not: null } } })).toBe(1);
   } finally { release(); spy.mockRestore(); }
-  await sendSetupLink({}, form); await sendSetupLink({}, form);
+  await sendSetupLink({}, form); await sendSetupLink({}, form); await sendSetupLink({}, form);
   expect(mock.mail).toHaveBeenCalledTimes(3); // Fourth is denied by the SHARED quota.
 });
 it("AUDIT: bulk admin revocation after its per-recipient check still permits that issuance", async () => {

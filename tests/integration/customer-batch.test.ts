@@ -10,7 +10,7 @@ import { sealCustomerBatch, openCustomerBatch } from "@/lib/admin/customer-batch
 import { GET as template } from "@/app/(portal)/admin/customers/import/template/route";
 import { fictionalCustomerCsv } from "../fixtures/customer-batch";
 import * as creation from "@/lib/admin/customer-create";
-import { issueAccountToken } from "@/lib/auth/account-tokens";
+import { issueAccountToken, setupReviewSelect, setupStateFingerprint } from "@/lib/auth/account-tokens";
 const db = getDb();
 let admin: { id: string; sessionVersion: number }; let tierId: string;
 const where = { email: { startsWith: "test-m5b" } };
@@ -104,7 +104,7 @@ it("requires confirmation, reuses setup tokens, reports partial failure and bloc
   mock.mail.mockResolvedValueOnce(undefined).mockRejectedValueOnce(Error("private provider payload"));
   const result = await confirmCustomerInvitations(staged.token, true); expect(result.status).toBe("success");
   if (result.status !== "success") throw Error("Expected result");
-  expect(result.results.map((r) => r.accepted).sort()).toEqual([false, true]);
+  expect(result.results.map((r) => r.status).sort()).toEqual(["accepted", "not_confirmed"]);
   const tokens = await db.accountToken.findMany({ where: { user: where } }); expect(tokens).toHaveLength(2);
   expect(tokens.filter((t) => t.deliveredAt && !t.consumedAt)).toHaveLength(1); expect(tokens.filter((t) => !t.deliveredAt && t.consumedAt)).toHaveLength(1);
   for (const call of mock.mail.mock.calls) { expect(call[2]).toBe("ACCOUNT_SETUP"); expect(JSON.stringify(result)).not.toContain(call[1]); }
@@ -121,9 +121,11 @@ it("rejects recipient drift and concurrent invitation confirmations send only on
 });
 it("rechecks bulk issuance active flags, email and session version under the existing User lock", async () => {
   const user = await customer();
-  expect(await issueAccountToken(user.id, "ACCOUNT_SETUP", "forged@example.test", 0)).toBe(false);
-  expect(await issueAccountToken(user.id, "ACCOUNT_SETUP", user.email, 1)).toBe(false);
+  const review = await db.user.findUniqueOrThrow({ where: { id: user.id }, select: setupReviewSelect });
+  const request = { purpose: "ACCOUNT_SETUP", channel: "bulk", expectedState: setupStateFingerprint(review) } as const;
+  expect(await issueAccountToken(user.id, { ...request, expectedState: setupStateFingerprint({ ...review, email: "forged@example.test" }) })).toBe("stale");
+  expect(await issueAccountToken(user.id, { ...request, expectedState: setupStateFingerprint({ ...review, sessionVersion: 1 }) })).toBe("stale");
   await db.customer.update({ where: { id: user.customer!.id }, data: { active: false } });
-  expect(await issueAccountToken(user.id, "ACCOUNT_SETUP", user.email, 0)).toBe(false);
+  expect(await issueAccountToken(user.id, request)).toBe("stale");
   expect(mock.mail).not.toHaveBeenCalled(); expect(await db.accountToken.count({ where: { userId: user.id } })).toBe(0);
 });

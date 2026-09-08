@@ -1,5 +1,216 @@
 # Security remediation record
 
+## Milestone 6D: invitation concurrency / REL-01
+
+Remediation date: **2026-09-07**. Implemented locally on `REL-01-Fix`, starting
+from merged Milestone 6C / PR #16 at
+`c07c33f67c834da17e203290e0cf77a6785e8988`. HEAD, local main, origin/main and a
+read-only `git ls-remote origin refs/heads/main` check agreed. The initial
+sandboxed remote read could not connect; the authorized read-only retry succeeded.
+No merge or deployment is included. [SECURITY-AUDIT.md](SECURITY-AUDIT.md) stays
+unchanged as the pre-fix baseline. SEC-04 remains open and separately reproduced.
+
+### State claim and linearization
+
+Both ADMIN setup paths now call the same `issueAccountToken(userId, request)`.
+The discriminated setup request requires a server-generated `expectedState` and
+server-selected individual/bulk channel. There is no unchecked setup overload.
+The password-reset request retains expected-email validation without invitation
+review or invitation quotas; its caller now tests the typed `accepted` status.
+No schema, migration, dependency, environment variable or external service is added.
+
+`setupStateFingerprint` is SHA-256 of a deterministic, versioned JSON projection:
+
+- User identity, email, role, active flag, password-set boolean and sessionVersion;
+- associated Customer identity and active flag (or null);
+- latest ACCOUNT_SETUP row's identity, createdAt, consumedAt, deliveredAt,
+  expiresAt and issue-time sessionVersion (or explicit null when none exists).
+
+Neither a token digest nor a raw token participates. Actual password hashes are
+not fingerprint inputs. The shared query projection and fingerprint stay server-only.
+No token internals appear in candidate/result DTOs. Stored expiry participates;
+time passing alone does not invalidate review of an otherwise unchanged token.
+Fresh review of an expired, failed, consumed or undelivered token can resend.
+
+The latest row uses `(createdAt DESC, id DESC)`. Setup insertion explicitly sets
+createdAt to `max(Date.now(), latest.createdAt + 1ms)` **under the User lock**.
+PostgreSQL's default NOW() is transaction-start time, so relying on it alone could
+sort a waiting transaction's new token behind an earlier token. The monotonic
+timestamp also handles equal milliseconds and backwards application clocks.
+Existing rows are deterministic under the tie-breaker; new rows sort after them.
+Expiry remains 24 hours from issuance, independent of this ordering timestamp.
+Token history must not be externally deleted/rewritten as a concurrency mechanism.
+
+The SQL-only transaction acquires the existing `SELECT ... FOR UPDATE` on User,
+re-reads the projection, compares the expected state and review deadline, checks
+eligibility, admits quotas, supersedes prior setup tokens and inserts the new row.
+**The successful claim linearizes at new-token insertion under that lock, becoming
+durable at commit.** Comparison and insertion cannot be separated by another
+writer. A mismatch returns `stale` before quota, supersession, insertion or email.
+Insertion failure rolls back supersession and quota together. Delivery marking
+and provider-failure cleanup now also take short User-locked transactions so
+reviewed token lifecycle fields cannot mutate between comparison and insertion.
+
+### Individual and bulk behavior
+
+The individual action keeps its Send/Resend UX. After ADMIN authorization and
+customer-ID validation it reads the chosen customer's state from SQL, then passes
+that fingerprint to issuance. Email, sessionVersion and both active flags are now
+bound even for this path. An unchanged disabled/passwordless customer can still
+be invited individually; a change since that review is stale. It does not enable
+the account. No browser field supplies authoritative email or review state.
+
+Bulk retains selection without preselection, 25-recipient maximum, explicit
+confirmation, encrypted ten-minute admin/session-bound preview, aggregate snapshot
+comparison and SQL one-use preview bucket. `batchFingerprint(rows)` now includes
+the shared setup projection in addition to the existing recipient display fields
+and update timestamps. Once rows match the encrypted snapshot, their per-user
+fingerprints are carried into issuance; the loop never silently adopts newer state.
+The existing per-row checks remain, followed by the atomic claim immediately before
+issuance. Earlier accepted recipients remain accepted if a later row changes.
+The workflow still awaits each email sequentially with 600 ms between recipients.
+
+Results distinguish `accepted`, `stale`, `ineligible`, `rate_limited`, and
+`not_confirmed`. Aggregate wording counts changed/not-attempted recipients
+separately from other not-attempted and unconfirmed results; each row explains the
+next action. Stale individual results explicitly say no email was attempted.
+Provider exceptions, setup links, digests and database details never enter results.
+`not_confirmed` covers provider/finalization failure and safe caught failures where
+the caller cannot establish acceptance; it makes no inbox-delivery promise.
+
+### Quota order and provider boundary
+
+Order: existing ADMIN guard and eligibility/review reads; mail-configuration
+preflight; User lock; expected-state/deadline comparison; locked eligibility;
+channel-global quota; shared recipient quota; supersession/insertion/commit;
+provider I/O; short conditional delivery-finalization transaction. Bulk also
+retains its existing acting-admin checks and one-use preview admission before the
+loop. No acting-admin revocation check was added inside the recipient claim (SEC-04).
+
+| Bucket | Preserved allowance | Consumption |
+| --- | --- | --- |
+| `account-invite:global` | 30 / hour | Individual, after successful state comparison |
+| `account-bulk-invite:global` | 100 / hour | Bulk, after successful state comparison |
+| `account-invite:<user>` | 3 / 15 minutes | Shared by both paths, after channel-global admission |
+| `customer-bulk-invite-preview:<fingerprint>` | 1 / 10 minutes | Existing one-use encrypted-preview guard |
+
+`consumeBucket` accepts an optional transaction client; its existing HMAC keys,
+bounded PostgreSQL upsert and database-clock windows remain unchanged. Stale
+losers consume no provider-send quota. A global admission **is committed** if the
+recipient cap rejects, so repeated fresh but capped requests exhaust global
+allowance without creating tokens or unlimited recipient rows. This intentionally
+underutilizes global allowance. Provider failure/process interruption after claim
+does not refund either quota. SQL failure before commit rolls back both and cannot
+send. An interrupted/stale batch may still spend its one-use preview allowance.
+
+No PostgreSQL transaction is held during Resend. Raw tokens remain random 32-byte
+values stored only as SHA-256 digests; setup/reset purposes and 24-hour/one-hour
+expiry remain separated. Delivery is marked only if the token remains unconsumed,
+unexpired and bound to the same current email/role/sessionVersion. Failure consumes
+the row; even cleanup failure leaves deliveredAt null and the link unusable.
+Fresh review can then issue another token within quota. A stale loser cannot
+supersede the winner or reuse its old review, even if the winner's provider fails.
+
+### Verification
+
+All application checks use `tests/security/run.mjs`: private-env-free source
+copies, allowlisted fictional environment, fresh loopback PostgreSQL, mocked or
+intercepted email, mocked fonts, intercepted fictional catalog content and blocked
+browser egress. No real customer data, email, remote DB/dataset or deployment
+configuration was accessed. Six existing migrations apply to each fresh cluster.
+
+- `node tests/security/run.mjs invitations --database`: **372 passed / 20 files**
+  in the initial pass, including the two inverted audit reproductions and 26 new
+  REL-01 cases. No failure. Later additions strengthen the SQL lock evidence
+  and existing-token/provider-completion cases.
+- `node tests/security/run.mjs invitations`: **376 unit/database tests passed /
+  20 files**, including **30 new REL-01 cases**; sanitized configured **production
+  build passed** and **all six Chromium browser scenarios passed**, exit 0.
+  Final source copy: `.test-runtime/security-source-umEhZy`.
+- `node tests/security/run.mjs lint`: passed.
+- `node tests/security/run.mjs typecheck`: passed, including Prisma generation,
+  Next route generation and `tsc --noEmit --incremental false`.
+- Final lint/typecheck reruns passed after all test additions (source copies
+  `.test-runtime/security-source-WRkQGn` and `security-source-Qa5e1c`).
+- `git diff --check`: passed. Baseline comparison with `git diff --exit-code
+  c07c33f67c834da17e203290e0cf77a6785e8988 -- docs/SECURITY-AUDIT.md package.json
+  package-lock.json prisma app/contact lib/contact`: passed, no changes.
+  `docs/PROJECT.md` contains no concrete legacy-client identifier checklist;
+  the targeted legacy/previous-client search found no entries requiring cleanup.
+
+Changed-file manifest:
+
+| Area | Files |
+| --- | --- |
+| Shared claim/quota | `lib/auth/account-tokens.ts`, `lib/auth/rate-limit.ts` |
+| Callers/results | `lib/admin/customer-invitations.ts`, `app/(portal)/admin/customers/invite-action.ts`, `app/(portal)/admin/customers/invitations/invitation-form.tsx`, `app/(portal)/forgot-password/actions.ts` |
+| Regressions | `tests/security/reproductions.test.ts`, `tests/security/invitation-concurrency.test.ts` (new), `tests/integration/account-tokens.test.ts`, `tests/integration/customer-batch.test.ts`, `tests/e2e/customer-batch.spec.ts` |
+| Isolated runners | `tests/security/invitations.config.ts` (new), `tests/security/integration.config.ts`, `tests/security/run.mjs`, `tests/security/focused.ts` |
+| Documentation | `docs/SECURITY-REMEDIATION.md`, `docs/DECISIONS.md`, `docs/ONBOARDING.md`, `docs/AUTH.md` |
+
+The invitation command runs Prisma generation, `prisma migrate deploy` and fictional
+development seeding only on its new local database, then
+`vitest run --config tests/security/invitations.config.ts`, `next build`, intercepted
+`next start`, and `playwright test account-tokens.spec.ts customer-batch.spec.ts
+--config tests/security/playwright.config.ts`. No unrelated order/catalog browser
+or database suites are run. The initial database-only pass omits build/browser.
+Only the configured fictional-catalog production mode was built for this patch;
+Firefox's order-only project is outside this scope.
+
+The new browser case holds a later recipient's SQL User lock while the earlier
+recipient's intercepted email is accepted, changes the later email/session state,
+and releases the lock. It verifies one outbound attempt, one accepted result, one
+explicit changed/not-attempted row, zero tokens for the loser, and a successful
+fresh review/send to the new address. Screenshots of those results were visually
+inspected at **390, 768 and 1440 pixels**; wording wraps readably and automated
+horizontal-overflow assertions pass. Existing setup/password-reset, disabled-account
+setup, no-mail fictional 50-customer import, bulk no-preselection/review and failure/
+retry browser scenarios also pass. Screenshots remain only in ignored test output.
+
+Existing harness warnings remain: Vite's future native-config-loader default and
+Next workspace-root inference from nested source copies. Neither prevented checks.
+No runtime application failure was observed. Private environments and real fonts,
+provider delivery, hosting limits or external catalog services were not verified.
+
+The concurrency tests assert provider attempt counts, winning/stale callers, token
+counts and resulting link usability, not merely one surviving token. Controlled
+barriers cover bulk/bulk, bulk/individual, individual/individual and partially
+overlapping batches. Separate Prisma pools both demonstrably wait on the same
+User lock in `pg_stat_activity` before release. Other coverage includes reverse
+provider completion, fresh resend, failure including failed cleanup, email/access/
+session/password/role drift, lifecycle-field drift, creation-time ordering,
+same-preview replay, preview tampering/binding/expiry, concurrent last quota slots,
+shared per-recipient limits, token consumption and rollback. Existing setup/reset,
+authorization, no-mail customer import and shared limiter regressions run too.
+Expensive unrelated catalog/order database/browser suites are excluded.
+
+### Residual limitations and separate gates
+
+- This prevents competing operations that reviewed the **same starting state**
+  from both sending. A later individual action or bulk preview that sees the
+  newly committed token is a fresh review and may intentionally resend, even
+  while the prior provider call is in flight. Older completion cannot revive a
+  superseded token. Two different starting states can therefore produce two emails.
+- An email/access/password edit after the claim cannot recall work already handed
+  to the provider. The accepted email may contain a subsequently invalid link.
+  The guarantee covers changes before the atomic claim, not a distributed
+  transaction between SQL and Resend. Process failure after provider acceptance
+  but before deliveredAt can leave an unusable received link. No exactly-once
+  inbox delivery, durable campaign ledger, automatic retry or cancellation is claimed.
+- Cross-instance safety uses PostgreSQL, with no process-local arbitration. Tests
+  use separate pools/connections in one Node process plus a production server and
+  browser test process; they do not certify a multi-host deployment or failover.
+  All invitation writers must run the new claim code; mixed old/new deployments
+  do not provide the new guarantee until old in-flight work has drained.
+- Per-batch pacing is not an aggregate cross-instance provider requests/second
+  guarantee. Fixed-window quota boundaries, action duration, actual mail routing,
+  hosting behavior and the historical release gates still require separately
+  authorized deployment verification.
+- **SEC-04 remains open**; its two existing observations continue to pass unchanged.
+  Residual DEP-01, the Sanity/React peer warning and dependency/release work remain
+  separate. SEC-03/contact behavior is unchanged; its tests cover compatibility
+  of the optional transaction argument in the shared limiter.
+
 ## Milestone 6C: public contact abuse protection
 
 Remediation date: **2026-09-07**. SEC-03 is implemented locally for review from

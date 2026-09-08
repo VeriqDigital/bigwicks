@@ -258,6 +258,15 @@ the recipient. Passwordless customers can be invited whether active or disabled.
 The edit page offers Send/Resend, shows current setup-pending state, and never
 shows a password, token or link. Already-set-up accounts have no invitation action.
 
+Milestone 6D binds both individual and bulk setup issuance to a server-trusted
+review of recipient/latest-token state. Under the existing User lock, only one
+operation can claim that state, consume invitation quotas and insert a new token.
+Stale competitors attempt no email and cannot supersede the winner. Fresh resends
+remain possible. Password reset does not require invitation review state and keeps
+its existing eligibility, quota, expiry and response semantics. See the
+[REL-01 remediation record](SECURITY-REMEDIATION.md#milestone-6d-invitation-concurrency--rel-01)
+for exact state fields, quota order, retry behavior and provider-boundary limits.
+
 Before issuing a link, configuration is validated. The new row and supersession
 of older unused tokens of the same purpose commit before Resend is called. The
 new row is unusable until Resend accepts the email and `deliveredAt` is recorded.

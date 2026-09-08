@@ -5,8 +5,8 @@
 ## Current priority
 
 **Optimize for:**  
-Complete Milestone 6C public contact abuse protection (SEC-03) from merged PR #15,
-preserving the public contact UX and historical Milestone 6A audit.
+Complete Milestone 6D invitation concurrency remediation (REL-01) from merged
+Milestone 6C / PR #16, preserving invitation UX and the historical Milestone 6A audit.
 
 **Waiting on:**
 
@@ -26,6 +26,40 @@ preserving the public contact UX and historical Milestone 6A audit.
 ---
 
 ## Decision log
+
+### 2026-09-07 — Milestone 6D invitation state claims
+
+**Source:** User's REL-01-only instruction. Clean `REL-01-Fix`, local main,
+origin/main and read-only remote main verification agree on PR #16 merge
+`c07c33f67c834da17e203290e0cf77a6785e8988`.
+
+**Decision:** Use existing User/AccountToken state without a migration. Both
+individual and bulk invitations carry a server-only SHA-256 review fingerprint
+covering identity/email/role/password-set/active/session state and the latest setup
+token's identity/lifecycle. Compare it after locking User, then consume existing
+quotas and supersede/insert in that same transaction. Insertion is the claim's
+linearization point, durable at commit. Latest-token creation time increases under
+the lock so transaction-start clocks cannot hide a newer token behind an older row.
+
+Bulk retains its encrypted aggregate snapshot, same-preview replay guard, per-row
+checks and sequential external side effects. Individual sends perform a fresh SQL
+review within the existing action, including the existing disabled-account policy.
+Stale callers return not-attempted wording, spend no send quota and cannot supersede
+the winner. Fresh reviewed resends remain possible after acceptance or failure.
+Global quota admission remains spent when the shared recipient cap rejects;
+provider failures are not refunded. SQL insertion failures roll back quota/token
+changes together. Resend occurs outside SQL transactions; short locked finalization
+and cleanup keep the reviewed lifecycle consistent and failed tokens unusable.
+
+This is one claim per reviewed state, not exactly-once inbox delivery. Fresh review
+of a newly committed token can intentionally supersede an in-flight provider call;
+already accepted mail cannot be recalled. SEC-04's acting-admin semantics remain
+unchanged and open. Contact work, dependency remediation, imports and release
+gates remain separate. No real mail, remote data/settings, deployment, push or merge.
+
+**Evidence and limitations:** [Milestone 6D remediation record](SECURITY-REMEDIATION.md#milestone-6d-invitation-concurrency--rel-01).
+
+---
 
 ### 2026-09-07 — Milestone 6C public contact abuse protection
 

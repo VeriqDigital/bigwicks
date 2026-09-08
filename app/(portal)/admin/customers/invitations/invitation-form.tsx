@@ -4,9 +4,16 @@ import Link from "next/link";
 import { previewInvitations, confirmInvitations } from "./actions";
 type Preview = Extract<Awaited<ReturnType<typeof previewInvitations>>, { status: "preview" }>;
 const button = "min-h-12 rounded bg-(--red) px-5 py-3 font-semibold text-white disabled:opacity-50";
+const resultLabels = {
+  accepted: "Accepted for delivery",
+  stale: "Account changed; not attempted. Refresh and review again",
+  ineligible: "Account unavailable; not attempted. Refresh and review again",
+  rate_limited: "Invitation limit reached; not attempted. Try again later",
+  not_confirmed: "Acceptance not confirmed; refresh and review before retrying",
+};
 function Confirm({ stage }: { stage: Preview }) {
   const [state, action, pending] = useActionState(confirmInvitations, null);
-  if (state) return <section className="mt-6"><p role="status">{state.message}</p>{state.status === "success" && <ul className="mt-4 space-y-3">{state.results.map((r) => <li key={r.id} className="wrap-anywhere">{r.companyName} — {r.email}: {r.accepted ? "Accepted for delivery" : "Not confirmed; refresh and retry"}</li>)}</ul>}
+  if (state) return <section className="mt-6"><p role="status">{state.message}</p>{state.status === "success" && <ul className="mt-4 space-y-3">{state.results.map((r) => <li key={r.id} className="wrap-anywhere">{r.companyName} — {r.email}: {resultLabels[r.status]}</li>)}</ul>}
     <Link className="mt-5 inline-block underline" href="/admin/customers">Return to customer management</Link></section>;
   return <section className="mt-6" aria-labelledby="invite-review"><h2 id="invite-review" className="font-heading text-2xl font-bold">Review invitation recipients</h2>
     <ul className="my-4 space-y-3">{stage.rows.map((r) => <li key={r.id} className="wrap-anywhere">{r.companyName} · {r.customerNumber || "No customer number"} · {r.email}</li>)}</ul>

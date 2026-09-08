@@ -27,9 +27,11 @@ const commands = {
   unit: ['node_modules/vitest/vitest.mjs', 'run'],
   focused: ['--import', 'tsx', 'tests/security/focused.ts'],
   contact: ['--import', 'tsx', 'tests/security/focused.ts', '--contact'],
+  invitations: ['--import', 'tsx', 'tests/security/focused.ts', '--invitations'],
+  'invitations-browser': ['--import', 'tsx', 'tests/security/focused.ts', '--invitations', '--browser-only'],
 };
 const command = commands[process.argv[2]];
-if (!command) throw new Error('Choose lint, typecheck, integration, unit, contact, or browsers/orders/focused with an existing isolated build directory.');
+if (!command) throw new Error('Choose lint, typecheck, integration, unit, contact, invitations [--database], or browsers/orders/focused/invitations-browser with an existing isolated build directory.');
 // Native build tools also see a source directory with NO private env files.
 mkdirSync('.test-runtime', { recursive: true });
 const stage = mkdtempSync(resolve('.test-runtime/security-source-'));
@@ -43,7 +45,7 @@ symlinkSync(resolve(sourceRoot, 'node_modules'), resolve(stage, 'node_modules'),
 symlinkSync(resolve(sourceRoot, 'public'), resolve(stage, 'public'), 'junction');
 // Existing generated types are safe code, not data; integration regenerates them.
 symlinkSync(resolve(sourceRoot, 'generated'), resolve(stage, 'generated'), 'junction');
-const reuseBuild = ['focused', 'browsers', 'orders'].includes(process.argv[2]);
+const reuseBuild = ['focused', 'browsers', 'orders', 'invitations-browser'].includes(process.argv[2]);
 if (reuseBuild) {
   const built = realpathSync(resolve(sourceRoot, process.argv[3] ?? ''));
   if (!built.startsWith(realpathSync(resolve(sourceRoot, '.test-runtime')) + sep)) throw new Error('Use an isolated audit build.');

@@ -28,18 +28,22 @@ try {
   });
   await postgres.createDatabase("audit_focused");
   const contactOnly = process.argv.includes("--contact");
-  if (contactOnly) await run(["node_modules/prisma/build/index.js", "generate"]);
+  const invitations = process.argv.includes("--invitations");
+  const browserOnly = process.argv.includes("--browser-only");
+  if (contactOnly || (invitations && !browserOnly)) await run(["node_modules/prisma/build/index.js", "generate"]);
   await run(["node_modules/prisma/build/index.js", "migrate", "deploy"]);
   await run(["--conditions=react-server", "--import", "tsx", "prisma/seed.ts"]);
   const ordersOnly = process.argv.includes("--orders");
-  if (!ordersOnly) await run(["node_modules/vitest/vitest.mjs", "run", "--config", contactOnly ? "tests/security/integration.config.ts" : "tests/security/focused.config.ts"]);
-  if (contactOnly) await run(["node_modules/next/dist/bin/next", "build"], true);
+  if (!ordersOnly && !browserOnly) await run(["node_modules/vitest/vitest.mjs", "run", "--config", invitations ? "tests/security/invitations.config.ts" : contactOnly ? "tests/security/integration.config.ts" : "tests/security/focused.config.ts"]);
+  if (invitations && process.argv.includes("--database")) return;
+  if (contactOnly || (invitations && !browserOnly)) await run(["node_modules/next/dist/bin/next", "build"], true);
   app = start(["--import", "./tests/email-interceptor.mjs", "--import", "./tests/catalog-interceptor.mjs", "node_modules/next/dist/bin/next", "start", "--port", "3107", "--hostname", "localhost"], true);
   let ready = false;
   for (let count = 0; count < 60; count++) { try { if ((await fetch("http://localhost:3107/login")).ok) { ready = true; break; } } catch { /* Starting. */ } await new Promise(done => setTimeout(done, 250)); }
   if (!ready) throw Error("Isolated app did not start.");
   if (ordersOnly) await run(["node_modules/@playwright/test/cli.js", "test", "orders.spec.ts"]);
-  await run(["node_modules/@playwright/test/cli.js", "test", "--config", "tests/security/http.config.ts", ...(contactOnly ? ["--grep", "contact"] : [])]);
+  if (invitations) await run(["node_modules/@playwright/test/cli.js", "test", "account-tokens.spec.ts", "customer-batch.spec.ts"]);
+  else await run(["node_modules/@playwright/test/cli.js", "test", "--config", "tests/security/http.config.ts", ...(contactOnly ? ["--grep", "contact"] : [])]);
 } finally {
   if (app && app.exitCode === null) { const closed = new Promise(done => app!.once("exit", done)); app.kill(); await closed; }
   if (started) await postgres.stop();
