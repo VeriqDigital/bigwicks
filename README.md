@@ -20,6 +20,12 @@ create-only customer CSV import at `/admin/customers/import` and separately
 reviewed setup invitations at `/admin/customers/invitations`. Imports create no
 passwords and send no email. See the [customer onboarding workflow](docs/ONBOARDING.md#customer-onboarding--milestone-5b).
 
+Milestone 5B and the Milestone 6A security audit are merged. Milestone 6B updates
+Next.js and its ESLint configuration to 16.3.4 for framework security remediation.
+See the [dated remediation record](docs/SECURITY-REMEDIATION.md) for resolved
+dependencies, verification and remaining release gates. The
+[original audit](docs/SECURITY-AUDIT.md) remains a historical baseline.
+
 Real catalog onboarding is complete in **non-production only**, as confirmed by
 the user: Sanity `sim96pgy` / `development` contains 302 products and 17 categories;
 import verification returned 302 unchanged / 0 new / 0 updates / 0 errors.
@@ -31,7 +37,7 @@ invitations have occurred. See [current onboarding status](docs/ONBOARDING.md#cu
 
 ## Stack
 
-- Next.js 16.2.x App Router
+- Next.js 16.3.4 App Router
 - React 19
 - TypeScript
 - Tailwind CSS 4

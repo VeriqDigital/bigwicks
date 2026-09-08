@@ -72,10 +72,17 @@ test("public Wholesale Portal link uses the existing account dispatcher for cust
 test("unauthenticated direct and RSC requests cannot access protected routes", async ({ request }) => {
   for (const path of ["/admin", "/portal", "/account"]) {
     for (const headers of [{}, { RSC: "1" }] as Record<string, string>[]) {
-      const response = await request.get(path, { headers, maxRedirects: 0 });
+      let response = await request.get(path, { headers, maxRedirects: 0 });
+      if (headers.RSC) {
+        // 16.3.4 first normalizes a raw RSC request to its cache-busting URL.
+        // Verify that empty redirect, then exercise the actual authorization.
+        expect(response.status()).toBe(307);
+        expect(response.headers().location).toBe(`${path}?_rsc`);
+        expect(await response.text()).toBe("");
+        response = await request.get(response.headers().location, { headers, maxRedirects: 0 });
+      }
       const body = await response.text();
       if (headers.RSC) {
-        // Next.js streams RSC redirects in the payload after sending HTTP 200.
         expect(response.status()).toBe(200);
         expect(body).toContain("NEXT_REDIRECT;replace;/login;307;");
       } else {

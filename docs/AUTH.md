@@ -371,12 +371,13 @@ data changes are part of this milestone.
   [Auth.js App Router installation](https://authjs.dev/getting-started/installation)
   and [Credentials provider](https://authjs.dev/getting-started/authentication/credentials)
   interfaces requested for this project.
-- The existing Next.js 16.2.9 stack is retained. The dependency audit on 2026-09-06
-  reports high-severity advisories in Next.js and its bundled PostCSS/sharp tree,
-  including [Server Actions denial of service](https://github.com/advisories/GHSA-m99w-x7hq-7vfj).
-  Patch and re-test the framework before production launch. No unrelated framework
-  upgrade was bundled into this milestone. Review full development-tool advisories
-  as well with `npm audit`.
+- Milestone 6B pins Next.js and eslint-config-next to 16.3.4, updating the framework's
+  nested PostCSS and sharp tree. See the [dated remediation record](SECURITY-REMEDIATION.md)
+  for addressed advisories, tests and remaining dependency/operational gates.
+  The [Milestone 6A audit](SECURITY-AUDIT.md) retains its original 16.2.9 baseline;
+  its contact-abuse, invitation-overlap and in-flight admin-revocation findings
+  are outside this framework patch and remain open. Production settings and
+  deployment of the patched artifact require separate verification.
 
 ## Verification
 

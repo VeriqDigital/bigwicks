@@ -77,7 +77,10 @@ for (const interrupted of [false, true]) {
       first = false;
       const response = await route.fetch({ maxRedirects: 0 }); // Real persistence and mocked notification.
       await actionGate;
-      expect(response.status()).toBe(303);
+      // Fetch-based actions now carry x-action-redirect on HTTP 200; native
+      // progressive-enhancement form redirects still use HTTP 303.
+      expect(response.status()).toBe(200);
+      expect(response.headers()["x-action-redirect"]).toMatch(/^\/portal\/confirmation\/BW-[A-F0-9]+;replace$/);
       await route.abort("failed");
     });
     try {
@@ -99,7 +102,7 @@ for (const interrupted of [false, true]) {
       await expect(page).toHaveURL(/\/portal\/confirmation\/BW-/);
       await expect(page.getByRole("heading", { name: "Order request submitted", exact: true })).toBeVisible();
       const reference = await page.getByTestId("order-reference").innerText();
-      expect(redirects).toEqual([{ status: 303, destination: `/portal/confirmation/${reference};replace`, revalidated: undefined }]);
+      expect(redirects).toEqual([{ status: 200, destination: `/portal/confirmation/${reference};replace`, revalidated: undefined }]);
       // A framework redirect must never be mislabeled as an interrupted request.
       expect(interruptions).toEqual([]);
       expect(submissions).toHaveLength(interrupted ? 2 : 1);
@@ -159,7 +162,7 @@ test("quantity entry, review, persisted confirmation, staff notification and ord
     expect((await customerContext.request.get("/admin/orders")).status()).toBe(404);
     expect((await customerContext.request.get(`/admin/orders/${reference}`)).status()).toBe(404);
     const replay = await page.request.post(submitRequest.url(), { data: submitRequest.postDataBuffer()!, headers: { "next-action": submitRequest.headers()["next-action"], "content-type": submitRequest.headers()["content-type"], origin: "http://localhost:3107", accept: "text/x-component" }, maxRedirects: 0 });
-    expect(replay.status()).toBe(303); expect(replay.headers()["x-action-redirect"]).toBe(`/portal/confirmation/${reference};replace`); expect(await db.order.count({ where: { customerId } })).toBe(1);
+    expect(replay.status()).toBe(200); expect(replay.headers()["x-action-redirect"]).toBe(`/portal/confirmation/${reference};replace`); expect(await db.order.count({ where: { customerId } })).toBe(1);
     await db.productPrice.updateMany({ where: { catalogKey: key(1) }, data: { price: "999.99" } }); await content([], true);
     await page.reload(); await expect(page.getByTestId("order-total")).toHaveText("60.17");
     await adminPage.getByRole("navigation", { name: "Administration navigation" }).getByRole("link", { name: "Orders", exact: true }).click();

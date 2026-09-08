@@ -5,8 +5,8 @@
 ## Current priority
 
 **Optimize for:**  
-Complete Milestone 5B bulk customer onboarding and separate invitations, preserving
-the completed milestones through 5A.2 and their security invariants.
+Complete Milestone 6B framework security remediation from merged main, preserving
+the completed application behavior and the historical Milestone 6A audit.
 
 **Waiting on:**
 
@@ -26,6 +26,22 @@ the completed milestones through 5A.2 and their security invariants.
 ---
 
 ## Decision log
+
+### 2026-09-07 — Milestone 6B framework security remediation
+
+**Source:** User's Milestone 6B instruction; current main verified at audit merge
+`032128b6b2a87005070714322ebd5243660c1719`.
+
+**Decision:** Pin stable Next.js and eslint-config-next 16.3.4, selected after
+checking current official releases/advisories. Update only their necessary
+dependency tree and required compatibility surfaces. Do not enable experimental
+caching/navigation or implement SEC-03, REL-01 or SEC-04 in this patch.
+
+**Evidence and remaining gates:** [Dated remediation record](SECURITY-REMEDIATION.md).
+The original [security audit](SECURITY-AUDIT.md) is preserved unchanged. No push,
+merge, deployment, real email or live data/configuration change is authorized here.
+
+---
 
 ### 2026-09-07 — Non-production catalog onboarding completed
 
