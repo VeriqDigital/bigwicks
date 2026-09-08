@@ -1,5 +1,176 @@
 # Security remediation record
 
+## Milestone 6E: admin revocation consistency / SEC-04
+
+Remediation date: **2026-09-07**. Work started on clean `SEC-04-Fix` from
+merged Milestone 6D / PR #17, `c9c475bd3cca9900cccce9fda5064d7f71e3e732`.
+HEAD, local main, origin/main and read-only `git ls-remote origin refs/heads/main`
+agreed. The sandboxed remote read could not connect; the read-only approved retry
+succeeded. No merge or deployment. [SECURITY-AUDIT.md](SECURITY-AUDIT.md) remains
+unchanged as the historical baseline; earlier dated entries below describe their
+then-open SEC-04 status.
+
+**SEC-04 is fixed for the customer create/edit/status and individual/bulk setup
+claim boundaries described here.** Customer-import and pricing-import confirmation
+already had equivalent transaction protection. No migration, schema, dependency,
+configuration, Sanity, contact-policy or catalog/pricing redesign is included.
+
+### Authorization and commit boundary
+
+`lib/auth/admin-transaction.ts` introduces `lockAdminActor(tx, actor)` by extracting
+the existing `verifyBatchAdmin` implementation. The server-only `AdminActor` is
+`{ id, sessionVersion }` from `requireAdmin()`, never submitted form fields. The
+helper takes `SELECT id FROM User WHERE id = actor.id FOR SHARE`, then re-reads
+the same row and requires presence, the same ID, active ADMIN role, matching
+authenticated sessionVersion and no Customer association. That last condition
+preserves the existing principal/import invariant. Failure raises a fixed
+`AdminSessionChangedError`, with no row details or version in the response.
+
+**Authorization linearizes at the successful recheck under the actor row lock.**
+The same transaction retains that lock through all protected writes and until
+commit/rollback. Effects become durable at commit; authorization alone is not a
+promise of successful commit. SHARE conflicts with deletion and updates to role,
+active and sessionVersion, including PostgreSQL's non-key UPDATE lock mode. A
+KEY SHARE lock would not provide the required protection. SHARE permits concurrent
+operations by the same actor without serializing unrelated customer work.
+
+If revocation locks first, the action waits, then rejects changed/missing state
+or safely aborts on a SERIALIZABLE snapshot conflict. No protected write commits.
+If the operation locks and validates first, revocation waits and the operation
+may commit first. A later revocation cannot retroactively cancel that commit.
+Fresh revoked requests continue to fail through existing redirect/404 guards.
+
+### Mutation inventory and lock order
+
+| Operation | Before | Milestone 6E / locks retained through SQL commit |
+| --- | --- | --- |
+| Create customer | Request guard only | Actor SHARE first; tier reads; insert CUSTOMER User then Customer, with existing all-or-nothing transaction |
+| Edit customer | Request guard only | Actor SHARE first; existing target/tier reads; update target User; invalidate tokens on changed email; update Customer |
+| Enable/disable customer | Request guard only | Actor SHARE first; update target User active/version; invalidate AccountToken; update Customer active |
+| Individual invitation | REL-01 recipient claim, request-time actor guard | Required actor in the same token transaction, before recipient User UPDATE lock; reviewed-state comparison; global then recipient quota; supersession/token insertion |
+| Bulk invitation | Separate actor transactions before issuance | Existing pre-batch guard retained; per-recipient actor check moved into the actual token claim; same actor/recipient/quota/token order as individual |
+| Customer import confirmation | Already actor SHARE/recheck first, SERIALIZABLE | `verifyBatchAdmin` delegates to shared helper, preserving transaction/snapshot/create-only behavior |
+| Pricing import confirmation | Already actor SHARE/recheck first, SERIALIZABLE | Unchanged implementation: external content read before transaction; actor then tier/price reads then ProductPrice writes |
+| Admin orders | Read-only list/detail | No admin order mutation exists; request/service guards unchanged |
+| Admin lists/details, pricing export, customer CSV template, import/invitation previews, Studio page | Read-only application operations | Request guards retained; no additional SQL locks. Sanity editing has separate permissions and is outside scope |
+
+The consistent policy is **actor authorization lock first, then target/domain
+locks and mutation**. Target User updates acquire their existing row lock before
+AccountToken/Customer writes. No touched transaction locks a target and then an
+actor, upgrades the actor lock, or edits another ADMIN. Valid actors have no
+Customer and protected targets are CUSTOMER, so actor/target identities are
+disjoint in application flows. Role immutability and create-only semantics remain.
+There is no application admin-role/revocation management endpoint to reorder.
+Future such writers must respect this policy, especially if touching two admins.
+
+PricingTier reads stay non-locking; inserts/updates retain PostgreSQL's implicit
+foreign-key locks. Existing SERIALIZABLE transactions retain snapshot-conflict
+protection and safe retry responses, without new automatic retries. Customer
+imports create new identities and do not lock existing customers for update.
+Token consumption/reset, delivery finalization and failure cleanup lock recipient
+User before token changes and never subsequently request an actor lock. CUSTOMER
+order submission's existing User-then-Customer locks remain compatible and unchanged.
+
+### Invitation and provider semantics
+
+The ACCOUNT_SETUP request type now requires `actor`; there is no unchecked setup
+overload. PASSWORD_RESET does not acquire an admin lock and keeps its existing
+policy. REL-01's expected recipient fingerprint, deadline, eligibility, quotas,
+monotonic latest-token ordering and one-winner-per-reviewed-state behavior stay
+intact. **Token insertion remains the recipient claim's linearization point,
+durable at commit**, with actor and recipient locks both held.
+
+Actor rejection occurs before recipient quota, token supersession or insertion,
+and before any provider call. Individual results say the administrator session
+changed and no setup email was attempted. Bulk returns `admin_changed` for that
+recipient, skips later recipients with the same truthful not-attempted result,
+and retains earlier accepted results. The aggregate message asks for reload and
+sign-in. The existing one-use batch preview may already be spent; it is not a
+provider-send claim. Unknown SQL/provider failures keep fixed safe responses.
+
+SQL commits before Resend; **no actor or recipient SQL lock spans provider I/O**.
+A claim that wins authorization/commit first may finish sending after revocation.
+Finalization still validates recipient/token state and never retroactively checks
+the actor to misreport an accepted send as cancelled. Existing provider-failure
+cleanup and fresh reviewed resend remain available within quotas. No cancellation
+of committed claims, provider acceptance or already downloaded data is promised.
+
+### Verification
+
+All application checks use the existing sanitized `tests/security/run.mjs` source
+copy, allowlisted fictional environment, disposable loopback PostgreSQL, intercepted
+mail, mocked font responses and blocked external browser egress. Six existing
+migrations apply only to a new local cluster. No private env, real customer data,
+real email, Preview/Production DB, remote Sanity or production configuration access.
+
+- `node tests/security/run.mjs revocation`: **451 tests passed in 23 files**,
+  configured **production build passed**, **9 Chromium browser scenarios passed**,
+  runner exit 0. Source copy `.test-runtime/security-source-nrS4Pz`.
+  This runs Prisma generation/migrations/fictional seeding, `vitest run --config
+  tests/security/revocation.config.ts`, `next build`, intercepted `next start`, and
+  `playwright test account-tokens.spec.ts customer-batch.spec.ts customers.spec.ts
+  --config tests/security/playwright.config.ts`.
+- The 39 new `admin-revocation.test.ts` cases cover create/edit/status, individual
+  issuance and both imports after guard/before transaction, each with disabled,
+  version-changed, role-changed and deleted actors; partial bulk for all four;
+  fresh denial; uncommitted revocation waiting; mutation-first and claim-first
+  completion; same actor/two customers, same customer and edit/invite concurrency.
+  Existing SEC-04 observations are inverted, not removed. Tests use controlled
+  barriers and bounded SQL/test timeouts, with `pg_stat_activity` lock evidence.
+- REL-01's 30 cases, account/setup/reset, customer management, customer import,
+  pricing authorization, shared limiter and SEC-03 contact tests all pass.
+  Existing unrelated catalog/order database/browser suites were not rerun.
+- The new browser case holds intercepted provider acceptance after claim 1,
+  revokes the actor using a NOWAIT lock, then releases the provider. It verifies
+  one accepted token/mail and two administrator-changed/not-attempted rows, then
+  verifies a fresh template request redirects to login. The SQL tests independently
+  cover revocation before claim and recipient-state competition.
+- Result screenshots visually inspected at **390, 768 and 1440 pixels**; the
+  message and row labels wrap readably and automated overflow assertions pass.
+  Screenshots remain in ignored test output. No layout/metadata/routes/assets changed.
+
+- `node tests/security/run.mjs revocation --database`: final rerun **451 passed /
+  23 files**, exit 0, `.test-runtime/security-source-zEJEvM`. Adds explicit
+  PostgreSQL deadlock-counter and captured SQLSTATE checks: zero observed deadlocks;
+  safe SERIALIZABLE contention remains retryable. Both original SEC-04 reproductions
+  and all 39 new cases passed. An initial redirected database run also reported
+  451 passing tests, but PowerShell reported exit 1 from native stderr redirection;
+  the unredirected complete run and final database run both exited 0.
+- `node tests/security/run.mjs lint`: final run **passed**, exit 0,
+  `.test-runtime/security-source-giP5Ib`.
+- `node tests/security/run.mjs typecheck`: final run **passed**, exit 0,
+  `.test-runtime/security-source-5tcaLp`; Prisma generation, Next route generation
+  and `tsc --noEmit --incremental false`. An initial redirected invocation had the
+  same PowerShell stderr issue; direct reruns passed without application changes.
+- `git diff --check`: **passed**. `git diff --exit-code
+  c9c475bd3cca9900cccce9fda5064d7f71e3e732 -- docs/SECURITY-AUDIT.md package.json
+  package-lock.json prisma lib/pricing app/contact lib/contact`: **passed**, unchanged.
+  Scope/diff review found no unrelated application changes. `docs/PROJECT.md`
+  contains no concrete legacy-client identifier checklist; the targeted
+  legacy/previous-client search found no identifiers requiring cleanup.
+
+The final database rerun strengthened test assertions only; after the successful
+production build, application changes were limited to a lock-order comment.
+Existing Vite future-config-loader and Next nested-workspace-root warnings remain;
+neither prevented any final check. Real fonts, live provider delivery and external
+catalog behavior are intentionally not covered by sanitized verification.
+
+### Residual limitations and separate release gates
+
+- Guarantee is per covered SQL transaction/claim, not instantaneous cancellation
+  of external work or a distributed SQL/provider transaction. Process loss after
+  claim/acceptance may still leave uncertain delivery and require fresh review.
+- A valid lock winner may still fail later validation, uniqueness or SERIALIZABLE
+  conflict. Safe caller retry/review remains required. Bounded local concurrency
+  tests do not certify unlimited load, multi-host failover or all future writers.
+- All deployed invitation/mutation writers must use the new boundary; mixed
+  old/new versions and old in-flight work do not provide the full guarantee.
+- DEP-01/native/nested dependency work, the existing Sanity/React peer warning,
+  real ingress/email/hosting configuration and historical operator release gates
+  remain separate. Real delivery, deployment duration/pooling limits, HTTPS/cookie
+  behavior and production backups were not verified. The unrelated Firefox order
+  tooling limitation is not addressed here. No merge, deploy or live import.
+
 ## Milestone 6D: invitation concurrency / REL-01
 
 Remediation date: **2026-09-07**. Implemented locally on `REL-01-Fix`, starting

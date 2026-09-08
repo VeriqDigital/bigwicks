@@ -5,6 +5,7 @@ import { previewInvitations, confirmInvitations } from "./actions";
 type Preview = Extract<Awaited<ReturnType<typeof previewInvitations>>, { status: "preview" }>;
 const button = "min-h-12 rounded bg-(--red) px-5 py-3 font-semibold text-white disabled:opacity-50";
 const resultLabels = {
+  admin_changed: "Administrator session changed; not attempted. Reload and sign in again",
   accepted: "Accepted for delivery",
   stale: "Account changed; not attempted. Refresh and review again",
   ineligible: "Account unavailable; not attempted. Refresh and review again",

@@ -21,7 +21,8 @@ const db = getDb();
 async function issue(userId: string, purpose: "ACCOUNT_SETUP" | "PASSWORD_RESET") {
   if (purpose === "PASSWORD_RESET") return issueAccountToken(userId, { purpose });
   const user = await db.user.findUniqueOrThrow({ where: { id: userId }, select: setupReviewSelect });
-  return issueAccountToken(userId, { purpose, channel: "individual", expectedState: setupStateFingerprint(user) });
+  const actor = await db.user.findUniqueOrThrow({ where: { email: "admin@example.test" } });
+  return issueAccountToken(userId, { purpose, actor, channel: "individual", expectedState: setupStateFingerprint(user) });
 }
 const email = "test-m2b-account@example.test";
 const password = "New isolated account password";

@@ -1,5 +1,6 @@
 import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
+import { lockAdminActor, AdminSessionChangedError } from "@/lib/auth/admin-transaction";
 import { requireAdmin } from "@/lib/auth/authorization";
 import { getDb } from "@/lib/db";
 import { validTiers } from "@/lib/pricing/tiers";
@@ -9,9 +10,11 @@ import { batchFingerprint, openCustomerBatch, sealCustomerBatch } from "./custom
 
 export function customerBatchMessage(error: unknown) { return error instanceof CustomerBatchError ? error.message : "Unable to complete this batch. Create a fresh preview and try again."; }
 export async function verifyBatchAdmin(tx: Prisma.TransactionClient, admin: { id: string; sessionVersion: number }) {
-  await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${admin.id} FOR SHARE`;
-  const user = await tx.user.findUnique({ where: { id: admin.id }, select: { active: true, role: true, sessionVersion: true, customer: { select: { id: true } } } });
-  if (!user?.active || user.role !== "ADMIN" || user.customer || user.sessionVersion !== admin.sessionVersion) throw new CustomerBatchError("Your account changed. Sign in again.");
+  try { await lockAdminActor(tx, admin); }
+  catch (error) {
+    if (error instanceof AdminSessionChangedError) throw new CustomerBatchError(error.message);
+    throw error;
+  }
 }
 async function snapshot(tx: Prisma.TransactionClient) {
   const [tiers, users, customers] = await Promise.all([

@@ -493,7 +493,12 @@ recalled and may contain a superseded link. Account changes after the claim have
 the same external boundary. This is not exactly-once delivery or an SQL/Resend
 distributed transaction. No migration is needed. See the [REL-01 design, regression
 evidence and limitations](SECURITY-REMEDIATION.md#milestone-6d-invitation-concurrency--rel-01).
-SEC-04 remains open; dependency and deployment gates are separate.
+Milestone 6E also locks/rechecks the authenticated acting ADMIN inside each setup
+claim, before the recipient lock. A changed administrator session blocks that
+recipient and skips later rows; earlier accepted mail remains accepted. Claims
+committed before revocation may finish provider work. SEC-04 is fixed for these
+covered SQL boundaries; dependency and deployment gates remain separate. See
+[SEC-04 details](SECURITY-REMEDIATION.md#milestone-6e-admin-revocation-consistency--sec-04).
 
 ### Initial customer onboarding steps
 

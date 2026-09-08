@@ -44,7 +44,7 @@ async function preview(users: Customer[]) {
 }
 async function review(user: Customer, channel: "individual" | "bulk" = "individual") {
   const row = await db.user.findUniqueOrThrow({ where: { id: user.id }, select: tokens.setupReviewSelect });
-  return { purpose: "ACCOUNT_SETUP", channel, expectedState: tokens.setupStateFingerprint(row) } as const;
+  return { purpose: "ACCOUNT_SETUP", actor: admin, channel, expectedState: tokens.setupStateFingerprint(row) } as const;
 }
 function deferred() { let resolve!: () => void; const promise = new Promise<void>(done => { resolve = done; }); return { promise, resolve }; }
 // Both server-trusted reviews reach issuance before either can acquire User.

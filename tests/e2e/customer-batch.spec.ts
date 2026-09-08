@@ -43,6 +43,44 @@ async function unauthorized(browser: Browser, requestApi: APIRequest, requests: 
     }
   } finally { await context.close(); await anonymous.dispose(); }
 }
+test("actor revocation during first provider call preserves acceptance and stops the rest of the batch", async ({ page }) => {
+  const tier = await db.pricingTier.findUniqueOrThrow({ where: { name: "Tier 1" } });
+  const admin = await db.user.findUniqueOrThrow({ where: { email: "admin@example.test" } });
+  const users = await Promise.all([1, 2, 3].map(index => db.user.create({ data: {
+    email: `browser-m5b-sec04-${index}@example.test`, role: "CUSTOMER", active: true,
+    customer: { create: { companyName: `Fictional SEC-04 browser ${index}`, active: true, pricingTierId: tier.id } },
+  }, include: { customer: true } })));
+  await login(page); await page.goto("/admin/customers/invitations");
+  for (const user of users) await page.getByRole("checkbox", { name: new RegExp(user.customer!.companyName) }).check();
+  await page.getByRole("button", { name: "Review selected invitations" }).click();
+  await expect(page.getByRole("heading", { name: "Review invitation recipients" })).toBeVisible();
+  const before = await readdir(mailDir); const hold = join(mailDir, "hold");
+  await writeFile(hold, "Fictional SEC-04 provider barrier");
+  try {
+    await page.getByLabel("Send setup invitations to these recipients.").check();
+    await page.getByRole("button", { name: "Confirm and send invitations" }).click();
+    await expect.poll(async () => (await readdir(mailDir)).filter(f => f.endsWith(".json") && !before.includes(f)).length).toBe(1);
+    // First token committed and provider is held. NOWAIT proves no actor lock
+    // spans provider I/O; the next recipient must see this new session version.
+    await db.$transaction(async tx => {
+      await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${admin.id} FOR UPDATE NOWAIT`;
+      await tx.user.update({ where: { id: admin.id }, data: { sessionVersion: { increment: 1 } } });
+    });
+    await unlink(hold);
+    await expect(page.getByRole("status")).toContainText("1 setup emails accepted for delivery");
+    await expect(page.getByRole("status")).toContainText("Administrator session changed; 2 not attempted");
+    await expect(page.getByRole("listitem").filter({ hasText: "Administrator session changed; not attempted" })).toHaveCount(2);
+    expect((await readdir(mailDir)).filter(f => f.endsWith(".json") && !before.includes(f))).toHaveLength(1);
+    expect(await db.accountToken.count({ where: { userId: { in: users.map(u => u.id) } } })).toBe(1);
+    expect(await db.accountToken.count({ where: { userId: { in: users.map(u => u.id) }, deliveredAt: { not: null }, consumedAt: null } })).toBe(1);
+    await responsive(page, "customer-invitation-admin-changed-result");
+    await page.goto("/admin/customers/import/template"); await expect(page).toHaveURL(/\/login/);
+  } finally {
+    await unlink(hold).catch(() => {});
+    // This isolated seeded identity is shared by subsequent browser scenarios.
+    await db.user.update({ where: { id: admin.id }, data: { sessionVersion: admin.sessionVersion } });
+  }
+});
 test("admin previews and imports 50 fictional customers without invitations, with dynamic tiers and protected actions", async ({ page, browser, playwright }) => {
   test.setTimeout(60000);
   const tier = await db.pricingTier.create({ data: { name: "Browser Tier 3", rank: 3 } });

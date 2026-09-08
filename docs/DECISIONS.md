@@ -5,8 +5,8 @@
 ## Current priority
 
 **Optimize for:**  
-Complete Milestone 6D invitation concurrency remediation (REL-01) from merged
-Milestone 6C / PR #16, preserving invitation UX and the historical Milestone 6A audit.
+Complete Milestone 6E acting-admin revocation consistency (SEC-04) from merged
+Milestone 6D / PR #17, preserving REL-01, SEC-03 and the historical Milestone 6A audit.
 
 **Waiting on:**
 
@@ -26,6 +26,36 @@ Milestone 6C / PR #16, preserving invitation UX and the historical Milestone 6A 
 ---
 
 ## Decision log
+
+### 2026-09-07 — Milestone 6E admin authorization at SQL boundaries
+
+**Source:** User's SEC-04-only instruction. Clean `SEC-04-Fix`, HEAD, local main,
+origin/main and read-only remote main agree on PR #17 merge
+`c9c475bd3cca9900cccce9fda5064d7f71e3e732`.
+
+**Decision:** Extract the existing customer-import admin lock into
+`lockAdminActor(tx, { id, sessionVersion })`. Customer create/edit/status and each
+individual/bulk setup-token claim now acquire and validate the actor first, holding
+its SHARE row lock until SQL commit/rollback. The check requires a present, active
+ADMIN, the authenticated session version and no Customer association. Customer
+import reuses the helper without changing its transaction; pricing confirmation
+already has equivalent protection and stays unchanged. Reads retain request guards;
+there are no admin order mutations. No schema migration is needed.
+
+Authorization linearizes at the successful locked recheck; protected effects become
+durable only at commit. Revocation that locks first blocks the operation. An
+authorized operation that locks first may commit before the waiting revocation.
+Setup-token insertion remains REL-01's state claim under the recipient lock. No
+actor/recipient SQL lock spans Resend. Later revocation cannot cancel an accepted
+provider operation or a committed claim. A blocked bulk claim reports the changed
+administrator session, skips later recipients and preserves earlier acceptance.
+
+Target email/access/session/token/role/tier/uniqueness behavior, setup/reset and
+contact quotas are preserved. Lock ordering, evidence and residual release gates:
+[Milestone 6E remediation record](SECURITY-REMEDIATION.md#milestone-6e-admin-revocation-consistency--sec-04).
+No production configuration, remote data, real email, merge or deployment.
+
+---
 
 ### 2026-09-07 — Milestone 6D invitation state claims
 

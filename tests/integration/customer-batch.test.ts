@@ -122,7 +122,7 @@ it("rejects recipient drift and concurrent invitation confirmations send only on
 it("rechecks bulk issuance active flags, email and session version under the existing User lock", async () => {
   const user = await customer();
   const review = await db.user.findUniqueOrThrow({ where: { id: user.id }, select: setupReviewSelect });
-  const request = { purpose: "ACCOUNT_SETUP", channel: "bulk", expectedState: setupStateFingerprint(review) } as const;
+  const request = { purpose: "ACCOUNT_SETUP", actor: admin, channel: "bulk", expectedState: setupStateFingerprint(review) } as const;
   expect(await issueAccountToken(user.id, { ...request, expectedState: setupStateFingerprint({ ...review, email: "forged@example.test" }) })).toBe("stale");
   expect(await issueAccountToken(user.id, { ...request, expectedState: setupStateFingerprint({ ...review, sessionVersion: 1 }) })).toBe("stale");
   await db.customer.update({ where: { id: user.customer!.id }, data: { active: false } });
