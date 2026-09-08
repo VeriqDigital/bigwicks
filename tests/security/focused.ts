@@ -29,11 +29,13 @@ try {
   await postgres.createDatabase("audit_focused");
   await run(["node_modules/prisma/build/index.js", "migrate", "deploy"]);
   await run(["--conditions=react-server", "--import", "tsx", "prisma/seed.ts"]);
-  await run(["node_modules/vitest/vitest.mjs", "run", "--config", "tests/security/focused.config.ts"]);
+  const ordersOnly = process.argv.includes("--orders");
+  if (!ordersOnly) await run(["node_modules/vitest/vitest.mjs", "run", "--config", "tests/security/focused.config.ts"]);
   app = start(["--import", "./tests/email-interceptor.mjs", "--import", "./tests/catalog-interceptor.mjs", "node_modules/next/dist/bin/next", "start", "--port", "3107", "--hostname", "localhost"], true);
   let ready = false;
   for (let count = 0; count < 60; count++) { try { if ((await fetch("http://localhost:3107/login")).ok) { ready = true; break; } } catch { /* Starting. */ } await new Promise(done => setTimeout(done, 250)); }
   if (!ready) throw Error("Isolated app did not start.");
+  if (ordersOnly) await run(["node_modules/@playwright/test/cli.js", "test", "orders.spec.ts"]);
   await run(["node_modules/@playwright/test/cli.js", "test", "--config", "tests/security/http.config.ts"]);
 } finally {
   if (app && app.exitCode === null) { const closed = new Promise(done => app!.once("exit", done)); app.kill(); await closed; }

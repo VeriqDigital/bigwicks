@@ -5,7 +5,7 @@
 **Client / business name:** Big Wicks Fireworks LLC
 **Public-facing name:** Big Wicks Fireworks
 **Project type:** Retail marketing website + protected wholesale customer portal
-**Current stage:** Milestones through 5A.2 are complete and merged per user. Milestone 5B adds create-only bulk customer onboarding and separately confirmed invitations and awaits PR #13 merge. Real catalog onboarding is complete in non-production only; production catalog/pricing imports, real customer imports and real invitations have not occurred. See [current onboarding status](ONBOARDING.md#current-status).
+**Current stage:** Milestones through 5B and the Milestone 6A security audit are merged. Milestone 6B prepares the framework security update for review; see [remediation and verification](SECURITY-REMEDIATION.md). Real catalog onboarding is complete in non-production only; production catalog/pricing imports, real customer imports and real invitations have not occurred. See [current onboarding status](ONBOARDING.md#current-status).
 **Primary Veriq contact:** Mick Enev
 
 ### Project summary
@@ -645,7 +645,7 @@ The database answers:
 
 ### Existing stack
 
-- Next.js 16.2.9
+- Next.js 16.3.4
 - React 19.2.4
 - TypeScript
 - Tailwind CSS 4

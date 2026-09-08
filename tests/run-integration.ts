@@ -6,6 +6,12 @@ import { createServer } from "node:net";
 import EmbeddedPostgres from "embedded-postgres";
 
 async function main() {
+  // Only the sanitized security wrapper enables this continuation after an
+  // unchanged source tree has already passed database tests and its first build.
+  const resumeBrowsers = process.argv.includes("--resume-isolated-browser-checks");
+  if (resumeBrowsers && !process.env.NODE_OPTIONS?.includes("tests/security/isolation.cjs")) {
+    throw new Error("Resume browser checks through tests/security/run.mjs only.");
+  }
   const root = resolve(".test-runtime");
   await mkdir(root, { recursive: true });
   const directory = await mkdtemp(resolve(root, "auth-"));
@@ -98,11 +104,15 @@ async function main() {
       });
     }
     await postgres.createDatabase("big_wicks_auth_test");
-    await run(["node_modules/prisma/build/index.js", "generate"]);
+    if (!resumeBrowsers) await run(["node_modules/prisma/build/index.js", "generate"]);
     await run(["node_modules/prisma/build/index.js", "migrate", "deploy"]);
     await run(["--conditions=react-server", "--import", "tsx", "prisma/seed.ts"]);
-    await run(["node_modules/vitest/vitest.mjs", "run", "--config", "vitest.integration.config.ts"]);
-    await run(["node_modules/next/dist/bin/next", "build"], true);
+    if (!resumeBrowsers) {
+      await run(["node_modules/vitest/vitest.mjs", "run", "--config", "vitest.integration.config.ts"]);
+      await run(["node_modules/next/dist/bin/next", "build"], true);
+    } else {
+      console.log("Resuming browsers from the isolated unconfigured build; unit/database tests are not rerun.");
+    }
     app = start(["--import", "./tests/email-interceptor.mjs", "node_modules/next/dist/bin/next", "start", "--port", "3107", "--hostname", "localhost"], true);
     await waitForApp();
     await run(["node_modules/@playwright/test/cli.js", "test"]);

@@ -1,7 +1,7 @@
 <!-- BEGIN:nextjs-agent-rules -->
 # This is NOT the Next.js you know
 
-This repository uses Next.js 16.2.x. APIs, conventions, and file structure may differ from training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing framework-sensitive code and heed deprecation notices.
+This repository uses Next.js 16.3.4. APIs, conventions, and file structure may differ from training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing framework-sensitive code and heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
 # Veriq Client Website — Codex Instructions

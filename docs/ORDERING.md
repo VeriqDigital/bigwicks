@@ -114,8 +114,9 @@ There is no durable draft or customer order-history list. If a browser is closed
 and loses its review/confirmation URL, staff can locate the saved request.
 
 On `submitted`, the Server Action calls `redirect(confirmationPath,
-RedirectType.replace)` outside any catch block. Next.js supplies the 303 action
-redirect and manages the confirmation navigation/history replacement. The client
+RedirectType.replace)` outside any catch block. Next.js 16.3.4 supplies an HTTP 200
+fetch-action response with `x-action-redirect` and manages confirmation navigation
+and history replacement (native form redirects still use HTTP 303). The client
 handles only returned review/invalid results and ordinary transport failures;
 it never initiates success navigation itself. Its async React action transition
 keeps **Submitting…** active. The catch calls documented `unstable_rethrow()` first
@@ -125,11 +126,14 @@ as an interruption. Ordinary failures retain the review/token and permit retry.
 There is no `revalidatePath("/admin/orders")` after submission. The protected list
 uses request-time authentication and uncached PostgreSQL reads; the next server
 request reads current orders. An already-open staff page still needs navigation
-or refresh; this is not a live feed. In installed Next.js 16.2.9, action revalidation
-invalidates router caches and schedules navigation work even after resolving the
+or refresh; this is not a live feed. In the original Next.js 16.2.9 implementation,
+action revalidation invalidates router caches and schedules navigation work even after resolving the
 action result. The previous browser `location.replace()` could race that work.
 The framework-owned redirect removes that competing navigation; no timing delay
 or custom error boundary is added.
+
+Milestone 6B upgrades the framework to 16.3.4. The submission/recovery design is
+preserved; version-specific verification is recorded in [SECURITY-REMEDIATION.md](SECURITY-REMEDIATION.md).
 
 The existing shared PostgreSQL/HMAC limiter allows 30 review/new-submission attempts
 per user per minute, bounding malformed requests and content work. Inside the
@@ -216,6 +220,12 @@ Non-production catalog/pricing imports are complete; production imports and real
 customer onboarding remain pending. See [current onboarding status](ONBOARDING.md#current-status).
 
 ## Verification record
+
+Milestone 6B on 2026-09-07: the Next.js 16.3.4 follow-up passed all five order
+scenarios in Chromium and all five in Firefox, including lost-response recovery.
+The current fetch-action redirect uses HTTP 200 with `x-action-redirect`;
+the earlier records below describe their original framework version.
+See [the complete remediation record](SECURITY-REMEDIATION.md).
 
 Server Action redirect follow-up on 2026-09-07: lint, typecheck, 151 unit tests,
 261 combined unit/database tests, all five isolated migrations and the ordinary

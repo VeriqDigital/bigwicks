@@ -59,9 +59,11 @@ or preview token is configured. A future private-dataset choice would require an
 explicit server-only reader token; never put one in Studio/client props or a
 `NEXT_PUBLIC_` variable. Prices must stay out of Sanity regardless of that choice.
 
-Pinned compatible packages: sanity 6.12.0, next-sanity 13.3.4, @sanity/client 8.5.0,
-@sanity/icons 5.2.1, styled-components 6.5.3. Node 24, Next.js 16.2.9 and React 19.2.4
-remain unchanged. The content API version is pinned to 2026-09-06.
+Pinned packages: sanity 6.12.0, next-sanity 13.3.4, @sanity/client 8.5.0,
+@sanity/icons 5.2.1, styled-components 6.5.3. The runtime uses Node 24, Next.js 16.3.4
+and React 19.2.4. Milestone 6B updates only the framework dependency tree; see the
+[remediation record](SECURITY-REMEDIATION.md) for verification and the existing
+Portable Text/React peer warning. The content API version remains 2026-09-06.
 
 Implementation references: [Sanity's embedded Studio guide](https://www.sanity.io/docs/nextjs/embedding-sanity-studio-in-nextjs),
 [validation](https://www.sanity.io/docs/studio/validation), and
