@@ -4,6 +4,13 @@ Website and customer-ordering project for Big Wicks Fireworks LLC in La Porte, I
 
 ## Current status
 
+Milestones through **6E / PR #18** are merged. Milestone 7A records the
+[production readiness audit](docs/PRODUCTION-READINESS.md) and the authoritative
+[launch/rollback runbook](docs/LAUNCH-RUNBOOK.md). Public SEO acceptance gaps,
+production bootstrap/configuration, client data and live verification remain open;
+feature/security completion is not public-launch approval. No live launch operation
+was performed in 7A.
+
 Milestones 1, 2A and 2B provide authentication, customer management and account
 setup/reset. Milestone 3A establishes Sanity product content and a private
 PostgreSQL pricing/catalog service. Milestone 3B provides CUSTOMER-only browsing
@@ -97,14 +104,11 @@ No online payment, live inventory synchronization, BoxHero/IMS integration, cust
 
 ## Environment variables
 
-The current contact form uses:
-
-- `RESEND_API_KEY`
-- `CONTACT_FROM_EMAIL`
-- `CONTACT_TO_EMAIL`
-- `NEXT_PUBLIC_SITE_URL`
-
-Database/authentication and development seed variables are listed in `.env.example`.
+Use the authoritative [environment inventory](docs/PRODUCTION-READINESS.md#5-authoritative-environmentconfiguration-inventory)
+and safe development placeholders in `.env.example`. Contact now requires SQL and
+AUTH_SECRET for its shared abuse limiter as well as its mail configuration;
+NEXT_PUBLIC_SITE_URL supplies metadata, not contact routing. Preview has no
+application-level mail recipient sandbox; keep its mail key absent by default.
 Follow [the authentication setup guide](docs/AUTH.md) before using `/login`, `/admin`
 or `/portal`. No production database or real customer accounts are provisioned by
 this repository change.

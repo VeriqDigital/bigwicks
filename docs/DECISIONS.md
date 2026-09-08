@@ -5,8 +5,9 @@
 ## Current priority
 
 **Optimize for:**  
-Complete Milestone 6E acting-admin revocation consistency (SEC-04) from merged
-Milestone 6D / PR #17, preserving REL-01, SEC-03 and the historical Milestone 6A audit.
+Close the gates documented by Milestone 7A's [production readiness audit](PRODUCTION-READINESS.md)
+using the [authoritative launch runbook](LAUNCH-RUNBOOK.md). Milestones through
+6E / PR #18 are merged; preserve completed SEC-03, REL-01 and SEC-04 fixes.
 
 **Waiting on:**
 
@@ -26,6 +27,31 @@ Milestone 6D / PR #17, preserving REL-01, SEC-03 and the historical Milestone 6A
 ---
 
 ## Decision log
+
+### 2026-09-08 — Milestone 7A readiness and release order
+
+**Source:** User's production-readiness/runbook request; clean `Milestone-7A`,
+HEAD and fetched origin/main at PR #18 merge `1129cbf`.
+
+**Decision:** Audit and documentation/example configuration only. No application
+redesign, dependency updates or live writes. Record unmet homepage canonical/
+sitemap acceptance requirements separately from completed security remediation.
+Production tier/ADMIN provisioning has no safe existing command; require a
+reviewed isolated rehearsal before production bootstrap, never development seed.
+Preserve the 302-product resolved catalogKey mapping, exclusions and existing
+W515B/W515BC decision. Partial pricing can be staged while hidden, but customer
+release requires complete intended coverage or explicit client approval of a
+narrower assortment/cohort. Customer import and invitation remain separate actions.
+
+**Outcome:** B. NOT CODE READY — BLOCKERS IDENTIFIED for the narrow public SEO
+acceptance gap; production/client/operations gates also remain open. No new
+reachable critical/high application runtime security issue was established.
+Read-only public advisories are dated evidence, not permanent clearance.
+[LAUNCH-RUNBOOK.md](LAUNCH-RUNBOOK.md) is the one release/rollback sequence;
+older launch-order examples and then-open security notes remain historical.
+No deployment, import, production configuration, DNS change or real email in 7A.
+
+---
 
 ### 2026-09-07 — Milestone 6E admin authorization at SQL boundaries
 

@@ -154,8 +154,8 @@ Pricing is private customer/account information.
 Rules:
 
 - Do not publish wholesale/account prices in public-page copy, metadata, schema, static HTML, or social previews.
-- Do not describe Tier 2 as an exact universal percentage discount unless Big Wicks confirms that rule.
-- The working understanding is that Tier 2 averages roughly 10% lower than Tier 1, but product-level authoritative data controls.
+- Tier 1 is the cheapest tier; higher ranks represent more expensive groups, as confirmed in Milestone 5A.1.
+- Each tier's per-product case price must be supplied independently. Never derive prices from percentages, Unit Cost, packing or another tier.
 - Do not expose internal customer tier labels publicly unless useful/approved.
 
 ---
