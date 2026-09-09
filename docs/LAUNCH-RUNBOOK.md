@@ -4,10 +4,12 @@ Prepared **2026-09-08**, baseline `1129cbf` (PR #18). Use with
 [PRODUCTION-READINESS.md](PRODUCTION-READINESS.md). This is the **one authoritative
 release sequence**, superseding older illustrative launch orders in project docs.
 
-**Current verdict: B. NOT CODE READY — BLOCKERS IDENTIFIED.** Public SEO completion
-is open; production configuration, bootstrap process, client data and live smoke
-evidence are also outstanding. This document is not permission to perform any
-production operation. Nothing below was executed against a live service in 7A.
+**Current verdict: A. CODE READY — BLOCKED ON CLIENT/PRODUCTION CONFIG.** Milestone
+7B (baseline `adb8fd1`, merged PR #19) closes CODE-01 with verified homepage/contact
+canonicals, the two-page sitemap and robots reference. Production configuration,
+bootstrap process, client data and live smoke evidence remain outstanding. This
+is not public-launch approval or permission to perform any production operation.
+Nothing below was executed against a live service in 7A or 7B.
 
 ## Operator rules and release record
 
@@ -58,7 +60,7 @@ through PR #18; preserved resolved mapping custodian identified.
 
 | Step / action | Mutation | Expected result and verification | STOP / recovery |
 | --- | --- | --- | --- |
-| 0.1 Close CODE-01 in a bounded reviewed patch: homepage canonical, `/` + `/contact` sitemap, robots reference. Add Preview indexing guard only if verified hosting control is insufficient. | LOCAL code; later merge/deploy separately approved | Lint/typecheck/relevant metadata tests/build; production origin URLs, public indexability, private noindex; no prices in public output. | Wrong origin, all-site production noindex or private sitemap route: fix before release. Code revert affects code only. |
+| 0.1 Include the 7B CODE-01 completion patch in the reviewed release candidate: homepage canonical, `/` + `/contact` sitemap, robots reference. Repository verification passed; Preview protection/noindex stays a live hosting gate. | LOCAL checks; later merge/deploy separately approved | `node tests/seo/verify.mjs` verifies lint/typecheck/focused tests/build/render with a fictional HTTPS origin and no service credentials. Repeat final-domain output verification in phase 4. | Wrong origin, all-site production noindex or private sitemap route: fix before release. Code revert affects code only. |
 | 0.2 Obtain missing pricing/customer/availability/domain/recipient/public-copy decisions from readiness section 4. Agree complete or explicitly narrowed launch assortment/cohort. | None | Written independent tier prices, exact customer tiers and availability matrix; staff approves neutral/current currency wording or supplies final wording for a reviewed patch. | No implicit approval of 22 blank prices, empty Tier 1 catalog, fixture customer or guessed business fact. Hold dependent phases. |
 | 0.3 Inventory and back up original resolved 302-product mapping, approved exclusions and W515B/W515BC resolution; compare artifact checksum with custodian's approved copy. | LOCAL private copy | 302 distinct existing UUIDv4 keys, 17 approved category names, all false, correct brand/packing, no Unit Cost; verified restore of the same mapping bytes. | Missing mapping or changed/blank keys: STOP. Retrieve original, never remap the raw workbook to regenerate keys. |
 | 0.4 Prepare and rehearse the first-tier/ADMIN procedure specified in phase 2 on a newly isolated local DB. | LOCAL isolated test DB only, separately scoped | Target guard, no mail, create-only transaction, correct tiers/ADMIN, safe refusal on conflicting state, no secret output; operator and reviewer sign off. | **No current repository production-bootstrap command exists.** Do not improvise seed or execute partial SQL; hold phase 2 until the procedure is reviewed. |
@@ -79,11 +81,18 @@ node tests/security/run.mjs unit tests/unit/onboarding.test.ts tests/unit/onboar
 git diff --check
 ```
 
+For the focused 7B SEO acceptance checks, run `node tests/seo/verify.mjs`.
+It creates an isolated source copy, generates Prisma/Next types, runs the nine SEO
+tests, lint/typecheck, a local production build and Chromium/HTTP route checks with
+`NEXT_PUBLIC_SITE_URL=https://www.example.test`. It copies no private environment
+files and uses no private service credentials. Local font stubs and blocked external
+embeds mean this does not approve production fonts/assets or real hosting behavior.
+
 The isolated wrapper strips private env files, blocks external application traffic
 and uses fictional configuration. The typecheck command generates Prisma and Next
 types. These are not production smoke checks. Future application changes need
 applicable production-build/browser checks; no need to repeat unrelated large
-security suites for this documentation-only milestone. Ordinary `npm run build`
+security suites for documentation-only 7A or the bounded 7B SEO patch. Ordinary `npm run build`
 loads local environment and downloads fonts; run only in a deliberately configured
 build context. Do not use a prior audit build with test preloads as a release artifact.
 
@@ -492,7 +501,7 @@ the incident owner determines necessary notifications. This runbook authorizes n
 **Any unresolved required checkbox = NO-GO for the dependent release phase.**
 Controlled infrastructure/bootstrap preparation may precede full client pricing
 only with its own scoped approval and closed safety gates; it is not public-launch
-approval. Next recommended action from 7A: close the small SEO patch and review/
-rehearse the guarded tier/ADMIN bootstrap process while collecting missing client
+approval. After 7B's CODE-01 closure, review/rehearse the guarded tier/ADMIN
+bootstrap process while collecting missing client
 inputs. Then request a separately scoped production infrastructure/configuration
 verification task, followed by authorized bootstrap when its gates pass.
