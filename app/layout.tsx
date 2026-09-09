@@ -4,6 +4,7 @@ import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 import { siteConfig } from "@/config/site";
+import { getSiteUrl } from "@/config/seo";
 import "./globals.css";
 
 const barlow = Barlow({
@@ -19,7 +20,7 @@ const robotoCondensed = Roboto_Condensed({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+  metadataBase: getSiteUrl(),
   title: {
     default: "Big Wicks Fireworks | La Porte, Indiana Fireworks Store",
     template: `%s | ${siteConfig.shortName}`,

@@ -4,12 +4,14 @@ Website and customer-ordering project for Big Wicks Fireworks LLC in La Porte, I
 
 ## Current status
 
-Milestones through **6E / PR #18** are merged. Milestone 7A records the
+Milestones through **7A / PR #19** are merged. Milestone 7A records the
 [production readiness audit](docs/PRODUCTION-READINESS.md) and the authoritative
-[launch/rollback runbook](docs/LAUNCH-RUNBOOK.md). Public SEO acceptance gaps,
-production bootstrap/configuration, client data and live verification remain open;
-feature/security completion is not public-launch approval. No live launch operation
-was performed in 7A.
+[launch/rollback runbook](docs/LAUNCH-RUNBOOK.md). Milestone 7B closes CODE-01:
+explicit homepage canonical, root/contact-only sitemap and robots reference, using
+`NEXT_PUBLIC_SITE_URL`. Focused tests and isolated production build/render checks
+pass. Verdict: **A. CODE READY — BLOCKED ON CLIENT/PRODUCTION CONFIG**. Production
+bootstrap/configuration, client data and live verification remain open; this is
+not public-launch approval. No live launch operation was performed in 7A or 7B.
 
 Milestones 1, 2A and 2B provide authentication, customer management and account
 setup/reset. Milestone 3A establishes Sanity product content and a private

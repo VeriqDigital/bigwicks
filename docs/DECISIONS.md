@@ -7,7 +7,8 @@
 **Optimize for:**  
 Close the gates documented by Milestone 7A's [production readiness audit](PRODUCTION-READINESS.md)
 using the [authoritative launch runbook](LAUNCH-RUNBOOK.md). Milestones through
-6E / PR #18 are merged; preserve completed SEC-03, REL-01 and SEC-04 fixes.
+7A / PR #19 are merged; 7B closes CODE-01. Preserve completed SEC-03, REL-01 and
+SEC-04 fixes; client/production configuration and operational gates remain open.
 
 **Waiting on:**
 
@@ -27,6 +28,34 @@ using the [authoritative launch runbook](LAUNCH-RUNBOOK.md). Milestones through
 ---
 
 ## Decision log
+
+### 2026-09-08 — Milestone 7B public SEO acceptance completion
+
+**Source:** User's CODE-01-only request; clean `Milestone-7B`, HEAD and fetched
+origin/main at merged PR #19 `adb8fd1`.
+
+**Decision:** Use page Metadata API canonical `/` on the homepage; retain contact's
+`/contact`. Share existing URL parsing and `http://localhost:3000` fallback
+through `config/seo.ts` for metadataBase, sitemap and robots. Preserve malformed-URL
+failure and development fallback; approved final HTTPS origin is still a production
+configuration gate. Sitemap contains only root/contact URL entries, with no arbitrary
+dates or public wholesale data. Preserve every disallow and protected noindex rule,
+all titles/descriptions/social metadata and Store JSON-LD facts.
+
+Preview protection/noindex remains a Vercel verification gate. No hosting behavior
+was established that justifies adding an application conditional; NODE_ENV does not
+distinguish Preview from Production. No environment-dependent noindex introduced.
+
+**Outcome:** CODE-01 resolved; **A. CODE READY — BLOCKED ON CLIENT/PRODUCTION CONFIG**.
+Nine focused tests, lint, typecheck and isolated production build pass; Chromium/HTTP
+verify fictional HTTPS canonicals, exact sitemap/robots, redirect exclusions and
+anonymous utility/protected indexing behavior. Next omits the root canonical's
+trailing slash; URL normalization verifies the equivalent root without changing
+framework output. See the [7B verification record](PRODUCTION-READINESS.md#7b-checks-actually-run).
+Client data, configuration, bootstrap, backups, staff operations and live verification
+remain open. No merge, deployment, service access, data mutation or email.
+
+---
 
 ### 2026-09-08 — Milestone 7A readiness and release order
 

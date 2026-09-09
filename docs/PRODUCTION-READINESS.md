@@ -4,18 +4,19 @@ Audit date: **2026-09-08**. Source baseline: `1129cbf` (merged PR #18 / Mileston
 6E), on clean `Milestone-7A`. `git fetch origin main` confirmed that remote main
 still matched this commit. This is a repository audit, not a live-service audit.
 
+Milestone **7B update, 2026-09-08**: SEO completion starts at merged PR #19,
+`adb8fd1`; fetched `origin/main` matches that baseline. The original 7A evidence
+below remains dated history; current SEO results and verification are recorded here.
+
 ## 1. Executive assessment
 
-**B. NOT CODE READY — BLOCKERS IDENTIFIED**, narrowly for the outstanding public
-SEO acceptance requirements below. No new reachable critical/high application
-security defect was established. Feature completeness and the completed security
-remediations do not establish production readiness.
-
-The homepage has no canonical declaration, and there is no sitemap implementation.
-These are explicit requirements in [SEO.md](SEO.md), not security vulnerabilities.
-They block completion of the agreed public release checklist, not private
-infrastructure preparation. A small, separately reviewed SEO completion patch is
-appropriate; this audit does not redesign the public site.
+**A. CODE READY — BLOCKED ON CLIENT/PRODUCTION CONFIG.** Milestone 7B resolves
+CODE-01 with an explicit homepage canonical, a URL-only public sitemap and its
+robots reference. Focused tests and an isolated production build/render check pass.
+No additional repository code blocker was established in this bounded SEO review.
+This is **not public-launch approval**; configuration, client data, bootstrap and
+live verification remain outstanding. The original 7A verdict was B solely for
+this SEO acceptance gap; completed security remediations remain intact.
 
 Production bootstrap is also **not yet cleared**: the production database/dataset,
 credentials, backup/restore evidence, first-admin provisioning procedure, client
@@ -51,7 +52,7 @@ schema, reader and importer were reviewed. No private `.env` values appear here.
 
 | ID / class | Open item | Gate and evidence required to close |
 | --- | --- | --- |
-| CODE-01 — A. Code | Homepage canonical and sitemap absent (`app/page.tsx`, `app/layout.tsx`, tracked file inventory). | Before public launch: reviewed patch supplies homepage canonical and a sitemap containing only `/` and `/contact`, references it from robots, and verifies final-origin output. Preserve protected noindex. Explicit SEO acceptance gap; not a reopened security defect. |
+| CODE-01 — A. Code — **RESOLVED in 7B** | Homepage canonical `/`; `app/sitemap.ts` contains only `/` and `/contact`; robots references the sitemap. | Nine focused tests, lint, typecheck, isolated production build and rendered checks pass with fictional `https://www.example.test`. Existing noindex/disallows preserved. Release candidate must include this patch; actual Production origin and Preview indexing remain CONFIG-01/02 gates. |
 | CONFIG-01 — B. Production configuration | SQL, Sanity, auth secrets, URL origins, mail and environment scopes not live-verified. | Before any production write: signed target/config matrix with distinct environment identities, least-privilege credentials and approved production origin. |
 | CONFIG-02 — B | Production HTTPS/domain, Preview protection/noindex, ingress headers, action durations and mail authentication not verified. | Before exposure/mail: real-domain smoke checks, provider settings and DNS evidence. A successful local build is insufficient. |
 | DATA-01 — C. Client data | Tier 1 missing, 22 Tier 2 unresolved; no approved launch assortment/tier coverage. | Before enabling products/inviting affected customers: complete independent prices for their approved assortment, or explicit client approval of a narrower assortment/cohort. |
@@ -105,7 +106,7 @@ services; that does not make service configuration optional for launch.
 | `CONTACT_FROM_EMAIL` | Server / no | C / C / R | Verified mailbox/display sender; `app/contact/actions.ts`, runtime. | Nonempty check only; provider enforces validity. No mail on missing value; no environment guard. |
 | `CONTACT_TO_EMAIL` | Server / private routing, not credential | C / C / R | One confirmed store inbox; contact runtime; From is fixed, visitor address is Reply-To. | Missing rejects send; nonempty but wrong value can misroute message. No production fallback. |
 | `ORDER_TO_EMAIL` | Server / private routing, not credential | C / C / R | One validated staff mailbox; `lib/orders/email.ts`, runtime. | Missing/invalid prevents notification, **not order persistence**. No contact-recipient fallback. Wrong valid address leaks order details. |
-| `NEXT_PUBLIC_SITE_URL` | Public / no | C / R / R | Absolute canonical origin, production HTTPS; `app/layout.tsx` metadata base at build/render. Match AUTH_URL in production. | Missing falls back to localhost; empty/malformed can break URL construction; valid wrong hostname silently contaminates metadata. Does not itself emit homepage canonical. Rebuild after change. |
+| `NEXT_PUBLIC_SITE_URL` | Public / no | C / R / R | Absolute canonical origin without path/query/fragment, production HTTPS; `config/seo.ts` supplies layout metadataBase, sitemap and robots at build/render. Match AUTH_URL in production. | Missing falls back to localhost; empty/malformed fails URL construction; valid wrong hostname still contaminates SEO output. Homepage and contact declare relative canonicals. Rebuild after change; final-origin verification remains mandatory. |
 | `NEXT_PUBLIC_SANITY_PROJECT_ID` | Public / no | C / R / R | Lowercase alphanumeric project ID; `sanity/environment.ts` used by Studio and server reader; **build + runtime**. | Invalid/missing pair gives unconfigured Studio/catalog failure; public build still works. Wrong valid ID can select another readable project. |
 | `NEXT_PUBLIC_SANITY_DATASET` | Public / no | C / R / R | `[a-z0-9][a-z0-9_-]{0,63}`; paired with project; build + runtime. | No dev/preview/prod identity inference. Wrong valid dataset can cross environments; Studio can edit it if staff have rights. Rebuild both public settings. |
 | `SANITY_API_WRITE_TOKEN` | Server/operator only / **secret** | C / C / C | Operator `scripts/onboarding/cli.ts`; remote raw dry-run and apply. Use full-read scoped token for planning, write capability only for apply. | Missing refuses remote CLI; not read by application. Wrong broad token plus wrong flags can mutate wrong dataset. **Omit from all Vercel app scopes; never NEXT_PUBLIC.** |
@@ -555,15 +556,15 @@ STOP release and request a bounded security patch before any broad upgrade.
 | Item | Source result / action |
 | --- | --- |
 | Public indexing | Root metadata index/follow true and robots allow `/` in **every environment**. Correct production intent; Preview needs verified hosting protection/noindex. Do not globally noindex production as a workaround. |
-| Canonicals | Contact defines `/contact`; homepage defines none. metadataBase resolves relative URLs but does not create canonical tags. CODE-01. Valid wrong site origin silently creates wrong contact/social URLs. |
-| Sitemap | No tracked sitemap file/generator; robots contains no sitemap reference. CODE-01. Exclude `/about` and `/services` redirects, utility routes and fragments. |
+| Canonicals | **7B verified:** homepage explicitly defines `/`, contact retains `/contact`; metadataBase uses shared `getSiteUrl()` with unchanged URL parsing/fallback. Production render emits one canonical per page on the configured fictional origin. Next serializes the root as `https://www.example.test` (equivalent to `/`). Valid wrong configuration remains a release STOP. |
+| Sitemap | **7B verified:** `app/sitemap.ts` returns only root and contact URLs; robots advertises the same origin's `/sitemap.xml`. URL-only entries, no guessed dates/frequencies/priorities. Redirects, private/utility/API/product routes, queries and fragments excluded. |
 | Public routes | `/` and `/contact`; `/about` permanently redirects to `/#about`, `/services` to `/#shop`. No substantive placeholder pages to index. |
 | Titles/descriptions/OG | Root Big Wicks title/description/twitter/OG; contact has specific metadata. OG slogan is still confirmation-required. app/opengraph-image.png and app/icon.jpg exist; visually approve final assets and verify rendered URLs. No manifest exists; PWA/manifest is not a launch requirement. |
 | Private routes | `(portal)` layout and explicit portal/confirmation/Studio metadata noindex; robots disallows protected paths and token pages. Auth remains actual security. Login inherits noindex even though not in robots disallow list. |
 | Token pages | no-referrer, private/no-store and X-Robots-Tag headers configured for setup/reset/forgot. Verify through live ingress; do not capture their query tokens. |
 | JSON-LD | Root emits Store, names/contact/address/hours/socials from siteConfig. No ratings/private prices. **Those business facts remain marked CONFIRM**, so structured-data truth is blocked on client approval. |
-| Links/assets | Source internal navigation targets existing routes/home anchors; real store/logo/category assets are used. No live external/social/map/asset fetch or new visual QA in this documentation-only audit. |
-| Preview duplication | No application VERCEL_ENV conditional. Verify actual Vercel Preview X-Robots-Tag/protection including custom Preview domains; do not assume repository metadata prevents indexing. If hosting cannot enforce it, include a narrow Preview-indexing safeguard in the SEO follow-up. |
+| Links/assets | Source internal navigation targets existing routes/home anchors; real store/logo/category assets are used. 7A had no visual QA; 7B checks local public layout/overflow at three widths with stubbed fonts and blocked external embeds. Live external links and full real-asset QA remain open. |
+| Preview duplication | **7B decision:** retain the hosting protection/noindex verification gate, including custom Preview domains. No application VERCEL_ENV conditional added: hosting semantics/configuration have not been established here, and NODE_ENV cannot distinguish Preview from Production. If hosting controls prove insufficient, scope a separate verified fix before release. |
 
 No concrete previous-client identifiers are listed in PROJECT.md. A tracked
 legacy/previous-client and asset-name inventory found no specific inherited client
@@ -606,7 +607,7 @@ prepare/import tests, target confirmations and dashboard evidence are the releva
 controls. A later minimal provisioning tool can close OPS-01 with explicit target
 review, create-only semantics, hidden password input and isolated rehearsal.
 
-No current production build, live schema query or browser/domain smoke is claimed. Prior
+7A claimed no production build, live schema query or browser/domain smoke. Prior
 6B/6C/6D/6E tests/builds remain dated historical evidence; the 6B follow-up passed
 both Chromium and Firefox orders, superseding the older 6A Firefox startup failure.
 
@@ -632,3 +633,41 @@ fonts, configured Studio, DNS, external links, production data and live smoke ch
 remain unverified. During document review the release sequence was corrected so
 protected final-domain attachment precedes browser ADMIN pricing/customer imports,
 because canonical AUTH_URL governs Auth.js redirects.
+
+### 7B checks actually run
+
+- `git fetch origin main` and `git rev-parse HEAD origin/main`: both `adb8fd1`,
+  merged PR #19; clean starting `Milestone-7B` branch. No merge, push or deployment.
+- `node tests/seo/verify.mjs`: isolated source copy
+  `.test-runtime/seo-source-hOGL1X`, no private `.env*` copied/loaded, OS-only
+  inherited environment, fictional HTTPS site/auth origin, unreachable local SQL
+  placeholder, no mail credentials and empty Sanity configuration. Existing isolation
+  preload blocks outbound application service traffic; Google font transport is stubbed.
+  Ran Prisma generate, Vitest `tests/unit/seo.test.ts` (**9/9 passed**), ESLint,
+  Next typegen, `tsc --noEmit --incremental false`, and Next production build
+  (**all passed**). No migrations, seed, database/service reads or mail.
+- Initial browser assertion expected a literal trailing slash on the root canonical;
+  Next correctly omits it. Corrected the assertion to compare normalized URLs,
+  preserving the normal Metadata API and application output.
+- `node tests/seo/verify.mjs --render-only .test-runtime/seo-source-hOGL1X`:
+  verifies application build inputs match before reuse; **passed** Chromium and HTTP
+  checks for one root/contact canonical each, public index/follow, title/description,
+  OG/Twitter presence, parseable Store JSON-LD, exact two-entry sitemap, robots
+  reference/all eight existing disallows, and `/about`/`/services` 308 anchor redirects.
+  Anonymous account/portal/confirmation/admin/Studio routes redirect to noindex login;
+  setup/reset/forgot metadata and X-Robots-Tag/referrer/cache headers remain intact.
+  Source review also confirms protected route/layout metadata remains unchanged.
+- Root and contact checked at **390 / 768 / 1440 px**, no horizontal overflow;
+  six local screenshots reviewed for layout. Fonts are stubbed, external map embeds
+  blocked and offscreen lazy images not comprehensively exercised; real asset/font
+  and authenticated/live-platform QA remain launch gates.
+- Final lint and `git diff --check` pass; diff limited to metadata/SEO, focused tests
+  and current readiness docs. No concrete legacy-client identifier is listed in
+  PROJECT or found in the targeted source/asset inventory. Historical security
+  documents, auth, service code, dependency files and client facts are unchanged.
+
+Build warnings: the existing Vite future config-loader notice and a nested isolated
+checkout/multiple-lockfile workspace-root notice. Neither blocked validation; no
+dependency or application build configuration changes made to suppress them.
+No large SQL/concurrency/security suites rerun for this SEO-only patch. Every live
+verification checkbox and CONFIG/DATA/OPS gate remains open.
