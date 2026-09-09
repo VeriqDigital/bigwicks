@@ -26,7 +26,7 @@ mkdirSync('.test-runtime', { recursive: true });
 const renderOnly = process.argv[2] === '--render-only';
 const stage = renderOnly ? realpathSync(process.argv[3]) : mkdtempSync(resolve('.test-runtime/seo-source-'));
 assert.ok(stage.startsWith(realpathSync('.test-runtime') + sep), 'Use an isolated SEO source copy');
-const files = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], { encoding: 'utf8', windowsHide: true }).split('\0').filter(Boolean);
+const files = execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8', windowsHide: true }).split('\0').filter(Boolean);
 for (const file of files) {
   if (/(^|\/)\.env(?:\.|$)/.test(file) || file.startsWith('public/')) continue;
   const target = resolve(stage, file);
