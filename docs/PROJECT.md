@@ -5,7 +5,7 @@
 **Client / business name:** Big Wicks Fireworks LLC
 **Public-facing name:** Big Wicks Fireworks
 **Project type:** Retail marketing website + protected wholesale customer portal
-**Current stage:** Milestones through 7A / PR #19 are merged. Milestone 7A provides the [production readiness audit](PRODUCTION-READINESS.md) and authoritative [launch/rollback runbook](LAUNCH-RUNBOOK.md). Milestone 7B resolves CODE-01 with verified homepage canonical, root/contact sitemap and robots reference. Verdict: **A. CODE READY — BLOCKED ON CLIENT/PRODUCTION CONFIG**, not public-launch approval. Production bootstrap/configuration, client data and live verification gates remain open. Real catalog onboarding is complete in non-production only; production catalog/pricing imports, real customer imports and real invitations have not occurred. See [current onboarding status](ONBOARDING.md#current-status).
+**Current stage:** Milestones through 7B / PR #20 are merged. Milestone 7A provides the [production readiness audit](PRODUCTION-READINESS.md) and authoritative [launch/rollback runbook](LAUNCH-RUNBOOK.md). 7B resolves CODE-01 SEO acceptance. 7C completes OPS-01 tooling/disposable rehearsal with a separate guarded tier/initial ADMIN bootstrap CLI; no production bootstrap was executed. Verdict: **A. CODE READY — BLOCKED ON CLIENT/PRODUCTION CONFIG**, not public-launch approval. Production bootstrap execution/configuration, client data and live verification remain open. Real catalog onboarding is complete in non-production only; production catalog/pricing imports, real customer imports and real invitations have not occurred. See [current onboarding status](ONBOARDING.md#current-status).
 **Primary Veriq contact:** Mick Enev
 
 ### Project summary
@@ -1136,11 +1136,12 @@ Test:
 ### What Codex should optimize for right now
 
 Complete the release gates in [PRODUCTION-READINESS.md](PRODUCTION-READINESS.md).
-Milestones through 7A / PR #19 are merged; 7B closes CODE-01 public SEO acceptance.
+Milestones through 7B / PR #20 are merged; CODE-01 public SEO acceptance is closed.
 [LAUNCH-RUNBOOK.md](LAUNCH-RUNBOOK.md) supersedes the older illustrative milestone
-launch order above. Review/rehearse initial production tier/ADMIN provisioning
-while collecting client inputs. Production operations require a separately scoped
-authorization; 7A/7B perform no deploy, remote mutation, real email or customer import.
+launch order above. 7C completes OPS-01 guarded bootstrap tooling/rehearsal. Collect
+client inputs and separately authorize production target/configuration verification,
+then bootstrap execution only after its live gates pass. 7A/7B/7C perform no deploy,
+live mutation, real email or customer import.
 
 ### Do not work on yet
 

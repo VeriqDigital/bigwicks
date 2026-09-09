@@ -8,6 +8,10 @@ Milestone **7B update, 2026-09-08**: SEO completion starts at merged PR #19,
 `adb8fd1`; fetched `origin/main` matches that baseline. The original 7A evidence
 below remains dated history; current SEO results and verification are recorded here.
 
+Milestone **7C update, 2026-09-08**: starts at merged PR #20, `6f0d880`, matching
+fetched `origin/main`. OPS-01 tooling and disposable-database rehearsal are complete;
+actual production bootstrap execution remains a separately authorized live gate.
+
 ## 1. Executive assessment
 
 **A. CODE READY — BLOCKED ON CLIENT/PRODUCTION CONFIG.** Milestone 7B resolves
@@ -19,9 +23,11 @@ live verification remain outstanding. The original 7A verdict was B solely for
 this SEO acceptance gap; completed security remediations remain intact.
 
 Production bootstrap is also **not yet cleared**: the production database/dataset,
-credentials, backup/restore evidence, first-admin provisioning procedure, client
+credentials, backup/restore evidence, actual first-admin execution, client
 pricing, availability and recipients remain unverified or missing. No production
 catalog/pricing/customer import or invitation has occurred, per the user.
+7C supplies the guarded `db:bootstrap` procedure and local evidence; it did not
+connect to Preview/Production or create a real ADMIN.
 
 [LAUNCH-RUNBOOK.md](LAUNCH-RUNBOOK.md) is the authoritative release order. Its
 commands are future operator instructions and do not authorize execution. This
@@ -57,7 +63,7 @@ schema, reader and importer were reviewed. No private `.env` values appear here.
 | CONFIG-02 — B | Production HTTPS/domain, Preview protection/noindex, ingress headers, action durations and mail authentication not verified. | Before exposure/mail: real-domain smoke checks, provider settings and DNS evidence. A successful local build is insufficient. |
 | DATA-01 — C. Client data | Tier 1 missing, 22 Tier 2 unresolved; no approved launch assortment/tier coverage. | Before enabling products/inviting affected customers: complete independent prices for their approved assortment, or explicit client approval of a narrower assortment/cohort. |
 | DATA-02 — C | Customer identities/numbers/tiers/active flags, ADMIN identity, recipients, currency, availability, public facts/deals and domain confirmation missing. | Obtain recorded client decisions, not inferred values. Images/descriptions block only if required by the approved content standard. |
-| OPS-01 — D. Operations | No production tier/ADMIN bootstrap command; existing seed is fictional/local-only. | Before SQL bootstrap: reviewed and isolated-rehearsed provisioning procedure, confirmed administrator and securely supplied password. Specification in runbook phase 2; no production seed. |
+| OPS-01 — D. Operations — **TOOLING/REHEARSAL COMPLETE in 7C** | Separate `db:bootstrap` CLI: guarded read-only plan, hidden password, atomic create-only tiers/ADMIN, exact completion/no-overwrite behavior. Development seed unchanged. | Disposable migration/apply, concurrency/rollback, auth compatibility, secrecy and Windows terminal checks pass. **Production execution remains open**: confirmed target/ADMIN, backup/restore, approved permissions, reviewed plan and separate authorization required under runbook phase 2. |
 | OPS-02 — D | Restore points, restore rehearsal, artifact custody and recovery owners not established. | Before migrations/imports: usable verified backups and named operator, approver and recovery owner. |
 | OPS-03 — D | Staff order monitoring, email-failure recovery and controlled invitation schedule not signed off. | Before customer access: assigned coverage, approved internal smoke recipients/account and cohort, provider headroom and delivery evidence. |
 | OPS-04 — D | Permanent resolved catalog mapping and reviewed exclusions/W515B–W515BC decision artifact not supplied for this audit. | Before catalog import: custodian supplies the preserved reviewed mapping; verify all 302 identities against the approved artifact. Do not reconstruct the resolution from this report. |
@@ -97,7 +103,7 @@ services; that does not make service configuration optional for launch.
 
 | Exact variable | Exposure / secret | D / P / V | Shape, purpose, phase and consumer | Missing/incorrect behavior; environment crossing |
 | --- | --- | --- | --- | --- |
-| `DATABASE_URL` | Server / **secret** | C / R / R | PostgreSQL URI; TLS to remote host; runtime `lib/db.ts`, migration CLI `prisma.config.ts`, seed/tests/audit. Build generation needs no live DB. | Missing throws on DB use; SQL-dependent auth/contact fail closed. **No target check or TLS enforcement in app**: a valid wrong URL reads/writes the wrong DB. |
+| `DATABASE_URL` | Server / **secret** | C / R / R | PostgreSQL URI; TLS to remote host; runtime `lib/db.ts`, migration CLI `prisma.config.ts`, seed/tests/audit. 7C bootstrap reads only operator process env and validates explicit target/TLS; no `.env` loading. Build generation needs no live DB. | Missing throws on DB use; SQL-dependent auth/contact fail closed. **No target check or TLS enforcement in app**: a valid wrong URL reads/writes the wrong DB. The separate bootstrap's checks do not change runtime behavior. |
 | `AUTH_SECRET` | Server / **secret** | R for auth/contact / R / R | Independently generated >=32 random bytes (e.g. base64); application requires >=32 characters in HMAC/sealing paths. Runtime Auth.js, `lib/auth/rate-limit.ts`, pricing/order/customer preview-token modules. | Missing/short blocks relevant operations; Auth.js alone is not the application's length validator. Shared secret across environments is unsafe. Rotation invalidates sessions/previews and changes limiter identities. |
 | `AUTH_URL` | Server / no | R for mail / R / R | Exact origin, no path/query/hash/userinfo; local HTTP permitted by account helper, **production must be HTTPS**. Auth.js and `lib/auth/account-email.ts`; runtime and framework initialization. | Mail fails without valid origin; Auth.js can otherwise infer headers. A wrong valid origin can send links to Preview/another host. Local HTTP exception is not environment-aware. |
 | `AUTH_TRUST_HOST` | Server / no | C / C / C | Exact `true` or `false`; `auth.ts`, runtime. Keep false on Vercel unless independently needed; Vercel detection suffices. | Explicit project expression uses `NODE_ENV !== production` OR `VERCEL === 1` OR exact `true`. Missing/false is not a universal trust-off switch on Vercel/dev. Requires trusted ingress. |
@@ -270,8 +276,9 @@ validation, provider pooling compatibility, cold starts and transaction/duration
 limits against the actual branch. Never disable TLS verification to make it work.
 
 Backups and a demonstrated restore are required before migration/import. A Vercel
-rollback cannot roll back SQL. First-tier/ADMIN bootstrap is OPS-01: only the local
-fictional seed exists; no production provisioning command is implied by this report.
+rollback cannot roll back SQL. First-tier/ADMIN bootstrap now has the separately
+guarded 7C `db:bootstrap` command; the fictional seed remains local/development-only.
+OPS-01 tooling/rehearsal is complete; no actual production provisioning is implied.
 
 ## 9. Sanity readiness
 
@@ -604,8 +611,9 @@ limitations require the runbook, not a new full order-management platform.
 shape check cannot prove correct remote identity, and an unreviewed provisioning
 script would turn this audit into a data-mutation implementation. Existing offline
 prepare/import tests, target confirmations and dashboard evidence are the relevant
-controls. A later minimal provisioning tool can close OPS-01 with explicit target
-review, create-only semantics, hidden password input and isolated rehearsal.
+controls. 7C subsequently closes OPS-01 tooling/rehearsal with explicit target
+review, create-only semantics, hidden password input and disposable PostgreSQL tests.
+The original 7A audit did not execute or authorize that operation.
 
 7A claimed no production build, live schema query or browser/domain smoke. Prior
 6B/6C/6D/6E tests/builds remain dated historical evidence; the 6B follow-up passed
@@ -671,3 +679,71 @@ checkout/multiple-lockfile workspace-root notice. Neither blocked validation; no
 dependency or application build configuration changes made to suppress them.
 No large SQL/concurrency/security suites rerun for this SEO-only patch. Every live
 verification checkbox and CONFIG/DATA/OPS gate remains open.
+
+### 7C guarded bootstrap and checks actually run
+
+Current verdict remains **A. CODE READY — BLOCKED ON CLIENT/PRODUCTION CONFIG**.
+OPS-01 tooling/rehearsal is complete. Production execution, CONFIG-01/02,
+DATA-01/02, OPS-02/03/04 and live verification remain open. This is not launch
+approval or a request to supply private credentials in chat.
+
+The CLI creates only Tier 1/rank 1, Tier 2/rank 2 and the supplied initial active
+ADMIN, version 0, with centralized Argon2id hashing and no Customer. Inspection
+requires migrated public tables and exactly six finished checksum-matching migration
+records. Both modes require explicit expected host/port/database, production-capable
+tool acknowledgement and exact target confirmation; apply additionally requires a
+SHA-256 plan binding target, normalized email, tier/ADMIN definitions, state fingerprint
+and migration identity. No password, hash or connection credentials enter the plan.
+Read-only default does not prompt/hash/write. Apply confirms hidden input twice,
+then rechecks under self-conflicting table locks, inserts all three rows atomically,
+checks postconditions and performs independent readback. No auth secret or mail
+configuration is required. Exact completion is zero-write; partial/unexpected state
+refuses, including extra users/customer data or limiter activity. See
+[the exact operator/recovery procedure](LAUNCH-RUNBOOK.md#guarded-first-admintier-bootstrap--milestone-7c).
+
+Verification on Windows / Node **24.20.0**:
+
+- `git fetch origin main`; `git rev-parse HEAD origin/main`: both `6f0d880`, merged
+  PR #20. Starting branch `Milestone-7C` was clean.
+- `node tests/bootstrap/run.mjs`: fresh source copy
+  `.test-runtime/bootstrap-source-oYvVxT`, OS-only inherited environment, no private
+  `.env*`, app secrets or live database configuration. Inventory is tracked files
+  plus the explicit known bootstrap patch paths for pre-commit checks, never arbitrary
+  untracked files. Existing test isolation blocks outbound application service access.
+  Disposable PostgreSQL initializes on loopback, applies all six migrations without
+  seeding and stops gracefully after verification.
+- The wrapper ran `prisma generate`, `prisma migrate deploy` on that fresh local DB,
+  `vitest run --config tests/bootstrap/config.ts`: **67/67 passed** (40 unit,
+  27 disposable DB/CLI tests), then ESLint, Next typegen and
+  `tsc --noEmit --incremental false`: **passed**. No full production build/browser
+  suite was needed: only operator tooling/tests/docs/package script changed; runtime
+  app, auth, schema, migrations, hashing policy and dependency versions are unchanged.
+- Tests cover no-write dry-run/no apply, exact creation/zero unrelated rows,
+  existing credential login and wrong-password refusal, normalized email, password
+  bounds, unchanged repeat, wrong/partial tiers/users/customer relations, changed
+  activation/version, mismatched target/confirmation, stale plan, two concurrent
+  callers (one creation), forced SQL failure after tier inserts (full rollback),
+  missing/failed/mismatched migration history, no mail imports/calls, unmodified seed
+  production/nonlocal refusals and sanitized stdout/stderr including raw/percent-encoded
+  fictional database passwords and forbidden CLI password arguments.
+- `node --conditions=react-server --import tsx tests/bootstrap/prompt-smoke.ts`
+  in an actual Windows PowerShell TTY: **passed** two hidden fictional password
+  entries and raw-mode restoration, with no value echoed. No DB connection in this
+  terminal smoke. Automated tests also cover cancellation, EOF, timeout, backspace,
+  CRLF, mismatches, invalid lengths, non-TTY input and raw-mode setup failure.
+- First 64-test rehearsal passed but typecheck identified three test-case typing
+  errors; corrected parameter tables/literal types. Corrected 64-test run passed
+  all checks; final 67-test run adds migration/encoded-secret/refusal coverage.
+- `git diff --check` and diff/source review pass; historical security records,
+  development seed, app/SEO/auth/service code, migrations and lockfile unchanged.
+  `npm.cmd run db:bootstrap -- --help` passes without DB access. Local documentation
+  checks pass for six files, 42 relative links, new 7C anchors/code fences and
+  whitespace in all ten new source/test files.
+  No concrete legacy-client identifier is listed in PROJECT; targeted source/asset
+  inventory found none requiring cleanup. Existing Vite future config-loader notice
+  is non-blocking; no dependency changes made to suppress it.
+
+No live database/service, Preview data, Production credentials, real account,
+deployment, grants, email or client catalog/prices were accessed or changed.
+Production target/role permissions, real TLS connectivity, backups, ADMIN identity
+and login remain live operator gates. The local tests do not certify those facts.

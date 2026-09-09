@@ -4,14 +4,18 @@ Website and customer-ordering project for Big Wicks Fireworks LLC in La Porte, I
 
 ## Current status
 
-Milestones through **7A / PR #19** are merged. Milestone 7A records the
+Milestones through **7B / PR #20** are merged. Milestone 7A records the
 [production readiness audit](docs/PRODUCTION-READINESS.md) and the authoritative
 [launch/rollback runbook](docs/LAUNCH-RUNBOOK.md). Milestone 7B closes CODE-01:
 explicit homepage canonical, root/contact-only sitemap and robots reference, using
 `NEXT_PUBLIC_SITE_URL`. Focused tests and isolated production build/render checks
 pass. Verdict: **A. CODE READY — BLOCKED ON CLIENT/PRODUCTION CONFIG**. Production
 bootstrap/configuration, client data and live verification remain open; this is
-not public-launch approval. No live launch operation was performed in 7A or 7B.
+not public-launch approval. Milestone 7C completes OPS-01 tooling and disposable
+rehearsal with a separate guarded `npm run db:bootstrap`: read-only plan by default,
+explicit reviewed apply and hidden ADMIN password. It creates only two tiers and
+one ADMIN; the development seed is unchanged. Production execution remains a
+separate live gate. No live launch operation was performed in 7A, 7B or 7C.
 
 Milestones 1, 2A and 2B provide authentication, customer management and account
 setup/reset. Milestone 3A establishes Sanity product content and a private
@@ -114,6 +118,13 @@ application-level mail recipient sandbox; keep its mail key absent by default.
 Follow [the authentication setup guide](docs/AUTH.md) before using `/login`, `/admin`
 or `/portal`. No production database or real customer accounts are provisioned by
 this repository change.
+
+Initial tier/ADMIN provisioning now has a separate operator tool; use the exact
+[guarded bootstrap procedure](docs/LAUNCH-RUNBOOK.md#guarded-first-admintier-bootstrap--milestone-7c).
+It reads only process-injected DATABASE_URL, requires no AUTH_SECRET/mail secrets
+and never runs automatically during build/migrate/deploy. Do not use the development
+seed for Production. `node tests/bootstrap/run.mjs` performs disposable local
+rehearsal and lint/typecheck without reading private environment files.
 
 Sanity uses `NEXT_PUBLIC_SANITY_PROJECT_ID` and `NEXT_PUBLIC_SANITY_DATASET` for a
 public content-only dataset. Both can remain empty for local checks; `/studio`

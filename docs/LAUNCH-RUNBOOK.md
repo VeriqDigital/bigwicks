@@ -7,9 +7,11 @@ release sequence**, superseding older illustrative launch orders in project docs
 **Current verdict: A. CODE READY — BLOCKED ON CLIENT/PRODUCTION CONFIG.** Milestone
 7B (baseline `adb8fd1`, merged PR #19) closes CODE-01 with verified homepage/contact
 canonicals, the two-page sitemap and robots reference. Production configuration,
-bootstrap process, client data and live smoke evidence remain outstanding. This
+bootstrap execution, client data and live smoke evidence remain outstanding. This
 is not public-launch approval or permission to perform any production operation.
-Nothing below was executed against a live service in 7A or 7B.
+Milestone 7C (baseline `6f0d880`, merged PR #20) completes OPS-01 tooling and
+disposable-database rehearsal with the separate `db:bootstrap` command below.
+Nothing below was executed against a live service in 7A, 7B or 7C.
 
 ## Operator rules and release record
 
@@ -63,7 +65,7 @@ through PR #18; preserved resolved mapping custodian identified.
 | 0.1 Include the 7B CODE-01 completion patch in the reviewed release candidate: homepage canonical, `/` + `/contact` sitemap, robots reference. Repository verification passed; Preview protection/noindex stays a live hosting gate. | LOCAL checks; later merge/deploy separately approved | `node tests/seo/verify.mjs` verifies lint/typecheck/focused tests/build/render with a fictional HTTPS origin and no service credentials. Repeat final-domain output verification in phase 4. | Wrong origin, all-site production noindex or private sitemap route: fix before release. Code revert affects code only. |
 | 0.2 Obtain missing pricing/customer/availability/domain/recipient/public-copy decisions from readiness section 4. Agree complete or explicitly narrowed launch assortment/cohort. | None | Written independent tier prices, exact customer tiers and availability matrix; staff approves neutral/current currency wording or supplies final wording for a reviewed patch. | No implicit approval of 22 blank prices, empty Tier 1 catalog, fixture customer or guessed business fact. Hold dependent phases. |
 | 0.3 Inventory and back up original resolved 302-product mapping, approved exclusions and W515B/W515BC resolution; compare artifact checksum with custodian's approved copy. | LOCAL private copy | 302 distinct existing UUIDv4 keys, 17 approved category names, all false, correct brand/packing, no Unit Cost; verified restore of the same mapping bytes. | Missing mapping or changed/blank keys: STOP. Retrieve original, never remap the raw workbook to regenerate keys. |
-| 0.4 Prepare and rehearse the first-tier/ADMIN procedure specified in phase 2 on a newly isolated local DB. | LOCAL isolated test DB only, separately scoped | Target guard, no mail, create-only transaction, correct tiers/ADMIN, safe refusal on conflicting state, no secret output; operator and reviewer sign off. | **No current repository production-bootstrap command exists.** Do not improvise seed or execute partial SQL; hold phase 2 until the procedure is reviewed. |
+| 0.4 Include/review the 7C `db:bootstrap` tooling and its isolated rehearsal evidence. | LOCAL isolated test DB only | OPS-01 tooling/rehearsal complete: `node tests/bootstrap/run.mjs`, guarded dry-run/apply, concurrency/rollback and secret-output checks. Windows hidden-prompt smoke passed. | Production execution remains separately authorized, with confirmed target/ADMIN, backups, permissions and reviewed dry-run. Never improvise seed or repair partial state. |
 | 0.5 Recheck release advisory inventory and candidate tests. | LOCAL + public advisory READ | No reachable critical/high runtime regression; exact committed lock and Node 24.x candidate. | Stop on credible regression; bounded patch/recheck, never `npm audit fix --force`. |
 | 0.6 Rehearse restore and first-day manual order/invitation recovery with isolated fictional data. | LOCAL or explicitly authorized isolated service | Named owners can recover artifacts/DB and reconcile saved orders without duplicate sends. | No tested restore or staff coverage: hold production writes/customer release. |
 
@@ -168,40 +170,131 @@ SELECT COUNT(*) AS customer_count FROM "Customer";
 SELECT COUNT(*) AS account_token_count FROM "AccountToken";
 SELECT COUNT(*) AS price_count FROM "ProductPrice";
 SELECT COUNT(*) AS order_count FROM "Order";
+SELECT COUNT(*) AS order_item_count FROM "OrderItem";
+SELECT COUNT(*) AS limiter_count FROM "LoginRateLimit";
+SELECT u.email, u.role, u.active, u."sessionVersion",
+       u."passwordHash" IS NOT NULL AS password_present,
+       NOT EXISTS (SELECT 1 FROM "Customer" c WHERE c."userId" = u.id) AS no_customer
+FROM "User" u;
 ```
 
-### Required first-ADMIN/tier procedure — currently an open gate
+### Guarded first-ADMIN/tier bootstrap — Milestone 7C
 
-The only repository writer creating ADMIN or initial tiers is `prisma/seed.ts`.
-It creates `admin@example.test` and two fictional customers and refuses normal
-production use. **It is not a production process and must not be adapted at the
-terminal by disabling guards.** Migrations create tables, not required tier rows.
-Customer creation/import cannot create an ADMIN; public reset/setup excludes ADMIN.
+`npm run db:bootstrap` runs `scripts/production/bootstrap.ts` under Node 24 with
+the server-only condition. It is separate from the unchanged development seed and
+is never run by install, build, migrations or deployment. It does not migrate,
+modify grants, call Sanity, issue tokens or send email. Production execution has
+**not occurred** and requires its own authorization after phases 0–2 prerequisites.
 
-The reviewed provisioning procedure must:
+Use a clean operator process and the reviewed checkout. Securely inject only the
+intended operator `DATABASE_URL`; the tool does **not load `.env*` files**. No
+AUTH_SECRET, AUTH_URL, Resend key, sender, seed variable or password env variable
+is needed. Do not use a shell transcript/debugger that records secret keystrokes,
+dump environment variables, or put secrets in command arguments/history. Obtain the
+real ADMIN email from the owner; there is no default or fixture fallback.
 
-1. Take explicit expected production target and operator acknowledgment; verify
-   actual target separately. Read a confirmed normalized ADMIN email and a
-   user-chosen or securely generated unique 15–128-character password via hidden
-   prompt/secret manager, never CLI argument, hardcoded default or logged env dump.
-2. Hash using existing `lib/auth/password.ts` Argon2id policy (19 MiB, two iterations,
-   one lane, random salt), before transaction; do not print the hash.
-3. In one transaction recheck expected initial state and create the approved unique
-   PricingTier rows (rank/name 1/Tier 1, 2/Tier 2 if that remains the signed mapping)
-   and ADMIN User (active true, sessionVersion 0, no Customer association). Use
-   generated Prisma IDs/timestamps. Reject conflicting existing rows; do not upsert
-   over an existing password, role, tier or active flag. A repeated invocation must
-   safely refuse or verify the already-completed result without altering it.
-4. Return only nonsecret counts/status; disconnect; perform independent readback.
-   Never import Preview SQL, create fake customers, create AccountTokens or send mail.
-5. For later ADMIN recovery, require owner identity verification and a backup,
-   update secure hash and increment sessionVersion in a reviewed transaction;
-   invalidate outstanding account tokens, retain authorized role and no Customer
-   association. No public/admin UI recovery tool is currently available.
+The URL must explicitly name PostgreSQL host, port (default 5432), database, user
+and password. The database is a single unescaped 1–63-character identifier using
+letters/digits/underscore/dot/hyphen; schema is strictly `public`. The only supported
+query parameter is a single `sslmode`. Remote hosts require `require` or `verify-full`;
+both use certificate/hostname verification (`rejectUnauthorized: true`). Loopback
+may omit TLS or use `disable` solely for disposable local rehearsals. Use a
+provider-approved direct operator connection; unsupported options, encoded database
+paths, socket/multi-host targets, query overrides and ambiguous parsing refuse.
+Do not bypass provider security requirements by blindly stripping options, and do
+not disguise a production connection as loopback through a tunnel. Parsed identity
+cannot prove business intent; independently verify provider branch/database before
+any command. CLI `--expected-host` uses the displayed lowercase hostname.
 
-This is the acceptance specification, **not an existing executable command**.
-Until implemented/reviewed/rehearsed or replaced by a signed equivalent DBA
-procedure, phase 2.4 remains STOP. Do not imply `db:deploy` completes bootstrap.
+Both inspection and apply require all target acknowledgements. The tool prints
+only host/port/database/schema/TLS and the exact confirmation string before checking
+the supplied acknowledgements. The examples are placeholders, **not executable
+production authorization**. `ADMIN_EMAIL` must be replaced with the approved identity.
+
+Read-only plan (no password prompt/hash, zero writes):
+
+```text
+npm run db:bootstrap -- --expected-host HOST --expected-port PORT --expected-database DB --admin-email ADMIN_EMAIL --allow-production --confirm HOST:PORT/DB
+```
+
+Inspect the displayed target, normalized email, counts and creation plan. A ready
+plan proposes only `Tier 1` / rank 1, `Tier 2` / rank 2 and one active ADMIN with
+sessionVersion 0 and no Customer relation. Each per-product price is still supplied
+independently later. Save/review the plan hash in the restricted release ledger.
+
+After separate approval of that exact plan, apply:
+
+```text
+npm run db:bootstrap -- --expected-host HOST --expected-port PORT --expected-database DB --admin-email ADMIN_EMAIL --allow-production --confirm HOST:PORT/DB --apply REVIEWED_SHA256
+```
+
+Apply first repeats inspection and checks the hash, then requires an interactive
+TTY and two matching hidden password entries (15–128 characters). Native Node raw
+input disables echo; no visible readline fallback, CLI password option, password
+artifact or environment password is provided. Backspace works; Ctrl+C/control
+input, EOF, mismatched entries, timeout or unavailable raw mode refuse and restore
+terminal mode. No DB transaction is held while awaiting input. Hashing uses only
+the central `lib/auth/password.ts` Argon2id helper before the write transaction.
+See [Node 24 TTY behavior](https://nodejs.org/docs/latest-v24.x/api/tty.html).
+
+Inspection runs in a read-only repeatable-read transaction. All eight application
+tables and migration history must be accessible; the six checked-in migrations must be finished, without
+failed/rolled-back/extra records, with matching SQL checksums (LF/CRLF equivalents
+accepted). A missing schema/history, unexpected data or drift refuses. This checks
+migration identity and required table/field access, not every possible privileged
+schema change; retain phase 2.3's independent schema/constraint review.
+
+The SHA-256 plan binds `big-wicks/initial-bootstrap/v1`, host/port/database/public
+schema/TLS, normalized email, intended tier names/ranks and ADMIN role/active/version,
+observed state fingerprint and migration identities/checksums. It contains no
+password, password hash, URI or credentials and is an exact-review check, not an
+authentication token. Apply re-reads it under locks; changed/unexpected state refuses.
+
+The write uses one READ COMMITTED transaction with SHARE ROW EXCLUSIVE locks on
+`_prisma_migrations`, User, Customer, PricingTier, ProductPrice, AccountToken, Order,
+OrderItem and LoginRateLimit, in that order. These self-conflicting locks serialize
+bootstrap callers and block competing writes while allowing normal reads. Fresh
+reads after lock acquisition avoid using a snapshot taken before another caller
+committed. Lock wait is limited to five seconds, transaction to 15 seconds; failures
+are not automatically retried. After two tier inserts and one ADMIN insert, full
+postconditions are checked before commit and read back independently afterward.
+See [PostgreSQL locking semantics](https://www.postgresql.org/docs/18/sql-lock.html).
+
+Use migration/operator credentials for migrations and separately approved
+bootstrap/operator credentials for bootstrap. Inspection requires SELECT on all
+listed tables; apply also needs INSERT on User/PricingTier and sufficient privilege
+for the table lock mode on every listed table (ownership or, on supported PostgreSQL,
+MAINTAIN/UPDATE/DELETE/TRUNCATE privilege). A role with only SELECT/INSERT cannot
+take these locks. The tool does not grant privileges; a DBA must approve and verify
+them. Keep normal runtime credentials least-privileged and remove operator access
+from the application environment after the operation.
+
+Expected readback: exactly the two tiers and one supplied active ADMIN, version 0,
+Argon2id password present (never printed), no Customer relation. Customer users,
+Customer, ProductPrice, AccountToken, Order, OrderItem and LoginRateLimit counts must
+all be zero. The CLI prints safe counts/status and emailsSent 0 after creation.
+Run the read-only command again and independently check the SQL counts above before opening
+the app. Real Production login smoke remains phase 8, separately authorized.
+
+Recovery is deliberately narrow:
+
+- Unexpected or partial state: STOP and investigate; no repair, upsert, deletion,
+  tier rename/rank change, activation or CUSTOMER-to-ADMIN conversion.
+- SQL failure before commit: transaction rolls back; dry-run and verify state first.
+- Lost connection/result around commit: outcome is uncertain; dry-run first, never
+  blindly reapply. A post-commit readback failure does not prove rollback.
+- Exact completed state: `already-complete`, exit 0, no writes or password prompt.
+  Requires only the two exact tiers, exactly the supplied active ADMIN with version
+  0/Argon2id hash/no Customer, and all other listed counts zero. A concurrent loser
+  may report this or safely refuse changed/locked state; it never overwrites.
+- Subsequent activity, changed ADMIN state, extra tiers/users or partial completion:
+  refuse. This tool is only for initial bootstrap, not ongoing account maintenance.
+- Lost ADMIN password later: separate owner-verified recovery with backup, a reviewed
+  password-hash update and sessionVersion increment/token invalidation. Public ADMIN
+  reset remains unsupported; bootstrap cannot reset a password.
+
+OPS-01 **tooling/rehearsal is complete**. Actual production target/ADMIN confirmation,
+backups, permissions, dry-run review and execution authorization remain live gates.
 
 ## Phase 3 — Production Sanity catalog import, all unavailable
 
@@ -501,7 +594,6 @@ the incident owner determines necessary notifications. This runbook authorizes n
 **Any unresolved required checkbox = NO-GO for the dependent release phase.**
 Controlled infrastructure/bootstrap preparation may precede full client pricing
 only with its own scoped approval and closed safety gates; it is not public-launch
-approval. After 7B's CODE-01 closure, review/rehearse the guarded tier/ADMIN
-bootstrap process while collecting missing client
-inputs. Then request a separately scoped production infrastructure/configuration
+approval. After 7C's OPS-01 tooling/rehearsal closure, collect missing client
+inputs and obtain a separately scoped production infrastructure/configuration
 verification task, followed by authorized bootstrap when its gates pass.
