@@ -7,8 +7,9 @@
 **Optimize for:**  
 Close the gates documented by Milestone 7A's [production readiness audit](PRODUCTION-READINESS.md)
 using the [authoritative launch runbook](LAUNCH-RUNBOOK.md). Milestones through
-7A / PR #19 are merged; 7B closes CODE-01. Preserve completed SEC-03, REL-01 and
-SEC-04 fixes; client/production configuration and operational gates remain open.
+7B / PR #20 are merged; CODE-01 is closed and 7C completes OPS-01 tooling/rehearsal.
+Preserve SEC-03, REL-01 and SEC-04 fixes. Production bootstrap execution and the
+client/configuration/remaining operational gates still need separate authorization/evidence.
 
 **Waiting on:**
 
@@ -28,6 +29,40 @@ SEC-04 fixes; client/production configuration and operational gates remain open.
 ---
 
 ## Decision log
+
+### 2026-09-08 — Milestone 7C guarded initial tier/ADMIN bootstrap
+
+**Source:** User's OPS-01 tooling request; clean `Milestone-7C` and fetched main
+at `6f0d880`, merged PR #20. No permission to connect to live environments.
+
+**Decision:** Add a separate operator `db:bootstrap`; preserve the development seed.
+Default read-only plan and explicit apply both require expected host/port/database,
+exact parsed-target confirmation and `--allow-production`. Apply binds a SHA-256
+reviewed plan to target/schema/TLS, normalized email, two exact tiers, ADMIN state,
+observed state fingerprint and migration identity. No new permanent env controls:
+only process-injected DATABASE_URL, without `.env` loading. No auth/mail secrets.
+
+Use two hidden native Node TTY entries and the existing Argon2id helper. Re-read
+initial state under PostgreSQL SHARE ROW EXCLUSIVE table locks at READ COMMITTED;
+create two tiers and one active ADMIN/version 0/no Customer in one transaction.
+Require all other tables empty, including LoginRateLimit. These brief locks protect
+against concurrent operators and other writers; the operator needs approved lock
+privileges as documented in the runbook. No advisory-only cooperation assumption.
+
+Exact completed bootstrap is read-only, without password reset or prompt. Partial,
+different or subsequently used state refuses. Lost-result recovery starts with a
+dry-run; later ADMIN password recovery remains a separate reviewed procedure with
+sessionVersion increment. No seed, email/token/customer/catalog/price work is added.
+
+**Outcome:** OPS-01 tooling/rehearsal complete: 67 unit/disposable PostgreSQL tests,
+lint/typecheck and actual Windows hidden-terminal smoke pass. All six migrations
+were applied only to fresh local test clusters; no seed needed. Full evidence is in
+[the 7C verification record](PRODUCTION-READINESS.md#7c-guarded-bootstrap-and-checks-actually-run).
+Readiness remains **A. CODE READY — BLOCKED ON CLIENT/PRODUCTION CONFIG**.
+Production target/ADMIN approvals, backups, permissions, reviewed plan and execution
+authorization remain open. No merge, deployment, live service access or real email.
+
+---
 
 ### 2026-09-08 — Milestone 7B public SEO acceptance completion
 

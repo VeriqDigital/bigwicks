@@ -213,6 +213,33 @@ passwords. Repeated seeds preserve existing passwords, status, role and tiers.
 Turn off the seed opt-in after use. Never seed a production database through a tunnel.
 Real production provisioning remains a separately authorized release task.
 
+## Initial production ADMIN and tiers — Milestone 7C
+
+`npm run db:bootstrap` is a separate one-shot operator CLI. The development seed
+and its production/local-host guards are unchanged. Build/install/migrate/deploy
+never invoke bootstrap. The exact command, acknowledgements, permissions and
+recovery sequence are in [runbook phase 2](LAUNCH-RUNBOOK.md#guarded-first-admintier-bootstrap--milestone-7c).
+
+Default inspection is read-only; apply requires a reviewed SHA-256 plan, expected
+host/port/database, exact confirmation and `--allow-production`. DATABASE_URL comes
+only from the operator process, with no `.env` loading. No AUTH_SECRET/AUTH_URL/mail
+configuration is needed. The operator supplies the approved email, normalized with
+the existing login schema plus control-character rejection, and confirms a hidden
+15–128-character password twice in an interactive terminal. The existing Argon2id
+helper remains the sole hashing policy; no password argument/env fallback exists.
+
+It creates exactly Tier 1/rank 1, Tier 2/rank 2 and one supplied ADMIN (active,
+sessionVersion 0, password hash set, no Customer). It creates no customers, prices,
+tokens, orders, order items, limiter rows or email. A locked transaction rechecks
+the reviewed state and verifies postconditions, followed by read-only readback.
+Exact prior completion causes no writes; any partial/unexpected or subsequently
+used state refuses. Bootstrap is not ADMIN password recovery. Direct credential
+login uses the supplied password; real-domain login is a later authorized smoke.
+
+`node tests/bootstrap/run.mjs` rehearses on newly initialized disposable PostgreSQL
+with sanitized configuration; it does not use Preview/Production. Tooling and local
+rehearsal are complete; no production ADMIN/tier bootstrap has been executed.
+
 ## Milestone 2A: admin customer management
 
 Staff can open `/admin/customers`, create a customer at `/admin/customers/new`,
