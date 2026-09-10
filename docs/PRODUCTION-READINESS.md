@@ -12,6 +12,18 @@ Milestone **7C update, 2026-09-08**: starts at merged PR #20, `6f0d880`, matchin
 fetched `origin/main`. OPS-01 tooling and disposable-database rehearsal are complete;
 actual production bootstrap execution remains a separately authorized live gate.
 
+Milestone **7D update, 2026-09-08**: refreshed `main` / `origin/main` at `7b4fa65`
+(merged PR #21). [PRODUCTION-CONFIGURATION.md](PRODUCTION-CONFIGURATION.md) is now
+the authoritative environment/target sheet and live verification ledger. Its
+manifest/review is complete; CONFIG-01/02 and OPS-02 remain open. No live provider
+settings were authenticated/verified. Local link/configuration metadata identifies
+candidate Vercel `bigwicks` and a pooled Neon connection with an unsupported
+bootstrap `channel_binding` option. Local operator credential cleanup remains required;
+exact endpoint/account/role and credential-presence evidence belongs in the private
+launch ledger, not public documentation.
+These are local observations, not Production identities or Vercel scope evidence.
+No live SQL, Sanity content, migration/bootstrap/import, mail, deploy or DNS change.
+
 ## 1. Executive assessment
 
 **A. CODE READY — BLOCKED ON CLIENT/PRODUCTION CONFIG.** Milestone 7B resolves
@@ -59,7 +71,7 @@ schema, reader and importer were reviewed. No private `.env` values appear here.
 | ID / class | Open item | Gate and evidence required to close |
 | --- | --- | --- |
 | CODE-01 — A. Code — **RESOLVED in 7B** | Homepage canonical `/`; `app/sitemap.ts` contains only `/` and `/contact`; robots references the sitemap. | Nine focused tests, lint, typecheck, isolated production build and rendered checks pass with fictional `https://www.example.test`. Existing noindex/disallows preserved. Release candidate must include this patch; actual Production origin and Preview indexing remain CONFIG-01/02 gates. |
-| CONFIG-01 — B. Production configuration | SQL, Sanity, auth secrets, URL origins, mail and environment scopes not live-verified. | Before any production write: signed target/config matrix with distinct environment identities, least-privilege credentials and approved production origin. |
+| CONFIG-01 — B. Production configuration | SQL, Sanity, auth secrets, URL origins, mail and environment scopes not live-verified. 7D supplies the [target matrix and ledger](PRODUCTION-CONFIGURATION.md), not live sign-off. | Before any production write: signed target/config matrix with distinct environment identities, least-privilege credentials and approved production origin. |
 | CONFIG-02 — B | Production HTTPS/domain, Preview protection/noindex, ingress headers, action durations and mail authentication not verified. | Before exposure/mail: real-domain smoke checks, provider settings and DNS evidence. A successful local build is insufficient. |
 | DATA-01 — C. Client data | Tier 1 missing, 22 Tier 2 unresolved; no approved launch assortment/tier coverage. | Before enabling products/inviting affected customers: complete independent prices for their approved assortment, or explicit client approval of a narrower assortment/cohort. |
 | DATA-02 — C | Customer identities/numbers/tiers/active flags, ADMIN identity, recipients, currency, availability, public facts/deals and domain confirmation missing. | Obtain recorded client decisions, not inferred values. Images/descriptions block only if required by the approved content standard. |
@@ -100,6 +112,12 @@ Preview / Production. `R` = required for intended functionality; `C` = condition
 services; that does not make service configuration optional for launch.
 
 ### Application and operator variables
+
+The D/P/V entries below describe tool applicability as well as application usage.
+They do **not** authorize operator variables in Vercel app scopes. The
+[7D operator policy](PRODUCTION-CONFIGURATION.md#operator-only-credentials) requires
+Sanity tokens/import controls absent from all Vercel application environments.
+Actual identities, presence checks and pending sign-offs belong to the 7D sheet.
 
 | Exact variable | Exposure / secret | D / P / V | Shape, purpose, phase and consumer | Missing/incorrect behavior; environment crossing |
 | --- | --- | --- | --- | --- |
@@ -747,3 +765,46 @@ No live database/service, Preview data, Production credentials, real account,
 deployment, grants, email or client catalog/prices were accessed or changed.
 Production target/role permissions, real TLS connectivity, backups, ADMIN identity
 and login remain live operator gates. The local tests do not certify those facts.
+
+### 7D configuration manifest and checks actually run
+
+2026-09-08: documentation-only change in five files: new
+[PRODUCTION-CONFIGURATION.md](PRODUCTION-CONFIGURATION.md), this readiness record,
+LAUNCH-RUNBOOK, DECISIONS and PROJECT. App/auth/DB/Sanity/mail/bootstrap code,
+dependencies, `.env.example` and private configuration files are unchanged.
+
+- `git fetch origin main`, `git switch main`, `git merge --ff-only origin/main`
+  (already up to date), `git rev-parse HEAD origin/main`: both `7b4fa65`, merged
+  PR #21. Initial fetch was sandbox-denied; approved retry completed. No merge
+  commit, push or remote repository mutation was made.
+- Read project/configuration/operator code, six migrations, installed Next.js
+  environment/maxDuration guidance and installed Auth.js/pg cookie/TLS behavior.
+  Sanity best-practices guidance informed the existing integration review; no
+  architecture rewrite. No authenticated provider inspection surface was available
+  in this session; workstation credential inventories are excluded from public docs.
+- Local configuration was inspected in memory without loading it into process
+  configuration. Exact local infrastructure and credential-presence evidence belongs
+  in the private launch ledger; public documentation retains operational conclusions.
+  No credential validity test, live SQL query,
+  bootstrap dry-run, catalog audit or provider account/content query was performed.
+- Official Vercel, Neon/PostgreSQL, node-postgres, Sanity and Resend documentation
+  researched on the audit date; supporting URLs accompany the manifest's procedures.
+  Neon Markdown documentation was fetched directly after the web reader could not
+  parse it. Public research verifies guidance only, not account settings or retention.
+- `npm.cmd run lint`: **passed**. In-memory relative-link/anchor/code-fence checks
+  across the five changed documents: **passed**. `git diff --check`: **passed**;
+  the new untracked manifest was separately checked for whitespace/final newline.
+  A preliminary whole-file whitespace check flagged existing Markdown hard breaks
+  in DECISIONS; these intentional pre-existing lines were preserved.
+- Secret-exclusion checks compared the five documents in memory with local secret
+  values/encoded forms and DB password, emitting only pass/fail counts: **passed**.
+  Credential-shaped text check passed. No actual secret appears in the patch.
+- Diff reviewed for scope; PROJECT lists no concrete legacy-client identifiers to
+  search. Tracked source/asset identity inventory found no task-related residue.
+  No application UI changed; responsive/browser smoke, typecheck, production build
+  and large security/order suites were not rerun for this documentation-only task.
+
+7D completes the manifest/manual verification definition, **not** production
+configuration. No live mutation, migration, bootstrap, import, email, deployment,
+DNS/domain action, grant change or provider login occurred. Next action is the
+read-only owner/dashboard target review in the manifest; live gates remain open.
