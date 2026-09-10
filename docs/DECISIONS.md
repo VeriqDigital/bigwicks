@@ -7,7 +7,9 @@
 **Optimize for:**  
 Close the gates documented by Milestone 7A's [production readiness audit](PRODUCTION-READINESS.md)
 using the [authoritative launch runbook](LAUNCH-RUNBOOK.md). Milestones through
-7B / PR #20 are merged; CODE-01 is closed and 7C completes OPS-01 tooling/rehearsal.
+7C / PR #21 are merged; CODE-01 is closed and 7C completes OPS-01 tooling/rehearsal.
+7D provides the [Production target sheet](PRODUCTION-CONFIGURATION.md); its live
+dashboard ledger remains open and is the next operational action.
 Preserve SEC-03, REL-01 and SEC-04 fixes. Production bootstrap execution and the
 client/configuration/remaining operational gates still need separate authorization/evidence.
 
@@ -29,6 +31,44 @@ client/configuration/remaining operational gates still need separate authorizati
 ---
 
 ## Decision log
+
+### 2026-09-08 — Milestone 7D Production configuration manifest
+
+**Source:** User's strict read-only infrastructure/configuration request; refreshed
+`main` / `origin/main` at `7b4fa65`, merged PR #21.
+
+**Decision:** Make [PRODUCTION-CONFIGURATION.md](PRODUCTION-CONFIGURATION.md) the
+single environment/launch target sheet, with provider access classification,
+Development/Preview/Production matrix, exact manual checks, evidence/verifier/phase
+ledger, credential roles, backup/restore and hard STOP gates. Preserve working app,
+bootstrap parser and release order. No provider mutation or application data query.
+
+**Findings:** No authenticated provider connector/browser session or explicitly
+authorized read-only Production SQL connection was available. Sanitized local
+inspection identifies candidate Vercel project `bigwicks`; local Neon URL uses a
+pooled host, `neondb_owner` role and `channel_binding=require`; local `.env` contains
+a Sanity write token and `sim96pgy/development`. These findings do not certify live
+provider targets/scopes. No secret value was printed or copied; private files were
+left unchanged. Final domain, Production SQL/Sanity targets and mail identities
+remain unconfirmed.
+
+**Policy:** Runtime least privilege is separate from temporary migration/bootstrap
+operator capability. Bootstrap table locks require privileges on all nine tables,
+not just SELECT/INSERT on tiers/users. Obtain a provider-issued direct connection
+with approved certificate/hostname verification; mandatory unsupported security
+options block execution. Preview has no recipient sandbox: mail key absent by
+default, no real customer data. Operator import credentials/flags never persist in
+Vercel app scopes. Local write-token cleanup is an explicit future operator item.
+Production must be built with Production NEXT_PUBLIC values; verify any promotion
+actually creates the correct Production build.
+
+**Outcome:** 7D manifest and verification plan complete; **A. CODE READY — BLOCKED
+ON CLIENT / PRODUCTION CONFIG** remains. CONFIG-01/02 and OPS-02 are not closed.
+Next: operator/client read-only dashboard target review and safe ledger sign-off,
+then separately scoped configuration/provisioning work. No deploy, live mutation,
+SQL/content inspection, import or email; no production readiness claim.
+
+---
 
 ### 2026-09-08 — Milestone 7C guarded initial tier/ADMIN bootstrap
 

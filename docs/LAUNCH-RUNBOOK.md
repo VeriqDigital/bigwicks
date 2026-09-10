@@ -13,6 +13,13 @@ Milestone 7C (baseline `6f0d880`, merged PR #20) completes OPS-01 tooling and
 disposable-database rehearsal with the separate `db:bootstrap` command below.
 Nothing below was executed against a live service in 7A, 7B or 7C.
 
+Milestone **7D**, baseline `7b4fa65` (merged PR #21), completes the
+[Production configuration manifest](PRODUCTION-CONFIGURATION.md) and read-only
+verification plan. That file is the authoritative target sheet; this runbook
+remains the release sequence. Live targets, scopes, backups and owners are still
+unverified. No live operation was executed in 7D. Before any write, close the
+applicable target-sheet ledger entries; documentation completion is not approval.
+
 ## Operator rules and release record
 
 Obtain separate authorization for the exact target, release window, deployment,
@@ -106,6 +113,12 @@ pricing is pending, but no dependent customer-release gate is waived by doing so
 
 Prerequisite: phase 0 approvals for infrastructure, owners and exact target names.
 Production catalog/prices remain absent and no real customer mail may run.
+
+First complete the [7D live verification ledger](PRODUCTION-CONFIGURATION.md#unverified-live-items)
+read-only: intended project/branch/domain/roles, Preview isolation and recovery
+evidence. Unknown existence is not NOT PROVISIONED until verified. Record necessary
+configuration changes for separate authorization; do not execute table steps merely
+because this manifest exists. Migrate/bootstrap credentials stay outside Vercel.
 
 | Step / action | Mutation | Expected result and verification | STOP / recovery |
 | --- | --- | --- | --- |
@@ -205,6 +218,20 @@ Do not bypass provider security requirements by blindly stripping options, and d
 not disguise a production connection as loopback through a tunnel. Parsed identity
 cannot prove business intent; independently verify provider branch/database before
 any command. CLI `--expected-host` uses the displayed lowercase hostname.
+
+The local URI inspected in 7D has a pooled endpoint and `channel_binding=require`;
+it is not an approved operator target and the bootstrap parser rejects that shape.
+Follow the [7C connection compatibility procedure](PRODUCTION-CONFIGURATION.md#7c-connection-compatibility)
+to obtain a provider-issued direct target and review certificate-verified TLS
+requirements. Mandatory channel binding/custom certificate options remain a STOP
+until supported by separately reviewed work. Never test connectivity with bootstrap
+inspection during an identity-only infrastructure audit.
+
+Use the [exact database role requirements](PRODUCTION-CONFIGURATION.md#database-roles):
+bootstrap applies SHARE ROW EXCLUSIVE locks to all nine inspected tables, including
+`_prisma_migrations`. SELECT plus INSERT alone is insufficient; the operator needs
+the version-appropriate lock privilege/ownership on each table. Runtime must not
+inherit this operator capability or object ownership.
 
 Both inspection and apply require all target acknowledgements. The tool prints
 only host/port/database/schema/TLS and the exact confirmation string before checking
@@ -594,6 +621,7 @@ the incident owner determines necessary notifications. This runbook authorizes n
 **Any unresolved required checkbox = NO-GO for the dependent release phase.**
 Controlled infrastructure/bootstrap preparation may precede full client pricing
 only with its own scoped approval and closed safety gates; it is not public-launch
-approval. After 7C's OPS-01 tooling/rehearsal closure, collect missing client
-inputs and obtain a separately scoped production infrastructure/configuration
-verification task, followed by authorized bootstrap when its gates pass.
+approval. After 7C's OPS-01 tooling/rehearsal and 7D's configuration-manifest
+completion, collect missing client inputs and complete the target sheet's pending
+read-only dashboard checks. Separately authorize necessary infrastructure changes,
+then migration/bootstrap only when their live gates pass.
