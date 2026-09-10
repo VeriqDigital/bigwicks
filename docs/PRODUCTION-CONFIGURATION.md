@@ -12,10 +12,14 @@ This is the authoritative environment/launch target sheet. The
 [readiness inventory](PRODUCTION-READINESS.md#5-authoritative-environmentconfiguration-inventory)
 defines variable consumers; the [launch runbook](LAUNCH-RUNBOOK.md) defines phase
 order and authorization. Historical audit evidence is not current provider evidence.
+This public sheet records requirements and conclusions. Exact endpoint, database,
+role, provider account IDs and credential-presence evidence belong only in the
+private launch ledger, never in public Git documentation. Keep secret values in
+the secret manager, not either ledger.
 
 No deployment, provider setting/DNS change, SQL query/mutation, migration,
 bootstrap (including plan), Sanity document read/write, import or email was executed.
-Local configuration was parsed in memory with allowlisted identity/presence output;
+Local configuration was reviewed without changing it;
 no secret value was printed, copied into documentation or written to a new file.
 
 Status vocabulary:
@@ -33,75 +37,70 @@ Status vocabulary:
 A = safely read and verified now; B = authenticated but no suitable safe read;
 C = authenticated access not established/available here; D = operator dashboard
 verification required. No provider qualifies for A or proven B in this session.
-Local credential presence does not establish authentication or production intent.
+Local configuration does not establish authentication or production intent.
 
 | Provider | Classification | Evidence / restriction | Next safe check |
 | --- | --- | --- | --- |
-| Vercel | C; D required | No provider connector, browser session, PATH CLI or injected token. Local repo link only. | V1–V5 below; do not log in on the user's behalf. |
+| Vercel | C; D required | No authenticated provider inspection was available. Candidate local project link only. | V1–V5 below; do not log in on the user's behalf. |
 | Neon/PostgreSQL | C; D required | Local URI exists, but role permissions, branch and intent are unknown. No explicitly supplied read-only Production connection; no SQL executed. | D1–D4, R1 and B1 below. |
-| Sanity | C; D required | Local write-token presence only; validity/scope not tested. No authenticated metadata connector/session. | S1–S3; do not use the write token merely to discover access. |
-| Resend | C; D required | No injected/local mail key in inspected scopes and no provider connector/session. | M1–M4. |
+| Sanity | C; D required | Authentication and credential scope were not verified; no authenticated metadata inspection was available. | S1–S3; do not use operator write credentials merely to discover access. |
+| Resend | C; D required | No authenticated provider inspection was available; mail configuration remains unverified live. | M1–M4. |
 | DNS/registrar | C; D required | Provider and final domain unknown; no provider connector/session. | N1–N3 after client domain approval. |
 
-`cua.getState()` returned no browsers/apps. `where.exe` found no Vercel, Neon,
-Sanity, psql or gh CLI on PATH (this does not assert no package exists elsewhere).
-Presence-only checks found no credentials at the inspected conventional Vercel,
-Sanity and Neon CLI configuration locations. No interactive login, installation,
-account connection, env pull/export, broad account search or credential dump occurred.
+No authenticated provider inspection surface was available for 7D. No interactive
+login, installation, account connection, env pull/export or credential dump occurred.
+Workstation credential inventories are excluded from this public record.
 
 ## Environment matrix
 
-`LOCAL-DB` below is an observed **local configuration**, not an approved environment:
-host `ep-falling-morning-avhben8d-pooler.c-11.us-east-1.aws.neon.tech`, port `5432`,
-database `neondb`, role `neondb_owner`. Its Neon project/branch are `[CONFIRM]`.
-Do not assign it to Preview or Production from its name, region, or past data counts.
+A local Neon pooled connection was observed. Its actual Development/Preview/
+Production purpose remains unconfirmed. Exact endpoint/database/role evidence must
+be maintained in the private launch ledger. Do not assign it to an environment
+from its name, region or past data counts. Local configuration is not live evidence.
 
 | Item | DEVELOPMENT | PREVIEW | PRODUCTION |
 | --- | --- | --- | --- |
 | Vercel project/environment | Local work; Vercel Development scope `[CONFIRM]`, LIVE DASHBOARD CHECK REQUIRED | Candidate `bigwicks` / Preview; LIVE DASHBOARD CHECK REQUIRED | Candidate `bigwicks` / Production; USER CONFIRMATION REQUIRED + LIVE DASHBOARD CHECK REQUIRED |
 | Git branch/source | VERIFIED local baseline `main` / `7b4fa65`; working branches thereafter | Actual preview branches/PR triggers `[CONFIRM]`, LIVE DASHBOARD CHECK REQUIRED | Intended production branch `[CONFIRM]`; `main` is source baseline, not proof of Vercel setting |
 | Public hostname | VERIFIED template `http://localhost:3000`; actual local origin NOT CONFIGURED in inspected env files | Exact deployment/custom origin `[CONFIRM]`, LIVE DASHBOARD CHECK REQUIRED | DOMAIN UNCONFIRMED; canonical HTTPS origin `[CONFIRM]` |
-| DATABASE target identity | VERIFIED local `LOCAL-DB`; intended isolated development target USER CONFIRMATION REQUIRED | Provider/project/host/port `[CONFIRM]`, LIVE DASHBOARD CHECK REQUIRED | Provider/project/host/port `[CONFIRM]`, LIVE DASHBOARD CHECK REQUIRED |
-| PostgreSQL branch/database | Branch `[CONFIRM]`; local database `neondb` | Branch/database `[CONFIRM]`; separate from Production | Branch/database `[CONFIRM]`; no provisioning claim |
-| Runtime DB role | Local role string `neondb_owner`; actual grants unknown | Role `[CONFIRM]`, isolated least privilege | Role A `[CONFIRM]`, least privilege; never operator credential |
+| DATABASE target identity | Local pooled connection observed; intended isolated development target USER CONFIRMATION REQUIRED | Provider/project/host/port `[CONFIRM]`, LIVE DASHBOARD CHECK REQUIRED | Provider/project/host/port `[CONFIRM]`, LIVE DASHBOARD CHECK REQUIRED |
+| PostgreSQL branch/database | Intended branch/database `[CONFIRM]`; exact local evidence is private | Branch/database `[CONFIRM]`; separate from Production | Branch/database `[CONFIRM]`; no provisioning claim |
+| Runtime DB role | Role `[CONFIRM]`; actual grants unknown; exact local role evidence is private | Role `[CONFIRM]`, isolated least privilege | Role A `[CONFIRM]`, least privilege; never operator credential |
 | Migration/bootstrap role | Dedicated disposable/local operator `[CONFIRM]` | Separate nonproduction operator `[CONFIRM]`; not Vercel app config | B/C operator identity `[CONFIRM]`; direct target, temporary access |
-| AUTH_SECRET identity/separation | NOT CONFIGURED in inspected process/files; independent local secret required for auth/contact | Separate secret-manager record/version `[CONFIRM]`; LIVE DASHBOARD CHECK REQUIRED | Unique >=32-character secret; record/version `[CONFIRM]`; LIVE DASHBOARD CHECK REQUIRED |
+| AUTH_SECRET identity/separation | Independent local secret required for auth/contact; configuration evidence is private | Separate secret-manager record/version `[CONFIRM]`; LIVE DASHBOARD CHECK REQUIRED | Unique >=32-character secret; record/version `[CONFIRM]`; LIVE DASHBOARD CHECK REQUIRED |
 | AUTH_URL | NOT CONFIGURED locally; template localhost origin only | Exact Preview HTTPS origin `[CONFIRM]`; never Production | Exact canonical HTTPS origin `[CONFIRM]` |
 | NEXT_PUBLIC_SITE_URL | NOT CONFIGURED locally; template localhost origin only | Exact Preview origin `[CONFIRM]`, baked into its build | Same origin as AUTH_URL `[CONFIRM]`, baked into Production build |
 | Sanity project ID | VERIFIED local `sim96pgy`; known nonproduction identity | Known nonproduction candidate `sim96pgy`; actual Preview binding LIVE DASHBOARD CHECK REQUIRED | `[CONFIRM]`, USER CONFIRMATION REQUIRED |
 | Sanity dataset | VERIFIED local `development`; user-confirmed nonproduction catalog | Candidate `development`; actual Preview binding LIVE DASHBOARD CHECK REQUIRED | `[CONFIRM]`; never assume `production` or reuse `development` |
-| Resend enabled/key | NOT CONFIGURED in inspected process/files; local internal tests only after approval | Key MUST BE ABSENT by default; LIVE DASHBOARD CHECK REQUIRED | Key presence/sending permission `[CONFIRM]`; no sends until mail gates close |
-| Account sender | NOT CONFIGURED locally | Unset by default; internal smoke sender only after approval | ACCOUNT_FROM_EMAIL `[CONFIRM]`, client approval + M1/M2 |
-| Contact sender | NOT CONFIGURED locally | Unset by default; internal smoke sender only after approval | CONTACT_FROM_EMAIL `[CONFIRM]`, client approval + M1/M2 |
-| Contact recipient | NOT CONFIGURED locally | Unset by default; approved internal inbox only | CONTACT_TO_EMAIL `[CONFIRM]`, USER CONFIRMATION REQUIRED |
-| Order recipient | NOT CONFIGURED locally | Unset by default; approved internal inbox only | ORDER_TO_EMAIL `[CONFIRM]`, USER CONFIRMATION REQUIRED |
-| Catalog write-token presence | VERIFIED present in local `.env`; remove from ordinary app context via authorized operator cleanup. Vercel Development MUST BE ABSENT | MUST BE ABSENT; LIVE DASHBOARD CHECK REQUIRED | MUST BE ABSENT; LIVE DASHBOARD CHECK REQUIRED |
-| ALLOW_PRODUCTION_CATALOG_IMPORT | VERIFIED not set in inspected files/process; MUST BE ABSENT from Vercel Development | MUST BE ABSENT; LIVE DASHBOARD CHECK REQUIRED | MUST BE ABSENT; only dedicated authorized import process may use `true` |
-| Development seed variables | NOT CONFIGURED locally; only explicit disposable local seed process | ALLOW_DEVELOPMENT_SEED and all three SEED_*_PASSWORD variables MUST BE ABSENT | Same four variables MUST BE ABSENT |
+| Resend enabled/key | Internal tests only after approval; local configuration evidence is private | Key MUST BE ABSENT by default; LIVE DASHBOARD CHECK REQUIRED | Key presence/sending permission `[CONFIRM]`; no sends until mail gates close |
+| Account sender | Local configuration evidence is private; approved internal identity required | Unset by default; internal smoke sender only after approval | ACCOUNT_FROM_EMAIL `[CONFIRM]`, client approval + M1/M2 |
+| Contact sender | Local configuration evidence is private; approved internal identity required | Unset by default; internal smoke sender only after approval | CONTACT_FROM_EMAIL `[CONFIRM]`, client approval + M1/M2 |
+| Contact recipient | Local configuration evidence is private; approved internal identity required | Unset by default; approved internal inbox only | CONTACT_TO_EMAIL `[CONFIRM]`, USER CONFIRMATION REQUIRED |
+| Order recipient | Local configuration evidence is private; approved internal identity required | Unset by default; approved internal inbox only | ORDER_TO_EMAIL `[CONFIRM]`, USER CONFIRMATION REQUIRED |
+| Catalog write-token presence | Local operator credential cleanup remains required. Vercel Development MUST BE ABSENT | MUST BE ABSENT; LIVE DASHBOARD CHECK REQUIRED | MUST BE ABSENT; LIVE DASHBOARD CHECK REQUIRED |
+| ALLOW_PRODUCTION_CATALOG_IMPORT | MUST BE ABSENT from Vercel Development; local configuration evidence is private | MUST BE ABSENT; LIVE DASHBOARD CHECK REQUIRED | MUST BE ABSENT; only dedicated authorized import process may use `true` |
+| Development seed variables | Only explicit disposable local seed process; local configuration evidence is private | ALLOW_DEVELOPMENT_SEED and all three SEED_*_PASSWORD variables MUST BE ABSENT | Same four variables MUST BE ABSENT |
 | Real customer data allowed? | No; isolated fictional/internal data | No; check lineage/import history without listing customers | Only approved data in later phase 6; no import in 7D |
 | Real customer email allowed? | No | No; no recipient sandbox exists | Only separately approved smoke/cohort in phases 8/10 |
 
-Local `.env` also has `SANITY_CATALOG_NON_PRODUCTION_TARGET` present; its exact
-identity was not emitted/approved by this audit. `.env.local` has none of the
-inspected application values configured. This is not a full inventory of arbitrary
-local keys. No `.env.production`, `.env.production.local` or `.env.preview` was found.
-No values in these files certify Vercel scopes. The files were left unchanged.
+Local secret/token presence and workstation credential inventory details are not
+public evidence. Record necessary details in the private launch ledger. Local
+configuration cannot certify Vercel scopes; no configuration files were changed.
 
 ## Vercel
 
-VERIFIED **local link only**: ignored `.vercel/repo.json` associates directory `.`
-with project `bigwicks`, ID `prj_3sWuFIHF1AIDFy3vA2dYB6O8Rwof`, team ID
-`team_HXpeSweiKYUJwKQwtoO8pHkx`. Team display name/slug and intended Production
-ownership remain `[CONFIRM]`. `.vercel/project.json` is absent. No tracked
-`vercel.json`, `.github` deployment workflow or `.openai/hosting.json` was found.
-Remote repository is `VeriqDigital/bigwicks`.
+VERIFIED **local link only**: candidate project slug `bigwicks`. Exact project/team
+IDs belong in the private launch ledger. Intended Production ownership remains
+`[CONFIRM]`. No tracked `vercel.json`, `.github` deployment workflow or
+`.openai/hosting.json` was found. Remote repository is `VeriqDigital/bigwicks`.
 
-All checks below are **LIVE DASHBOARD CHECK REQUIRED**. Record safe IDs/settings,
-UTC timestamp and verifier; do not reveal secret variable values or raw logs.
+All checks below are **LIVE DASHBOARD CHECK REQUIRED**. Record exact IDs/settings,
+UTC timestamp and verifier in the private launch ledger; do not reveal secret
+values or raw logs.
 
 1. **V1 — Identity/source:** In Vercel, select the owner-approved team/project.
-   Settings → General: compare project/team IDs above. Settings → Git and
-   Environments: record connected repo, intended production branch, Preview branch
+   Settings → General: compare project/team IDs with the private launch ledger.
+   Settings → Git and Environments: record connected repo, intended production branch, Preview branch
    rules, automatic deployment triggers, ignored-build behavior and domain auto
    assignment. Inspect existing deployment source SHA/environment. Do not push a
    test commit to discover behavior. An automatic Production deploy on merge means
@@ -159,8 +158,9 @@ that new build; a promotion/alias name alone is insufficient. No promotion execu
 
 Production provider/project, branch ID/name/lineage, database, PostgreSQL major,
 runtime endpoint/role, operator endpoint/role, region and provisioning status are
-all `[CONFIRM]`. Neon is indicated by **local** host metadata only. The local
-`neondb_owner` role name does not establish its grants or suitability for runtime.
+all `[CONFIRM]`. A local Neon pooled connection was observed; its actual environment
+purpose remains unconfirmed. Local role metadata does not establish effective grants
+or suitability for runtime. Exact identity evidence belongs in the private launch ledger.
 
 1. **D1 — Target:** Owner opens the intended Neon organization/project. Record
    project ID/name, region, branch ID/name/parent, database and PostgreSQL version.
@@ -495,10 +495,11 @@ ALLOW_PRODUCTION_CATALOG_IMPORT. V2 verifies actual absence (not empty/false ent
 All seed credentials/ALLOW_DEVELOPMENT_SEED and test-only settings/preloads must
 also be absent from Preview/Production; no privileged DB operator credential.
 
-The local `.env` write token is a concrete cleanup item, not evidence of Vercel
-exposure. Future authorized cleanup moves custody to the approved secret manager
-and removes it from ordinary app env files/processes. Revoke/rotate only if required
-by exposure review or the chosen temporary-token lifecycle. No token was changed here.
+Local operator credential cleanup remains required; this is not evidence of Vercel
+exposure. Keep credential-presence evidence in the private launch ledger and credential
+values in the approved secret manager. Future authorized cleanup removes operator
+credentials from ordinary app env files/processes. Revoke/rotate only if required by
+exposure review or the chosen temporary-token lifecycle. No credential was changed here.
 
 Future catalog credential procedure (separate import authorization required):
 
@@ -538,8 +539,8 @@ No framework/app/build configuration was modified.
 was read to refresh main; public provider documentation was researched. Neither
 operation verifies Vercel, Neon, Sanity, Resend or DNS account settings.
 
-VERIFIED local/source evidence: PR #21 baseline, candidate Vercel link IDs, sanitized
-local DB identity/options and Sanity target/token presence, Node 24 contract,
+VERIFIED local/source conclusions: PR #21 baseline, candidate Vercel slug `bigwicks`,
+a local Neon pooled connection with a bootstrap-incompatible option, Node 24 contract,
 bootstrap parser/TLS/locks, runtime DB grants required by code, mail boundaries,
 auth cookie defaults and build-time public-variable behavior. Sanity/pricing counts
 and Gmail Spam result remain user-reported history, not newly queried facts.
@@ -548,8 +549,10 @@ and Gmail Spam result remain user-reported history, not newly queried facts.
 
 This ledger is the sign-off index. Each referenced procedure above supplies the
 manual action and expected evidence. All human verifiers below are responsibilities
-with an actual name **`[CONFIRM]`**, not assigned individuals. Record safe evidence,
-UTC verification time and named verifier before changing status to VERIFIED (live).
+with an actual name **`[CONFIRM]`**, not assigned individuals. Maintain exact identity/
+credential-presence evidence, UTC verification time and named verifier in the private
+launch ledger. Publish only a redacted conclusion and phase status here before
+changing status to VERIFIED (live).
 
 | Item / check | Required value/identity | Source of truth | Current evidence | Verifier | Status | Required before runbook phase |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -562,7 +565,7 @@ UTC verification time and named verifier before changing status to VERIFIED (liv
 | D2–D4 connection | Direct operator + pooled runtime targets, TLS/security/capacity `[CONFIRM]` | Provider Connect/settings + approved identity check | Local options incompatible with bootstrap | DB owner `[CONFIRM]` | LIVE DASHBOARD CHECK REQUIRED | 2 migration/bootstrap |
 | R1 privileges | A runtime; B/C controlled operator identities `[CONFIRM]` | DBA effective grant/ownership review | Code-derived requirements only | DBA `[CONFIRM]` | LIVE DASHBOARD CHECK REQUIRED | 2 migration/bootstrap; 4 runtime |
 | B1 restore | Point/retention/options/RPO/RTO/rehearsal/owner `[CONFIRM]` | Provider history + rehearsal record | No recovery evidence | Recovery owner `[CONFIRM]` | USER CONFIRMATION REQUIRED; LIVE DASHBOARD CHECK REQUIRED | Any production migration/import |
-| A1 secret/origin | Independent strong Production secret; matching canonical origins | Secret custodian + Vercel + client origin approval | Local auth NOT CONFIGURED; code reviewed | Auth/hosting owner `[CONFIRM]` | LIVE DASHBOARD CHECK REQUIRED; USER CONFIRMATION REQUIRED | 4 runtime; 8 links |
+| A1 secret/origin | Independent strong Production secret; matching canonical origins | Secret custodian + Vercel + client origin approval | Code reviewed; exact local configuration evidence is private | Auth/hosting owner `[CONFIRM]` | LIVE DASHBOARD CHECK REQUIRED; USER CONFIRMATION REQUIRED | 4 runtime; 8 links |
 | S1 target | Exact Production project/dataset/visibility `[CONFIRM]` | Sanity owner + Manage metadata | Nonproduction pair only | Sanity owner `[CONFIRM]` | USER CONFIRMATION REQUIRED; LIVE DASHBOARD CHECK REQUIRED | Any production write / 3 catalog |
 | S2/S3 access | Dataset/member/token scope and exact CORS `[CONFIRM]` | Sanity Manage API/Members | No live evidence | Sanity owner `[CONFIRM]` | LIVE DASHBOARD CHECK REQUIRED | 3 import / 8 Studio |
 | M1 sender domain | Team/domain/SPF/DKIM/DMARC/key scope `[CONFIRM]` | Resend + authoritative DNS | No live evidence | Email/DNS owner `[CONFIRM]` | LIVE DASHBOARD CHECK REQUIRED | 8 any mail |
@@ -570,7 +573,7 @@ UTC verification time and named verifier before changing status to VERIFIED (liv
 | M3/M4 delivery | Quota headroom, monitoring owner, tracking off, successful internal smoke | Resend settings/events + approved recipient evidence | Prior Gmail setup landed in Spam | Email owner `[CONFIRM]` | LIVE DASHBOARD CHECK REQUIRED | 8 smoke / 10 invitations |
 | N1–N3 domain | Domain ownership, apex/www, DNS backup, attachment/cert/redirects `[CONFIRM]` | Client + registrar/DNS + Vercel | DOMAIN UNCONFIRMED | Domain owner `[CONFIRM]` | USER CONFIRMATION REQUIRED; LIVE DASHBOARD CHECK REQUIRED | Domain-dependent phases 4/7/8/10 |
 | Preview isolation | All seven checklist items closed, no real data/mail | Vercel/Neon/Sanity + data custodian | Policy only; no live proof | Release/data owners `[CONFIRM]` | LIVE DASHBOARD CHECK REQUIRED | Any production write / Preview exposure |
-| O1 credentials | Operator/seed/test controls absent from app scopes; local token cleanup | Vercel scopes + credential custodian | Local .env write token present | Operator/hosting owner `[CONFIRM]` | MUST BE ABSENT; LIVE DASHBOARD CHECK REQUIRED | Any production write / 4 app |
+| O1 credentials | Operator/seed/test controls absent from app scopes; local operator credential cleanup | Vercel scopes + credential custodian | Local operator credential cleanup remains required; detailed evidence is private | Operator/hosting owner `[CONFIRM]` | MUST BE ABSENT; LIVE DASHBOARD CHECK REQUIRED | Any production write / 4 app |
 
 ## Hard STOP conditions
 
@@ -612,7 +615,8 @@ or OPS-02. No exception is inferred from code readiness or successful local test
 review: confirm the candidate Vercel project/team and intended branch, identify
 distinct Production/Preview DB and Sanity targets (or record NOT PROVISIONED), and
 obtain the canonical domain and approved mail identities. Fill the ledger with safe
-IDs/settings, UTC evidence and actual verifiers. Then scope any needed provisioning/
+IDs/settings, UTC evidence and actual verifiers in the private launch ledger; publish
+only redacted conclusions here. Then scope any needed provisioning/
 configuration separately; do not run migration/bootstrap/import/deploy yet.
 
 Verification performed for this document is recorded in the

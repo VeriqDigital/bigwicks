@@ -1144,6 +1144,8 @@ Collect client inputs and complete its read-only dashboard verification ledger,
 then separately authorize necessary configuration/provisioning and migration/bootstrap
 only after their live gates pass. 7A/7B/7C/7D perform no deploy, live mutation, real
 email or customer import. Local link/env evidence is not live provider verification.
+Exact infrastructure identities and credential-presence evidence belong in the
+private launch ledger; public documentation retains requirements and conclusions.
 
 ### Do not work on yet
 

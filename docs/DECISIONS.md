@@ -46,8 +46,9 @@ bootstrap parser and release order. No provider mutation or application data que
 **Findings:** No authenticated provider connector/browser session or explicitly
 authorized read-only Production SQL connection was available. Sanitized local
 inspection identifies candidate Vercel project `bigwicks`; local Neon URL uses a
-pooled host, `neondb_owner` role and `channel_binding=require`; local `.env` contains
-a Sanity write token and `sim96pgy/development`. These findings do not certify live
+pooled endpoint and `channel_binding=require`. Its actual Development/Preview/
+Production purpose remains unconfirmed. Exact endpoint/account/role and credential-
+presence evidence belongs in the private launch ledger. These findings do not certify live
 provider targets/scopes. No secret value was printed or copied; private files were
 left unchanged. Final domain, Production SQL/Sanity targets and mail identities
 remain unconfirmed.
@@ -58,7 +59,7 @@ not just SELECT/INSERT on tiers/users. Obtain a provider-issued direct connectio
 with approved certificate/hostname verification; mandatory unsupported security
 options block execution. Preview has no recipient sandbox: mail key absent by
 default, no real customer data. Operator import credentials/flags never persist in
-Vercel app scopes. Local write-token cleanup is an explicit future operator item.
+Vercel app scopes. Local operator credential cleanup remains required.
 Production must be built with Production NEXT_PUBLIC values; verify any promotion
 actually creates the correct Production build.
 

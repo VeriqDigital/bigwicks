@@ -17,8 +17,10 @@ Milestone **7D update, 2026-09-08**: refreshed `main` / `origin/main` at `7b4fa6
 the authoritative environment/target sheet and live verification ledger. Its
 manifest/review is complete; CONFIG-01/02 and OPS-02 remain open. No live provider
 settings were authenticated/verified. Local link/configuration metadata identifies
-candidate Vercel `bigwicks`, a pooled Neon connection with owner-named role and
-unsupported bootstrap `channel_binding` option, and a local Sanity write token.
+candidate Vercel `bigwicks` and a pooled Neon connection with an unsupported
+bootstrap `channel_binding` option. Local operator credential cleanup remains required;
+exact endpoint/account/role and credential-presence evidence belongs in the private
+launch ledger, not public documentation.
 These are local observations, not Production identities or Vercel scope evidence.
 No live SQL, Sanity content, migration/bootstrap/import, mail, deploy or DNS change.
 
@@ -778,12 +780,12 @@ dependencies, `.env.example` and private configuration files are unchanged.
 - Read project/configuration/operator code, six migrations, installed Next.js
   environment/maxDuration guidance and installed Auth.js/pg cookie/TLS behavior.
   Sanity best-practices guidance informed the existing integration review; no
-  architecture rewrite. PATH CLI lookup, tool inventory and browser state inspection
-  found no authenticated provider inspection surface available in this session.
-- One-off in-memory local checks emitted only allowlisted Vercel project IDs,
-  DB host/database/role/security option names, Sanity public identifiers and
-  secret/setting presence booleans. `.env`/`.env.local` were parsed without loading
-  them into process configuration. No credential validity test, live SQL query,
+  architecture rewrite. No authenticated provider inspection surface was available
+  in this session; workstation credential inventories are excluded from public docs.
+- Local configuration was inspected in memory without loading it into process
+  configuration. Exact local infrastructure and credential-presence evidence belongs
+  in the private launch ledger; public documentation retains operational conclusions.
+  No credential validity test, live SQL query,
   bootstrap dry-run, catalog audit or provider account/content query was performed.
 - Official Vercel, Neon/PostgreSQL, node-postgres, Sanity and Resend documentation
   researched on the audit date; supporting URLs accompany the manifest's procedures.

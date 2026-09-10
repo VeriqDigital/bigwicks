@@ -32,9 +32,11 @@ owner, Sanity owner, DNS/email owner and order/inquiry owner. Record who can sto
 launch and who can approve resumption. Roles here are responsibilities, not
 invented staff names. No unnamed/unowned critical step may pass.
 
-Maintain a restricted launch ledger containing:
+Maintain a private launch ledger outside the public Git repository containing:
 
 - Commit and lockfile checksum; deployment IDs and known-good rollback candidate.
+- Exact local/target endpoint, provider project/team IDs, database/role and
+  credential-presence evidence; keep only redacted conclusions in public docs.
 - Approved production origin, Vercel project/environment, DB branch/database/role,
   Sanity project/dataset, exact tier ranks/names and credential-manager references.
 - Client approvals, artifact checksums, availability matrix, customer/cohort ledger.
