@@ -68,6 +68,28 @@ never exposed. Existing safe transaction-conflict responses still require a fres
 retry/review. No schema, migration, dependency or configuration change. See the
 [SEC-04 verification and limitations](SECURITY-REMEDIATION.md#milestone-6e-admin-revocation-consistency--sec-04).
 
+## Additional ADMIN provisioning (Milestone 7E)
+
+`npm run db:add-admin` is a dedicated create-only operator command for an
+already-running database. It requires the process's `DATABASE_URL`, exact expected
+host/port/database, `--allow-production`, `--confirm HOST:PORT/DB` and an ADMIN
+email normalized by existing auth validation. Two matching hidden password entries
+use the shared terminal helper and 15–128-character Argon2id policy.
+
+One transaction checks for an existing email and inserts only an active ADMIN User
+with sessionVersion 0 and a password hash. The unique email constraint handles
+concurrent inserts; an existing ADMIN, CUSTOMER or disabled user always refuses.
+No user is updated, elevated, reactivated or reset. No Customer, AccountToken,
+pricing tier or email is created, and pricing state is neither required nor changed.
+There is no admin-management UI or admin invitation/reset change. This command
+never runs automatically during build, deploy or migrations.
+
+See the [operator procedure and recovery guidance](LAUNCH-RUNBOOK.md#additional-admin-creation--milestone-7e).
+`node tests/bootstrap/run.mjs` covers this command alongside initial bootstrap on
+fresh disposable loopback PostgreSQL, including credential login, duplicates,
+concurrency, rollback, target/CLI refusal and secret-free output. Live execution
+requires separate authorization; Milestone 7E does not create a real administrator.
+
 ## Architecture
 
 - PostgreSQL with Prisma 7.10.0 and the Node PostgreSQL driver adapter. The generated

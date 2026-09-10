@@ -17,7 +17,7 @@ mkdirSync('.test-runtime', { recursive: true });
 const stage = mkdtempSync(resolve('.test-runtime/bootstrap-source-'));
 const tracked = execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8', windowsHide: true }).split('\0').filter(Boolean);
 // Explicit patch files support pre-commit verification; never enumerate arbitrary untracked files.
-const patchFiles = ['scripts/production/plan.ts', 'scripts/production/bootstrap-core.ts', 'scripts/production/bootstrap.ts', 'scripts/production/password-input.ts', 'tests/unit/bootstrap.test.ts', 'tests/bootstrap/config.ts', 'tests/bootstrap/database.test.ts', 'tests/bootstrap/postgres.ts', 'tests/bootstrap/run.mjs', 'tests/bootstrap/prompt-smoke.ts'];
+const patchFiles = ['scripts/production/plan.ts', 'scripts/production/bootstrap-core.ts', 'scripts/production/bootstrap.ts', 'scripts/production/password-input.ts', 'scripts/production/add-admin-core.ts', 'scripts/production/add-admin.ts', 'tests/unit/bootstrap.test.ts', 'tests/bootstrap/config.ts', 'tests/bootstrap/database.test.ts', 'tests/bootstrap/add-admin.test.ts', 'tests/bootstrap/add-admin-cli.ts', 'tests/bootstrap/postgres.ts', 'tests/bootstrap/run.mjs', 'tests/bootstrap/prompt-smoke.ts'];
 for (const file of new Set([...tracked, ...patchFiles])) {
   if (/(^|\/)\.env(?:\.|$)/.test(file) || file.startsWith('public/')) continue;
   const target = resolve(stage, file); mkdirSync(dirname(target), { recursive: true }); copyFileSync(resolve(root, file), target);
