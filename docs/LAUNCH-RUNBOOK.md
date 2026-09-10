@@ -325,6 +325,60 @@ Recovery is deliberately narrow:
 OPS-01 **tooling/rehearsal is complete**. Actual production target/ADMIN confirmation,
 backups, permissions, dry-run review and execution authorization remain live gates.
 
+### Additional ADMIN creation — Milestone 7E
+
+After initial bootstrap, use the separate `db:add-admin` operator command for an
+additional authorized staff identity. Obtain approval for the exact target/email
+and take the required backup first. This example is a placeholder, not live
+execution authorization:
+
+```text
+npm run db:add-admin -- --expected-host HOST --expected-port PORT --expected-database DB --admin-email ADMIN_EMAIL --allow-production --confirm HOST:PORT/DB
+```
+
+Use a clean operator process with the intended `DATABASE_URL` securely injected;
+no `.env*` files are loaded. The same target parser, explicit driver fields,
+public-schema restriction and certificate-verified TLS/connection compatibility
+rules described above apply. All target acknowledgements are mandatory. This
+command has no dry-run/`--apply` mode: after validating flags, displaying the safe
+target and normalized email, and checking that the email is absent, it prompts
+twice for a hidden password. Review the displayed identity before entering it;
+Ctrl+C cancels. A noninteractive or redirected terminal refuses. Never put the
+ADMIN password in arguments, environment variables, files, transcripts or logs.
+
+The existing hidden-input helper requires matching 15–128-character entries;
+the shared Argon2id helper hashes before opening the final transaction. Within
+one READ COMMITTED transaction the tool verifies the connected database name,
+checks email absence again and creates exactly one User: `role=ADMIN`,
+`active=true`, `sessionVersion=0`, generated password hash, no Customer relation.
+Existing users always refuse, including disabled users and CUSTOMER accounts.
+The unique email constraint arbitrates simultaneous attempts: at most one succeeds,
+and the other receives a safe duplicate refusal. There is no upsert, role change,
+reactivation, password reset or deletion. This tool requires neither empty tables
+nor a particular pricing-tier state; it never reads or changes tiers and creates
+no Customer, AccountToken or email.
+
+Unlike initial bootstrap, additional creation needs SELECT/INSERT on User and
+normal schema/connection access; it does not take bootstrap's broad table locks
+or require tier-write privileges. Have the DBA verify the temporary operator role
+and existing schema/unique constraint. No migration or grant runs automatically.
+The command is never invoked by installation, build, deploy or migrations.
+
+Success prints `Additional ADMIN created`, normalized email, ADMIN role, active
+true, customer created 0 and email sent 0. It never prints passwords, hashes or the
+connection URI. Independently verify the authorized identity and securely hand
+off its credential; any live login smoke requires its own authorization. On a
+duplicate, inspect the existing identity without trying to repair it with this
+tool. On any database/connection failure, stop and independently check whether the
+insert committed before retrying; an uncertain result does not prove rollback.
+There is no automatic retry or password recovery through this command.
+
+Rehearse with `node tests/bootstrap/run.mjs`: a fresh disposable loopback cluster,
+isolated source without `.env*`, no inherited application credentials, and blocked
+remote application access. It includes additional-admin tests plus bootstrap and
+hidden-input regression tests, lint and typecheck. No Preview/Production execution
+or real ADMIN creation is part of Milestone 7E.
+
 ## Phase 3 — Production Sanity catalog import, all unavailable
 
 Prerequisite: phases 1–2 complete; separately authorized Sanity write, protected

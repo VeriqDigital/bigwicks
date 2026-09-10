@@ -24,7 +24,7 @@ export function readHiddenPassword(input: ReadStream = process.stdin, output: Wr
       current = ""; first = "";
       if (error) reject(error); else resolve(result);
     }
-    function cancel() { finish(new BootstrapError("Hidden password input cancelled or unavailable. No bootstrap write attempted.")); }
+    function cancel() { finish(new BootstrapError("Hidden password input cancelled or unavailable. No database write attempted.")); }
     function data(chunk: Buffer | string) {
       const text = typeof chunk === "string" ? chunk : decoder.write(chunk);
       for (const character of text) {
@@ -35,7 +35,7 @@ export function readHiddenPassword(input: ReadStream = process.stdin, output: Wr
           skipLf = character === "\r";
           if (current.length < 15 || current.length > 128) return finish(new BootstrapError("Passwords must contain 15 to 128 characters."));
           if (phase === 0) { first = current; current = ""; phase = 1; output.write("\nConfirm ADMIN password (hidden): "); }
-          else if (current !== first) return finish(new BootstrapError("Password entries differ. No bootstrap write attempted."));
+          else if (current !== first) return finish(new BootstrapError("Password entries differ. No database write attempted."));
           else return finish();
         } else if (character === "\b" || character === "\u007f") {
           current = Array.from(current).slice(0, -1).join("");

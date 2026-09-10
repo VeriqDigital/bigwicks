@@ -40,10 +40,10 @@ export function parseRequest(args: string[], target: Target): Request {
   for (let i = 0; i < args.length; i++) {
     const key = args[i];
     if (!["--expected-host", "--expected-port", "--expected-database", "--admin-email", "--allow-production", "--confirm", "--apply"].includes(key) || flags.has(key)) {
-      throw new BootstrapError("Unknown or repeated bootstrap flag. Password arguments are never accepted. Use --help.");
+      throw new BootstrapError("Unknown or repeated operator flag. Password arguments are never accepted. Use --help.");
     }
     const value = key === "--allow-production" ? "true" : args[++i];
-    if (!value || value.startsWith("--")) throw new BootstrapError("Bootstrap flag is missing a value. Use --help.");
+    if (!value || value.startsWith("--")) throw new BootstrapError("Operator flag is missing a value. Use --help.");
     flags.set(key, value);
   }
   if (flags.get("--expected-host") !== target.host || flags.get("--expected-port") !== String(target.port) || flags.get("--expected-database") !== target.database) {
