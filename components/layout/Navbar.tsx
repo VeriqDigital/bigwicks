@@ -2,17 +2,21 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Button from "@/components/ui/Button";
 import { navigation, primaryCta, siteConfig } from "@/config/site";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!isMenuOpen) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setIsMenuOpen(false);
+      if (event.key === "Escape") {
+        setIsMenuOpen(false);
+        menuButton.current?.focus();
+      }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -33,12 +37,12 @@ const Navbar = () => {
       </div>
 
       <nav
-        className="mx-auto flex h-[86px] max-w-(--container-width) items-center justify-between border-b border-white/10 px-4 sm:px-6 lg:h-[104px]"
+        className="mx-auto flex h-[74px] max-w-(--container-width) items-center justify-between border-b border-white/10 px-4 sm:px-6 lg:h-[88px]"
         aria-label="Main navigation"
       >
         <Link
           href="/"
-          className="relative block h-[66px] w-[190px] shrink-0 sm:h-[72px] sm:w-[220px] lg:h-[88px] lg:w-[276px]"
+          className="relative block h-[60px] w-[180px] shrink-0 sm:h-[68px] sm:w-[210px] lg:h-[74px] lg:w-[224px]"
           aria-label="Big Wicks Fireworks home"
         >
           <span className="absolute inset-0 block">
@@ -47,19 +51,19 @@ const Navbar = () => {
               alt="Big Wicks Fireworks"
               fill
               className="object-contain object-left"
-              sizes="(max-width: 640px) 190px, (max-width: 1024px) 220px, 276px"
+              sizes="(max-width: 640px) 180px, (max-width: 1024px) 210px, 224px"
               preload
             />
           </span>
         </Link>
 
-        <div className="hidden items-center gap-6 xl:flex xl:gap-8">
+        <div className="hidden items-center gap-5 lg:flex xl:gap-7">
           {navigation.map((item) => (
             <Link
               key={item.label}
               href={item.href}
               prefetch={item.href === "/account" ? false : undefined}
-              className="py-3 text-xs font-bold uppercase tracking-widest text-[#f2f2ef] transition-colors hover:text-[#ff6872]"
+              className={`py-3 text-xs font-bold uppercase tracking-wider transition-colors hover:text-[#ff6872] ${item.href === "/account" ? "border-l border-white/25 pl-5 text-[#c7c7c3]" : "text-[#f2f2ef]"}`}
             >
               {item.label}
             </Link>
@@ -69,7 +73,7 @@ const Navbar = () => {
           </Button>
         </div>
 
-        <div className="flex items-center gap-3 xl:hidden">
+        <div className="flex items-center gap-3 lg:hidden">
           <a
             href={siteConfig.contact.phoneHref}
             className="hidden rounded-[3px] border border-[#5a514b] px-3 py-2 text-xs font-bold uppercase tracking-wider text-white sm:block"
@@ -84,6 +88,7 @@ const Navbar = () => {
             }
             aria-expanded={isMenuOpen}
             aria-controls="mobile-navigation-menu"
+            ref={menuButton}
             onClick={() => setIsMenuOpen((open) => !open)}
           >
             <span className="grid gap-1.5" aria-hidden="true">
@@ -104,7 +109,7 @@ const Navbar = () => {
       {isMenuOpen && (
         <div
           id="mobile-navigation-menu"
-          className="max-h-[calc(100dvh-118px)] overflow-y-auto border-t border-[#3a3a3f] bg-[#151517] p-3 text-white lg:max-h-[calc(100dvh-136px)] xl:hidden"
+          className="max-h-[calc(100dvh-106px)] overflow-y-auto border-t border-[#3a3a3f] bg-[#151517] p-3 text-white lg:hidden"
         >
           <div className="grid">
             {navigation.map((item) => (
@@ -113,7 +118,7 @@ const Navbar = () => {
                 href={item.href}
                 prefetch={item.href === "/account" ? false : undefined}
                 onClick={() => setIsMenuOpen(false)}
-                className="border-b border-[#3a3a3f] px-4 py-4 text-sm font-bold uppercase tracking-widest hover:bg-[#242428] hover:text-[#ff6872]"
+                className={`border-b border-[#3a3a3f] px-4 py-3.5 text-sm font-bold uppercase tracking-widest hover:bg-[#242428] hover:text-[#ff6872] ${item.href === "/account" ? "mt-2 text-[#bdbdb8]" : ""}`}
               >
                 {item.label}
               </Link>

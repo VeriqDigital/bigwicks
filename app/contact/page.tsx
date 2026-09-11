@@ -4,6 +4,8 @@ import ContactForm from "@/components/contact/ContactForm";
 import Button from "@/components/ui/Button";
 import Container from "@/components/ui/Container";
 import { siteConfig } from "@/config/site";
+import MobileActions from "@/components/layout/MobileActions";
+import "../public.css";
 
 export const metadata: Metadata = {
   title: "Contact & Visit",
@@ -20,35 +22,55 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <>
-      <section className="border-b border-[#303034] bg-[#151517] py-16 text-white md:py-20 lg:py-24">
+    <div className="public-site public-contact">
+      <section className="contact-intro border-b border-[#303034] bg-[#151517] text-white">
         <Container>
-          <div className="max-w-4xl">
-            <p className="text-sm font-bold text-[#ff6872]">Contact Big Wicks</p>
-            <h1 className="text-balance mt-4 font-heading text-5xl font-bold uppercase leading-[0.9] sm:text-6xl md:text-7xl">
-              Got a question?
-              <span className="block text-[#ff5963]">We&apos;re here to help.</span>
-            </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-white/75">
-              Reach out with questions about products, the store, current promotions,
-              or planning your visit to Big Wicks.
-            </p>
+          <div className="contact-intro-inner">
+            <div className="max-w-4xl">
+              <p className="text-sm font-bold text-[#ff6872]">
+                Contact Big Wicks
+              </p>
+              <h1 className="text-balance mt-4 font-heading text-5xl font-bold uppercase leading-[0.9] sm:text-6xl md:text-7xl">
+                Got a question?
+                <span className="block text-[#ff5963]">
+                  We&apos;re here to help.
+                </span>
+              </h1>
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-white/75">
+                Products, store hours, or your next visit. Talk to the Big Wicks
+                team.
+              </p>
+            </div>
+            <div className="contact-intro-actions">
+              <Button href={siteConfig.contact.mapUrl} newTab>
+                Get Directions
+              </Button>
+              <a
+                href={siteConfig.contact.phoneHref}
+                className="public-text-link"
+              >
+                Call The Store ↗
+              </a>
+            </div>
           </div>
         </Container>
       </section>
 
-      <section className="bg-(--background) py-20 md:py-24 lg:py-28">
+      <section className="contact-content bg-(--background)">
         <Container>
           <div className="grid gap-8 lg:grid-cols-[1.18fr_0.82fr] lg:items-start">
             <ContactForm />
 
-            <aside className="space-y-6" aria-label="Big Wicks store information">
+            <aside
+              className="contact-sidebar space-y-6"
+              aria-label="Big Wicks store information"
+            >
               <figure className="relative aspect-16/10 overflow-hidden rounded-[7px] border border-[#d5d5d0] bg-[#deded9]">
                 <Image
                   src="/images/store/big-wicks-storefront-night.jpg"
                   alt="Big Wicks Fireworks storefront illuminated in La Porte, Indiana"
                   fill
-                  className="object-cover object-center"
+                  className="object-cover object-[center_32%]"
                   sizes="(max-width: 1024px) 100vw, 42vw"
                 />
               </figure>
@@ -77,10 +99,17 @@ export default function ContactPage() {
                     {siteConfig.contact.email}
                   </a>
                 </address>
+                <p className="mt-4 text-sm leading-6 text-[#62625f]">
+                  {siteConfig.contact.proximity}.
+                </p>
 
                 <div className="mt-7 flex flex-col gap-3 sm:flex-row lg:flex-col xl:flex-row">
-                  <Button href={siteConfig.contact.mapUrl} newTab>Get Directions</Button>
-                  <Button href={siteConfig.contact.phoneHref} variant="dark">Call The Store</Button>
+                  <Button href={siteConfig.contact.mapUrl} newTab>
+                    Get Directions
+                  </Button>
+                  <Button href={siteConfig.contact.phoneHref} variant="dark">
+                    Call The Store
+                  </Button>
                 </div>
 
                 <div className="mt-7 border-t border-[#e3e3df] pt-6">
@@ -119,13 +148,15 @@ export default function ContactPage() {
                   ))}
                 </dl>
                 <p className="mt-5 text-sm leading-6 text-[#777773]">
-                  Hours may change seasonally. Call ahead to confirm before a long trip.
+                  Hours may change seasonally. Call ahead to confirm before a
+                  long trip.
                 </p>
               </div>
             </aside>
           </div>
         </Container>
       </section>
-    </>
+      <MobileActions />
+    </div>
   );
 }
