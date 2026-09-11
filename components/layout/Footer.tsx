@@ -4,9 +4,9 @@ import { footerLinks, siteConfig } from "@/config/site";
 
 const Footer = () => (
   <footer className="w-full border-t border-[#303034] bg-[#151517] text-white">
-    <div className="mx-auto w-full max-w-(--container-width) px-6 py-16 lg:py-20">
-      <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-[1.15fr_0.65fr_0.85fr_0.6fr_0.85fr] lg:gap-8">
-        <div>
+    <div className="mx-auto w-full max-w-(--container-width) px-6 py-10 md:py-14 lg:py-16">
+      <div className="grid grid-cols-2 gap-x-6 gap-y-8 lg:grid-cols-[1.15fr_0.65fr_0.85fr_0.6fr_0.85fr] lg:gap-8">
+        <div className="col-span-2 md:col-span-1">
           <div className="relative h-28 w-full max-w-[330px]">
             <Image
               src="/Big wicks logo background removed.png"
@@ -16,7 +16,7 @@ const Footer = () => (
               sizes="330px"
             />
           </div>
-          <p className="mt-6 max-w-sm leading-7 text-[#b7b7b3]">
+          <p className="mt-4 max-w-sm leading-7 text-[#b7b7b3]">
             A huge fireworks selection, strong value, and friendly guidance just
             south of New Buffalo.
           </p>
@@ -30,7 +30,7 @@ const Footer = () => (
           <h2 className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#ff5963]">
             Explore
           </h2>
-          <ul className="mt-6 space-y-4 text-sm font-semibold text-[#c0c0bc]">
+          <ul className="mt-5 space-y-3 text-sm font-semibold text-[#c0c0bc]">
             {footerLinks.map((link) => (
               <li key={link.label}>
                 <Link
@@ -56,7 +56,7 @@ const Footer = () => (
             </p>
             <a
               href={siteConfig.contact.phoneHref}
-              className="mt-4 block text-xl font-bold text-white hover:text-[#ff6872]"
+              className="mt-4 block text-lg font-bold text-white hover:text-[#ff6872] xl:text-xl"
             >
               {siteConfig.contact.phone}
             </a>
@@ -103,7 +103,7 @@ const Footer = () => (
           </h2>
           <dl className="mt-6 space-y-2 text-sm text-[#c0c0bc]">
             {siteConfig.hours.map(({ day, hours }) => (
-              <div key={day} className="flex justify-between gap-4">
+              <div key={day} className="flex justify-between gap-2">
                 <dt>{day.slice(0, 3)}</dt>
                 <dd className="font-semibold text-white">{hours}</dd>
               </div>
@@ -115,7 +115,7 @@ const Footer = () => (
         </div>
       </div>
 
-      <div className="mt-14 flex flex-col gap-4 border-t border-[#303034] pt-7 text-xs text-[#8f8f8c] sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-9 flex flex-col gap-4 border-t border-[#303034] pt-7 text-xs text-[#8f8f8c] sm:flex-row sm:items-center sm:justify-between">
         <p>
           &copy; {new Date().getFullYear()} {siteConfig.name}. All rights
           reserved.

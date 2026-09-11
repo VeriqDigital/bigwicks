@@ -8,9 +8,8 @@ import TrustStrip from "@/components/sections/TrustStrip";
 import AboutSection from "@/components/sections/AboutSection";
 import DealsSection from "@/components/sections/DealsSection";
 import DemoSection from "@/components/sections/DemoSection";
-import SelectionShowcase from "@/components/sections/SelectionShowcase";
-import WhyChooseSection from "@/components/sections/WhyChooseSection";
-import Section from "@/components/ui/Section";
+import MobileActions from "@/components/layout/MobileActions";
+import "./public.css";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
@@ -18,36 +17,31 @@ export const metadata: Metadata = {
 
 export default function Home() {
   return (
-    <>
+    <div className="public-site">
       <Hero />
       <TrustStrip />
-      <Section id="shop" tone="light">
+      <section id="shop" className="selection-section public-container">
         <CategorySection />
-      </Section>
-      <Section id="deals" tone="light">
+      </section>
+      <section id="deals" className="value-section">
         <DealsSection />
-      </Section>
-      <Section id="about" tone="black">
-        <AboutSection />
-      </Section>
-      <Section tone="light">
-        <SelectionShowcase />
-      </Section>
-      <Section id="why-big-wicks" tone="light">
-        <WhyChooseSection />
-      </Section>
-      <Section id="demos" tone="dark">
-        <DemoSection />
-      </Section>
-      <Section id="visit" tone="light">
+      </section>
+      <section id="visit" className="visit-section">
         <LocationSection />
-      </Section>
-      <Section id="faq" tone="light">
+      </section>
+      <section id="about" className="story-section public-container">
+        <AboutSection />
+      </section>
+      <section id="demos" className="demo-section">
+        <DemoSection />
+      </section>
+      <section id="faq" className="faq-section public-container">
         <FAQ />
-      </Section>
-      <Section tone="light">
+      </section>
+      <section className="final-section">
         <ContactCtaSection />
-      </Section>
-    </>
+      </section>
+      <MobileActions />
+    </div>
   );
 }

@@ -7,35 +7,30 @@ const FAQ = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <div className="grid gap-12 lg:grid-cols-[0.7fr_1.3fr]">
+    <div className="grid gap-7 lg:grid-cols-[0.7fr_1.3fr] lg:gap-14">
       <div>
         <p className="text-sm font-extrabold uppercase tracking-widest text-(--red)">
           FAQ
         </p>
-        <h2 className="text-balance mt-4 font-heading text-5xl font-bold uppercase leading-[0.9] text-[#171719] md:text-6xl">
+        <h2 className="text-balance mt-4 max-w-sm font-heading text-4xl font-bold uppercase leading-none text-[#171719] md:text-5xl">
           Before you make the drive
         </h2>
-        <p className="mt-6 max-w-md leading-7 text-[#625f5b]">
-          Straight answers about the store, our location, and how the Big Wicks
-          team can help.
+        <p className="mt-5 max-w-sm leading-7 text-[#625f5b]">
+          A few things to know before you stop in.
         </p>
       </div>
-      <div className="space-y-3">
+      <div className="border-t border-[#bfbfb9]">
         {faqs.map((item, index) => {
           const isOpen = openIndex === index;
           return (
             <div
               key={item.question}
-              className="relative overflow-hidden rounded-[7px] border border-[#d5d5d0] bg-white transition-colors hover:border-(--red)"
+              className="relative border-b border-[#cfcfc8]"
             >
-              <span
-                className={`absolute inset-y-0 left-0 w-1 ${isOpen ? "bg-(--red)" : "bg-transparent"}`}
-                aria-hidden="true"
-              />
               <button
                 type="button"
                 onClick={() => setOpenIndex(isOpen ? null : index)}
-                className="flex w-full cursor-pointer items-start justify-between gap-5 px-6 py-6 text-left"
+                className="flex w-full cursor-pointer items-center justify-between gap-5 py-4 text-left hover:text-(--red)"
                 aria-expanded={isOpen}
                 aria-controls={`faq-answer-${index}`}
               >
@@ -49,14 +44,13 @@ const FAQ = () => {
                   {isOpen ? "−" : "+"}
                 </span>
               </button>
-              {isOpen && (
-                <p
-                  id={`faq-answer-${index}`}
-                  className="px-6 pb-6 pr-16 leading-7 text-[#625f5b]"
-                >
-                  {item.answer}
-                </p>
-              )}
+              <p
+                id={`faq-answer-${index}`}
+                hidden={!isOpen}
+                className="pb-5 pr-10 text-[15px] leading-7 text-[#625f5b]"
+              >
+                {item.answer}
+              </p>
             </div>
           );
         })}

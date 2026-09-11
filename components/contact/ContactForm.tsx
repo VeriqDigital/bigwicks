@@ -32,8 +32,7 @@ const ContactForm = () => {
           Send us a message
         </h2>
         <p className="mt-4 max-w-2xl leading-7 text-[#62625f]">
-          Ask about products, current store information, promotions, or planning
-          your visit. We&apos;ll get back to you as soon as we can.
+          Tell us what you have in mind. For current availability, call the store.
         </p>
       </div>
 

@@ -51,18 +51,16 @@ export const siteConfig = {
 export type NavItem = { label: string; href: string };
 
 export const navigation: NavItem[] = [
-  { label: "Home", href: "/" },
-  { label: "Shop Fireworks", href: "/#shop" },
+  { label: "Fireworks", href: "/#shop" },
   { label: "Deals", href: "/#deals" },
-  { label: "About", href: "/#about" },
-  { label: "Visit Us", href: "/#visit" },
+  { label: "Visit", href: "/#visit" },
   { label: "Contact", href: "/contact" },
-  { label: "Wholesale Portal", href: "/account" },
+  { label: "Wholesale", href: "/account" },
 ];
 
 export const footerLinks: NavItem[] = [
-  { label: "Shop by Category", href: "/#shop" },
-  { label: "Current Deals", href: "/#deals" },
+  { label: "Explore the Selection", href: "/#shop" },
+  { label: "In-store Value", href: "/#deals" },
   { label: "Why Big Wicks", href: "/#why-big-wicks" },
   { label: "Firework Demos", href: "/#demos" },
   { label: "Frequently Asked Questions", href: "/#faq" },

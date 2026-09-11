@@ -1,52 +1,26 @@
-import Image from "next/image";
-import Button from "@/components/ui/Button";
-import { siteConfig } from "@/config/site";
+import SelectionShowcase from "./SelectionShowcase";
+import WhyChooseSection from "./WhyChooseSection";
 
 const AboutSection = () => (
-  <div className="grid gap-12 lg:grid-cols-[1.22fr_0.78fr] lg:items-center">
-    <div className="relative min-h-[420px] overflow-hidden rounded-[7px] border border-[#3a3a3f] bg-[#18181b] sm:min-h-[520px] lg:min-h-[590px]">
-      <Image
-        src="/images/store/big-wicks-storefront-night.jpg"
-        alt="Big Wicks Fireworks storefront illuminated at night in La Porte, Indiana"
-        fill
-        className="object-cover object-center"
-        sizes="(max-width: 1024px) 100vw, 62vw"
-      />
-      <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-[#0b0b0d] via-[#0b0b0d]/70 to-transparent p-7 pt-36 sm:p-9 sm:pt-40">
-        <p className="text-sm font-extrabold uppercase tracking-widest text-[#ff5a65]">
-          A real local store on IN-39
-        </p>
-        <p className="mt-2 max-w-xl font-heading text-3xl font-bold uppercase leading-none text-white sm:text-4xl">
-          Three miles south of downtown New Buffalo
-        </p>
-      </div>
-    </div>
-
-    <div>
-      <p className="text-sm font-extrabold uppercase tracking-widest text-[#ff5a65]">
-        About Big Wicks
-      </p>
-      <h2 className="text-balance mt-4 font-heading text-5xl font-bold uppercase leading-[0.9] text-white md:text-6xl">
-        The local alternative to the giant chains
+  <div className="story-layout">
+    <div className="story-copy" id="why-big-wicks">
+      <p className="public-kicker">Inside Big Wicks</p>
+      <h2 className="public-title">
+        Big selection.
+        <br />
+        Local people.
       </h2>
-      <p className="mt-7 text-lg leading-8 text-[#d0d0cd]">
-        Big Wicks is one of Indiana&apos;s newer retail fireworks destinations,
-        located in La Porte just 3 miles south of downtown New Buffalo. Inside,
-        you&apos;ll find an organized store, a broad selection, and people ready
-        to help.
+      <p className="story-intro">
+        Walk the aisles. Compare the effects. Ask us what to try.
       </p>
-      <p className="mt-5 leading-7 text-[#aaa9a5]">
-        Whether you&apos;re planning a family celebration or looking for
-        something with more impact, the goal is simple: make it easier to leave
-        with fireworks you&apos;re excited to light.
+      <p>
+        Our La Porte store is packed with choices, from a few backyard favorites
+        to the centerpiece of your show. You bring the ideas. We&apos;ll help
+        you find the fireworks.
       </p>
-      <div className="mt-8">
-        <Button href={siteConfig.contact.mapUrl} newTab variant="secondary">
-          Plan Your Visit
-        </Button>
-      </div>
+      <WhyChooseSection />
     </div>
+    <SelectionShowcase />
   </div>
 );
-
 export default AboutSection;
