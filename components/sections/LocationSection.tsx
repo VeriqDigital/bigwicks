@@ -4,60 +4,62 @@ import { siteConfig } from "@/config/site";
 
 const LocationSection = () => (
   <div className="public-container visit-layout">
-    <div className="visit-copy">
-      <p className="public-kicker">La Porte, Indiana</p>
-      <h2 className="public-title">
-        Make us
-        <br />
-        your next stop.
-      </h2>
-      <p className="visit-proximity">{siteConfig.contact.proximity}.</p>
-      <address>
-        <strong>{siteConfig.shortName}</strong>
-        <span>
-          {siteConfig.contact.addressLine1}
+    <div className="visit-top">
+      <div className="visit-copy">
+        <p className="public-kicker">La Porte, Indiana</p>
+        <h2 className="public-title">
+          Make us
           <br />
-          {siteConfig.contact.city}, {siteConfig.contact.state}{" "}
-          {siteConfig.contact.postalCode}
-        </span>
-        <a href={siteConfig.contact.phoneHref}>{siteConfig.contact.phone}</a>
-      </address>
-      <div className="visit-actions">
-        <Button href={siteConfig.contact.mapUrl} newTab>
-          Get Directions
-        </Button>
-        <a href={siteConfig.contact.phoneHref} className="public-text-link">
-          Call The Store ↗
-        </a>
+          your next stop.
+        </h2>
+        <p className="visit-proximity">{siteConfig.contact.proximity}.</p>
+        <address>
+          <strong>{siteConfig.shortName}</strong>
+          <span>
+            {siteConfig.contact.addressLine1}
+            <br />
+            {siteConfig.contact.city}, {siteConfig.contact.state}{" "}
+            {siteConfig.contact.postalCode}
+          </span>
+          <a href={siteConfig.contact.phoneHref}>{siteConfig.contact.phone}</a>
+        </address>
+        <div className="visit-actions">
+          <Button href={siteConfig.contact.mapUrl} newTab>
+            Get Directions
+          </Button>
+          <a href={siteConfig.contact.phoneHref} className="public-text-link">
+            Call The Store <span aria-hidden="true">↗</span>
+          </a>
+        </div>
       </div>
-    </div>
-    <div className="visit-hours">
-      <h3>Open 7 days</h3>
-      <dl>
-        {siteConfig.hours.map(({ day, hours }) => (
-          <div key={day}>
-            <dt>{day}</dt>
-            <dd>{hours}</dd>
-          </div>
-        ))}
-      </dl>
-      <p>Hours may change seasonally. Call to confirm before a long trip.</p>
-    </div>
-    <div className="visit-visuals">
       <figure className="visit-store">
         <Image
           src="/images/store/big-wicks-storefront-night.jpg"
           alt="The illuminated Big Wicks sign and red-trimmed storefront on IN-39"
           fill
-          sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 390px"
+          sizes="(max-width: 767px) 100vw, (max-width: 1280px) 56vw, 665px"
         />
         <figcaption>Look for the Big Wicks sign.</figcaption>
       </figure>
+    </div>
+    <div className="visit-bottom">
+      <div className="visit-hours">
+        <h3>Open 7 days</h3>
+        <dl>
+          {siteConfig.hours.map(({ day, hours }) => (
+            <div key={day}>
+              <dt>{day}</dt>
+              <dd>{hours}</dd>
+            </div>
+          ))}
+        </dl>
+        <p>Hours may change seasonally. Call to confirm before a long trip.</p>
+      </div>
       <iframe
         src={siteConfig.contact.mapEmbedUrl}
         title="Map showing Big Wicks Fireworks in La Porte, Indiana"
         width="100%"
-        height="220"
+        height="420"
         loading="lazy"
         referrerPolicy="no-referrer-when-downgrade"
       />

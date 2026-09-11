@@ -5,7 +5,7 @@ The existing logo, storefront/interior/category photography, fonts, color palett
 video and business facts are retained. No new imagery, dependency, tracking or
 private application behavior is introduced.
 
-## Design and page structure
+## Initial 8A design and page structure
 
 The previous page repeated a large heading, explanatory paragraph and bordered
 card grid across selection, deals, story and benefits. Three separate sections
@@ -109,6 +109,65 @@ or Search Console/GBP work is included. Root/contact canonicals, Store JSON-LD,
 sitemap, robots, redirects and private indexing protections remain unchanged.
 No merge, deployment, real account, database mutation or email is authorized by
 this design milestone.
+
+## Follow-up: equal categories and a substantial store destination
+
+The approved section order stays intact: hero, quick facts, selection, value,
+visit, combined story, demo, FAQ, final CTA. Only selection and visit presentation
+change from the initial 8A design above.
+
+- Selection replaces the asymmetric four-feature/four-supporting composition
+  with eight equal cards: four columns on desktop (1024px and up), two on tablet
+  and phone. Each card has the same 4:3 image frame, condensed heading, short
+  description and red bottom action. Grid rows stretch to the same height.
+  Borders, 7px corners, keyboard focus and subtle reduced-motion-aware image
+  movement preserve the retail character.
+- Every category owns an `href` in `data/fireworks.ts`. All currently resolve to
+  the existing `/#visit` section through real links labeled “Browse in store.”
+  Future public listing destinations can replace those values when the pages
+  exist. This follow-up creates no public catalog or speculative routes.
+- Visit replaces three compact columns with two substantial rows: information
+  and a large storefront above, dark hours panel and wide map below. Desktop
+  proportions are approximately 42/58 above and 30/70 below. Tablet gives the
+  hours more width for readability; phones stack copy, storefront, hours, map.
+  The desktop map starts at 420px tall and the phone map is 340px tall.
+  Get Directions remains the prominent red button; Call The Store is secondary.
+- Address, phone, proximity, all seven days of hours and both map URLs still
+  come from the unchanged site configuration. All other 8A sections, navigation,
+  mobile actions, contact refinements and private application behavior are retained.
+
+Follow-up source files: `app/public.css`,
+`components/sections/CategorySection.tsx`,
+`components/sections/LocationSection.tsx`, and `data/fireworks.ts`.
+The existing visual runner also captures selection/visit details at all three
+review widths and checks category data when reusing an existing build.
+
+Final isolated build and screenshots: `.test-runtime/public-source-kedRfE`.
+Reviewed full homepages and both section details at 390, 768 and 1440px.
+Section captures hide fixed navigation only while taking the screenshot; the
+normal viewport captures and interaction checks retain it.
+
+| Width | Initial 8A height | Follow-up height | Change | Original pre-8A height |
+| --- | ---: | ---: | ---: | ---: |
+| 390px | 8,696px | 9,064px | +368px | 17,613px |
+| 768px | 6,612px | 7,936px | +1,324px | 15,551px |
+| 1440px | 5,944px | 6,503px | +559px | 10,201px |
+
+The page remains about 49% shorter than pre-8A at phone/tablet widths and 36%
+shorter on desktop. The taller tablet category grid is intentional: all eight
+categories receive equal space in two columns. Visit still appears early,
+at 3,215px on a 390px phone and 2,445px on a 1440px desktop. At 1440px the
+storefront measures about 689×463px and the map 846×455px; on a 390px phone
+they measure 350×259px and 350×340px.
+
+Rerun and passed after the final source changes: nine SEO tests, ESLint, route
+type generation, TypeScript, production build and the existing public browser
+acceptance checks across seven widths. Additional browser measurements confirmed
+equal card heights and fitting titles at every width; keyboard activation,
+visible link focus, hover and reduced motion were exercised. Contact heights
+remain identical to initial 8A. The previously documented isolated-map limitation
+still applies: map dimensions and configured destinations were checked, while
+live Google Maps rendering was not.
 
 ## Changed files
 

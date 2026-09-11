@@ -2,13 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { fireworksCategories } from "@/data/fireworks";
 
-const featured = [
-  fireworksCategories[0],
-  fireworksCategories[2],
-  fireworksCategories[1],
-  fireworksCategories[3],
-];
-
 const CategorySection = () => (
   <>
     <div className="selection-heading">
@@ -26,52 +19,34 @@ const CategorySection = () => (
         Take a look around, then come explore it all in store.
       </p>
     </div>
-    <div className="category-editorial">
-      {featured.map((category, index) => (
-        <article
-          key={category.title}
-          className={"category-feature category-feature-" + index}
-        >
-          <Image
-            src={category.image}
-            alt={category.alt}
-            fill
-            style={{ objectPosition: category.position }}
-            sizes={
-              index < 2
-                ? "(max-width: 767px) 100vw, (max-width: 1280px) 50vw, 608px"
-                : "(max-width: 767px) 50vw, (max-width: 1280px) 25vw, 296px"
-            }
-          />
-          <div className="category-caption">
-            <h3>{category.title}</h3>
-            <p>{category.description}</p>
-          </div>
-        </article>
-      ))}
-    </div>
-    <div className="category-supporting">
-      {fireworksCategories.slice(4).map((category) => (
-        <article key={category.title}>
-          <div className="category-thumbnail">
+    <div className="category-grid">
+      {fireworksCategories.map((category) => (
+        <article key={category.title} className="category-card">
+          <div className="category-image">
             <Image
               src={category.image}
               alt={category.alt}
               fill
               style={{ objectPosition: category.position }}
-              sizes="(max-width: 767px) 44vw, (max-width: 1280px) 23vw, 284px"
+              sizes="(max-width: 1023px) 50vw, (max-width: 1280px) 25vw, 290px"
             />
           </div>
-          <h3>{category.title}</h3>
-          <p>{category.description}</p>
+          <div className="category-body">
+            <h3>{category.title}</h3>
+            <p>{category.description}</p>
+            <Link
+              href={category.href}
+              className="category-action"
+              aria-label={`Browse ${category.title} in store`}
+            >
+              Browse in store <span aria-hidden="true">↗</span>
+            </Link>
+          </div>
         </article>
       ))}
     </div>
     <div className="selection-footnote">
       <p>Selection varies. Call or stop in for current availability.</p>
-      <Link href="/#visit" className="public-text-link">
-        Come see it in store <span aria-hidden="true">↗</span>
-      </Link>
     </div>
   </>
 );

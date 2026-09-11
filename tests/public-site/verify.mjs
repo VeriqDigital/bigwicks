@@ -37,7 +37,7 @@ for (const file of files) {
   if (/(^|\/)\.env(?:\.|$)/.test(file) || file.startsWith('public/')) continue;
   const target = resolve(stage, file);
   if (renderOnly) {
-    if (/^(app\/|components\/|config\/|lib\/|sanity\/|prisma\/|auth\.|[^/]*config\.|package(?:-lock)?\.json$)/.test(file)) {
+    if (/^(app\/|components\/|config\/|data\/|lib\/|sanity\/|prisma\/|auth\.|[^/]*config\.|package(?:-lock)?\.json$)/.test(file)) {
       assert.ok(readFileSync(resolve(root, file)).equals(readFileSync(target)), `Build input changed: ${file}`);
     }
     continue;
@@ -130,6 +130,14 @@ try {
       if ([390, 768, 1440].includes(width)) {
         await page.screenshot({ path: resolve(stage, `${baseline ? 'before' : 'after'}-${path === '/' ? 'home' : 'contact'}-${width}.png`), fullPage: true });
         await page.screenshot({ path: resolve(stage, `${baseline ? 'before' : 'after'}-${path === '/' ? 'home' : 'contact'}-${width}-viewport.png`) });
+        if (path === '/') {
+          for (const section of ['shop', 'visit']) {
+            // Fixed navigation is checked in the viewport captures. Hide it
+            // only during section captures so it cannot cover the section.
+            await page.locator(`#${section}`).screenshot({ path: resolve(stage, `detail-${section}-${width}.png`), style: 'header, .mobile-actions { visibility: hidden !important; }' });
+          }
+          await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+        }
       }
       if (!baseline) {
         const quick = page.getByRole('navigation', { name: 'Quick store actions' });
@@ -153,7 +161,7 @@ try {
     if (!baseline && path === '/') {
       await page.setViewportSize({ width: 1440, height: 900 });
       for (const selector of ['.retail-hero', '#shop', '#visit', '#about', '#demos']) {
-        await page.locator(selector).screenshot({ path: resolve(stage, `detail-${selector.replace(/[.#]/g, '')}-1440.png`) });
+        await page.locator(selector).screenshot({ path: resolve(stage, `detail-${selector.replace(/[.#]/g, '')}-1440.png`), style: 'header, .mobile-actions { visibility: hidden !important; }' });
       }
       assert.equal(await page.locator('.hero-actions a').first().textContent(), 'Get Directions');
       assert.equal(await page.locator('#shop h3').count(), 8);
