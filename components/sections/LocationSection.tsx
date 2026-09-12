@@ -1,18 +1,17 @@
 import Image from "next/image";
+import Link from "next/link";
 import Button from "@/components/ui/Button";
 import { siteConfig } from "@/config/site";
 
-const LocationSection = () => (
+const LocationSection = ({ newBuffalo = false }: { newBuffalo?: boolean }) => (
   <div className="public-container visit-layout">
     <div className="visit-top">
       <div className="visit-copy">
         <p className="public-kicker">La Porte, Indiana</p>
         <h2 className="public-title">
-          Make us
-          <br />
-          your next stop.
+          {newBuffalo ? "Plan your visit." : <>Make us<br />your next stop.</>}
         </h2>
-        <p className="visit-proximity">{siteConfig.contact.proximity}.</p>
+        <p className="visit-proximity">{newBuffalo ? siteConfig.contact.proximity : <Link className="underline underline-offset-4 hover:text-(--red)" href="/fireworks-near-new-buffalo-mi">{siteConfig.contact.proximity}</Link>}.</p>
         <address>
           <strong>{siteConfig.shortName}</strong>
           <span>

@@ -55,10 +55,12 @@ export const navigation: NavItem[] = [
   { label: "Deals", href: "/#deals" },
   { label: "Visit", href: "/#visit" },
   { label: "Contact", href: "/contact" },
-  { label: "Wholesale", href: "/account" },
+  { label: "Wholesale", href: "/wholesale" },
 ];
 
 export const footerLinks: NavItem[] = [
+  { label: "Fireworks Near New Buffalo", href: "/fireworks-near-new-buffalo-mi" },
+  { label: "Wholesale", href: "/wholesale" },
   { label: "Explore the Selection", href: "/#shop" },
   { label: "In-store Value", href: "/#deals" },
   { label: "Why Big Wicks", href: "/#why-big-wicks" },

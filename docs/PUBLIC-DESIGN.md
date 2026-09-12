@@ -180,3 +180,18 @@ live Google Maps rendering was not.
 - `config/site.ts` (navigation labels/links only), `data/fireworks.ts` (unused
   unsupported review themes removed), `data/faq.ts` (configured proximity reused)
 - `tests/public-site/fonts.mjs`, `tests/public-site/verify.mjs`, this document
+
+## Milestone 8B continuation
+
+The 8A design above remains approved. 8B adds two public landing pages in the same
+visual system; it does not replace the homepage composition. The visit-proximity
+sentence becomes a contextual New Buffalo link, and navigation/footer wholesale
+links now lead to public information at `/wholesale`. New Buffalo reuses the
+store visit layout and retail mobile bar. Wholesale keeps sign-in as its first
+and final action, without a competing fixed retail bar. Landing-specific styles
+are in `app/landing.css`; the existing `app/public.css` is unchanged.
+
+The public runner now covers four routes and shares SEO assertions with the
+focused runner. Its JSON-LD checks support the added WebSite/WebPage/breadcrumb
+entities. See [current SEO architecture](SEO.md) and [8B results](SEO-8B-VERIFICATION.md).
+Earlier counts/results in this document describe 8A only.
