@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import { publicMetadata } from "@/config/seo";
 import Image from "next/image";
 import ContactForm from "@/components/contact/ContactForm";
 import Button from "@/components/ui/Button";
@@ -7,18 +7,11 @@ import { siteConfig } from "@/config/site";
 import MobileActions from "@/components/layout/MobileActions";
 import "../public.css";
 
-export const metadata: Metadata = {
-  title: "Contact & Visit",
-  description:
-    "Contact Big Wicks Fireworks in La Porte, Indiana, call the store, view current hours, or get directions from New Buffalo and the surrounding area.",
-  alternates: { canonical: "/contact" },
-  openGraph: {
-    title: "Contact Big Wicks Fireworks",
-    description:
-      "Send Big Wicks a question, call the store, view current hours, or get directions to our La Porte, Indiana location.",
-    url: "/contact",
-  },
-};
+export const metadata = publicMetadata(
+  "/contact",
+  "Contact & Visit | Big Wicks Fireworks",
+  "Contact Big Wicks Fireworks in La Porte, Indiana, call the store, view current hours, or get directions from New Buffalo and the surrounding area.",
+);
 
 export default function ContactPage() {
   return (

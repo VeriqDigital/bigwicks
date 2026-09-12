@@ -5,6 +5,8 @@ import Navbar from "@/components/layout/Navbar";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 import { siteConfig } from "@/config/site";
 import { getSiteUrl } from "@/config/seo";
+import JsonLd from "@/components/seo/JsonLd";
+import { storeJsonLd } from "@/config/structured-data";
 import "./globals.css";
 
 const barlow = Barlow({
@@ -49,33 +51,11 @@ export const metadata: Metadata = {
   },
 };
 
-const localBusinessJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "Store",
-  name: siteConfig.name,
-  description: siteConfig.description,
-  telephone: siteConfig.contact.phone,
-  email: siteConfig.contact.email,
-  sameAs: siteConfig.socialLinks.map(({ href }) => href),
-  address: {
-    "@type": "PostalAddress",
-    streetAddress: siteConfig.contact.addressLine1,
-    addressLocality: siteConfig.contact.city,
-    addressRegion: siteConfig.contact.state,
-    postalCode: siteConfig.contact.postalCode,
-    addressCountry: "US",
-  },
-  openingHours: siteConfig.hours.map(({ schema }) => schema),
-};
-
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${barlow.variable} ${robotoCondensed.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd) }}
-        />
+        <JsonLd data={storeJsonLd()} />
         <ScrollToTop />
         <Navbar />
         <main className="flex-1">{children}</main>

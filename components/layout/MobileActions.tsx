@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { siteConfig } from "@/config/site";
 
-// Mounted only by the two public pages, never by the shared/private layouts.
+// Mounted only by public retail pages, never by the shared/private layouts.
 export default function MobileActions() {
   const [footerVisible, setFooterVisible] = useState(false);
   useEffect(() => {

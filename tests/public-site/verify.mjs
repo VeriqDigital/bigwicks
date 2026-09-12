@@ -1,5 +1,6 @@
 // Public design acceptance: isolated production build, no live database or mail.
 import assert from 'node:assert/strict';
+import { publicPaths, assertPublicPage } from '../seo/assertions.mjs';
 import { spawn, execFileSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, symlinkSync } from 'node:fs';
@@ -30,8 +31,10 @@ mkdirSync('.test-runtime', { recursive: true });
 const renderOnly = process.argv.includes('--render-only');
 const stage = renderOnly ? realpathSync(process.argv[process.argv.indexOf('--render-only') + 1]) : mkdtempSync(resolve('.test-runtime/public-source-'));
 assert.ok(stage.startsWith(realpathSync('.test-runtime') + sep), 'Use an isolated SEO source copy');
-const files = execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8', windowsHide: true }).split('\0').filter(Boolean);
-if (!baseline) files.push('app/public.css', 'components/layout/MobileActions.tsx', 'tests/public-site/verify.mjs', 'tests/public-site/fonts.mjs');
+const files = execFileSync('git', baseline ? ['ls-files', '-z'] : ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], { encoding: 'utf8', windowsHide: true }).split('\0').filter(Boolean);
+// Keep the existing --baseline comparison usable against the two-page 8A HEAD.
+const legacyBaseline = baseline && !files.includes('app/wholesale/page.tsx');
+const paths = legacyBaseline ? ['/', '/contact'] : publicPaths;
 const changed = new Set(execFileSync('git', ['diff', '--name-only', 'HEAD', '-z'], { encoding: 'utf8', windowsHide: true }).split('\0'));
 for (const file of files) {
   if (/(^|\/)\.env(?:\.|$)/.test(file) || file.startsWith('public/')) continue;
@@ -94,20 +97,18 @@ try {
   page.on('pageerror', error => pageErrors.push(error.message));
   await context.route('https://www.google.com/maps**', route => route.fulfill({ contentType: 'text/html', body: '<html><body style="margin:0;background:#d9d9d2;color:#5c5c55;font:14px sans-serif;display:grid;place-content:center;height:100vh;text-align:center"><div>Map paused for isolated preview<br><small>No external map connection</small></div></body></html>' }));
   const metrics = [];
-  for (const [path, canonical] of [['/', `${origin}/`], ['/contact', `${origin}/contact`]]) {
-    const response = await page.goto(`${base}${path}`, { waitUntil: 'networkidle' });
+  const seen = { titles: new Set(), descriptions: new Set() };
+  const seoReport = [];
+  for (const path of paths) {
+    const canonical = new URL(path, origin).href;
+    const response = await page.goto(base + path, { waitUntil: 'networkidle' });
     assert.equal(response.status(), 200);
-    assert.equal(await page.locator('link[rel="canonical"]').count(), 1);
-    // Next serializes a root canonical without a trailing slash; compare URLs.
-    assert.equal(new URL(await page.locator('link[rel="canonical"]').getAttribute('href')).href, canonical);
-    assert.equal(await page.locator('meta[name="robots"]').getAttribute('content'), 'index, follow');
-    assert.ok(await page.title());
-    assert.ok(await page.locator('meta[name="description"]').getAttribute('content'));
-    assert.ok(await page.locator('meta[property="og:title"]').getAttribute('content'));
-    assert.ok(await page.locator('meta[name="twitter:card"]').getAttribute('content'));
-    const structuredData = JSON.parse(await page.locator('script[type="application/ld+json"]').textContent());
-    assert.equal(structuredData['@type'], 'Store');
-    for (const field of ['offers', 'price', 'priceRange', 'aggregateRating']) assert.equal(structuredData[field], undefined);
+    if (legacyBaseline) {
+      assert.equal(await page.locator('link[rel="canonical"]').count(), 1);
+      assert.equal(new URL(await page.locator('link[rel="canonical"]').getAttribute('href')).href, canonical);
+      assert.equal(await page.locator('meta[name="robots"]').getAttribute('content'), 'index, follow');
+      assert.equal(JSON.parse(await page.locator('script[type="application/ld+json"]').textContent())['@type'], 'Store');
+    } else seoReport.push(await assertPublicPage(page, path, origin, seen));
     await page.addStyleTag({ content: fontCss + '\nhtml { --font-barlow: "Barlow" !important; --font-roboto-condensed: "Roboto Condensed" !important; }' });
     await page.evaluate(() => document.fonts.ready);
     for (const width of [360, 390, 430, 768, 1024, 1440, 1920]) {
@@ -127,9 +128,14 @@ try {
       const overflow = await page.locator('body').evaluate(el => [...el.querySelectorAll('h1,h2,h3,p,a,button,figure,video')].filter(node => { const box = node.getBoundingClientRect(); return box.width > 0 && (box.right > innerWidth + 1 || box.left < -1); }).map(node => node.textContent?.slice(0, 60)));
       assert.deepEqual(overflow, [], `${path} clipped content at ${width}`);
       metrics.push({ path, width, height: await page.evaluate(() => document.body.scrollHeight), visitTop: path === '/' ? await page.locator('#visit').evaluate(el => el.offsetTop) : null });
+      if (path === '/wholesale') {
+        await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+        const login = await page.locator('.landing-hero .wholesale-sign-in').boundingBox();
+        assert.ok(login && login.y >= 0 && login.y + login.height < 900, 'Wholesale sign-in visible in first viewport');
+      }
       if ([390, 768, 1440].includes(width)) {
-        await page.screenshot({ path: resolve(stage, `${baseline ? 'before' : 'after'}-${path === '/' ? 'home' : 'contact'}-${width}.png`), fullPage: true });
-        await page.screenshot({ path: resolve(stage, `${baseline ? 'before' : 'after'}-${path === '/' ? 'home' : 'contact'}-${width}-viewport.png`) });
+        await page.screenshot({ path: resolve(stage, `${baseline ? 'before' : 'after'}-${path === '/' ? 'home' : path.slice(1)}-${width}.png`), fullPage: true });
+        await page.screenshot({ path: resolve(stage, `${baseline ? 'before' : 'after'}-${path === '/' ? 'home' : path.slice(1)}-${width}-viewport.png`) });
         if (path === '/') {
           for (const section of ['shop', 'visit']) {
             // Fixed navigation is checked in the viewport captures. Hide it
@@ -139,7 +145,7 @@ try {
           await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
         }
       }
-      if (!baseline) {
+      if (!baseline && path !== '/wholesale') {
         const quick = page.getByRole('navigation', { name: 'Quick store actions' });
         if (width < 768) {
           await quick.waitFor({ state: 'visible' });
@@ -191,12 +197,25 @@ try {
       assert.ok(href && href !== '#', 'No placeholder link');
       if (href.startsWith('/#') && path === '/') assert.equal(await page.locator(`[id="${href.slice(2)}"]`).count(), 1, href);
     }
+    // Resolve internal page/fragment links locally without following private CTAs.
+    const current = page.url();
+    for (const href of new Set(links.filter(href => href.startsWith('/') || href.startsWith('#')))) {
+      const target = new URL(href, current);
+      if (target.pathname === '/account') continue;
+      assert.ok(publicPaths.includes(target.pathname), 'Only existing public destinations: ' + href);
+      if (target.hash) {
+        const checkPage = await context.newPage();
+        await checkPage.goto(base + target.pathname, { waitUntil: 'domcontentloaded' });
+        assert.equal(await checkPage.locator('[id="' + target.hash.slice(1) + '"]').count(), 1, href);
+        await checkPage.close();
+      }
+    }
     console.log(`PASS ${path}: unique ${canonical}, index/follow, social metadata, Store JSON-LD; 390/768/1440px`);
   }
   const sitemapResponse = await fetch(`${base}/sitemap.xml`);
   assert.equal(sitemapResponse.status, 200);
   const xml = await sitemapResponse.text();
-  assert.deepEqual([...xml.matchAll(/<loc>(.*?)<\/loc>/g)].map(match => match[1]), [`${origin}/`, `${origin}/contact`]);
+  assert.deepEqual([...xml.matchAll(/<loc>(.*?)<\/loc>/g)].map(match => match[1]), paths.map(path => new URL(path, origin).href));
   assert.doesNotMatch(xml, /lastmod|changefreq|priority|price|customer|catalogKey/i);
   const robotsResponse = await fetch(`${base}/robots.txt`);
   assert.equal(robotsResponse.status, 200);
@@ -228,6 +247,7 @@ try {
   console.log('PASS sitemap, robots, redirects, anonymous protected/utility noindex and token headers. No remote services used.');
   assert.deepEqual(pageErrors, [], 'No browser runtime errors');
   const { writeFileSync } = await import('node:fs');
+  writeFileSync(resolve(stage, 'seo-report.json'), JSON.stringify(seoReport, null, 2));
   writeFileSync(resolve(stage, 'public-metrics.json'), JSON.stringify(metrics, null, 2));
   console.log('PASS public links, assets, navigation, FAQ, video, contact validity and mobile-action boundaries.');
   console.log(JSON.stringify(metrics));

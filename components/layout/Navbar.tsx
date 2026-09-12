@@ -63,7 +63,7 @@ const Navbar = () => {
               key={item.label}
               href={item.href}
               prefetch={item.href === "/account" ? false : undefined}
-              className={`py-3 text-xs font-bold uppercase tracking-wider transition-colors hover:text-[#ff6872] ${item.href === "/account" ? "border-l border-white/25 pl-5 text-[#c7c7c3]" : "text-[#f2f2ef]"}`}
+              className={`py-3 text-xs font-bold uppercase tracking-wider transition-colors hover:text-[#ff6872] ${item.href === "/wholesale" ? "border-l border-white/25 pl-5 text-[#c7c7c3]" : "text-[#f2f2ef]"}`}
             >
               {item.label}
             </Link>
@@ -118,7 +118,7 @@ const Navbar = () => {
                 href={item.href}
                 prefetch={item.href === "/account" ? false : undefined}
                 onClick={() => setIsMenuOpen(false)}
-                className={`border-b border-[#3a3a3f] px-4 py-3.5 text-sm font-bold uppercase tracking-widest hover:bg-[#242428] hover:text-[#ff6872] ${item.href === "/account" ? "mt-2 text-[#bdbdb8]" : ""}`}
+                className={`border-b border-[#3a3a3f] px-4 py-3.5 text-sm font-bold uppercase tracking-widest hover:bg-[#242428] hover:text-[#ff6872] ${item.href === "/wholesale" ? "mt-2 text-[#bdbdb8]" : ""}`}
               >
                 {item.label}
               </Link>

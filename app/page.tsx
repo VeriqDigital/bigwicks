@@ -1,4 +1,7 @@
-import type { Metadata } from "next";
+import { publicMetadata } from "@/config/seo";
+import { siteConfig } from "@/config/site";
+import { websiteJsonLd } from "@/config/structured-data";
+import JsonLd from "@/components/seo/JsonLd";
 import FAQ from "@/components/sections/FAQ";
 import Hero from "@/components/sections/Hero";
 import LocationSection from "@/components/sections/LocationSection";
@@ -11,13 +14,12 @@ import DemoSection from "@/components/sections/DemoSection";
 import MobileActions from "@/components/layout/MobileActions";
 import "./public.css";
 
-export const metadata: Metadata = {
-  alternates: { canonical: "/" },
-};
+export const metadata = publicMetadata("/", "Big Wicks Fireworks | La Porte, Indiana Fireworks Store", siteConfig.description);
 
 export default function Home() {
   return (
     <div className="public-site">
+      <JsonLd data={websiteJsonLd()} />
       <Hero />
       <TrustStrip />
       <section id="shop" className="selection-section public-container">

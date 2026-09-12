@@ -4,6 +4,13 @@ Website and customer-ordering project for Big Wicks Fireworks LLC in La Porte, I
 
 ## Current status
 
+Milestone 8A / PR #24 is merged. Milestone 8B expands the public search surface
+with `/fireworks-near-new-buffalo-mi` and `/wholesale`, preserves the approved
+homepage/contact design, and keeps operational wholesale data private.
+See [SEO architecture and manual launch checklist](docs/SEO.md) and
+[8B verification](docs/SEO-8B-VERIFICATION.md). No merge or deployment is included.
+Earlier milestone summaries below retain their original scope.
+
 Milestones through **7B / PR #20** are merged. Milestone 7A records the
 [production readiness audit](docs/PRODUCTION-READINESS.md) and the authoritative
 [launch/rollback runbook](docs/LAUNCH-RUNBOOK.md). Milestone 7B closes CODE-01:

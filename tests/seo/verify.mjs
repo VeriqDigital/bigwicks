@@ -1,5 +1,6 @@
 // Repository-only SEO acceptance: no private env files, credentials or services.
 import assert from 'node:assert/strict';
+import { publicPaths, assertPublicPage } from './assertions.mjs';
 import { spawn, execFileSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, symlinkSync } from 'node:fs';
@@ -26,7 +27,7 @@ mkdirSync('.test-runtime', { recursive: true });
 const renderOnly = process.argv[2] === '--render-only';
 const stage = renderOnly ? realpathSync(process.argv[3]) : mkdtempSync(resolve('.test-runtime/seo-source-'));
 assert.ok(stage.startsWith(realpathSync('.test-runtime') + sep), 'Use an isolated SEO source copy');
-const files = execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8', windowsHide: true }).split('\0').filter(Boolean);
+const files = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], { encoding: 'utf8', windowsHide: true }).split('\0').filter(Boolean);
 for (const file of files) {
   if (/(^|\/)\.env(?:\.|$)/.test(file) || file.startsWith('public/')) continue;
   const target = resolve(stage, file);
@@ -81,31 +82,24 @@ try {
   const context = await browser.newContext();
   await context.route('**/*', route => new URL(route.request().url()).origin === base ? route.continue() : route.abort());
   const page = await context.newPage();
-  for (const [path, canonical] of [['/', `${origin}/`], ['/contact', `${origin}/contact`]]) {
-    const response = await page.goto(`${base}${path}`, { waitUntil: 'networkidle' });
+  const seen = { titles: new Set(), descriptions: new Set() };
+  const seoReport = [];
+  for (const path of publicPaths) {
+    const canonical = new URL(path, origin).href;
+    const response = await page.goto(base + path, { waitUntil: 'networkidle' });
     assert.equal(response.status(), 200);
-    assert.equal(await page.locator('link[rel="canonical"]').count(), 1);
-    // Next serializes a root canonical without a trailing slash; compare URLs.
-    assert.equal(new URL(await page.locator('link[rel="canonical"]').getAttribute('href')).href, canonical);
-    assert.equal(await page.locator('meta[name="robots"]').getAttribute('content'), 'index, follow');
-    assert.ok(await page.title());
-    assert.ok(await page.locator('meta[name="description"]').getAttribute('content'));
-    assert.ok(await page.locator('meta[property="og:title"]').getAttribute('content'));
-    assert.ok(await page.locator('meta[name="twitter:card"]').getAttribute('content'));
-    const structuredData = JSON.parse(await page.locator('script[type="application/ld+json"]').textContent());
-    assert.equal(structuredData['@type'], 'Store');
-    for (const field of ['offers', 'price', 'priceRange', 'aggregateRating']) assert.equal(structuredData[field], undefined);
+    seoReport.push(await assertPublicPage(page, path, origin, seen));
     for (const width of [390, 768, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${path} overflow at ${width}`);
-      await page.screenshot({ path: resolve(stage, `seo-${path === '/' ? 'home' : 'contact'}-${width}.png`), fullPage: true });
+      await page.screenshot({ path: resolve(stage, `seo-${path === '/' ? 'home' : path.slice(1)}-${width}.png`), fullPage: true });
     }
     console.log(`PASS ${path}: unique ${canonical}, index/follow, social metadata, Store JSON-LD; 390/768/1440px`);
   }
   const sitemapResponse = await fetch(`${base}/sitemap.xml`);
   assert.equal(sitemapResponse.status, 200);
   const xml = await sitemapResponse.text();
-  assert.deepEqual([...xml.matchAll(/<loc>(.*?)<\/loc>/g)].map(match => match[1]), [`${origin}/`, `${origin}/contact`]);
+  assert.deepEqual([...xml.matchAll(/<loc>(.*?)<\/loc>/g)].map(match => match[1]), publicPaths.map(path => new URL(path, origin).href));
   assert.doesNotMatch(xml, /lastmod|changefreq|priority|price|customer|catalogKey/i);
   const robotsResponse = await fetch(`${base}/robots.txt`);
   assert.equal(robotsResponse.status, 200);
@@ -123,6 +117,7 @@ try {
   for (const path of ['/login', '/setup-account', '/reset-password', '/forgot-password', '/account', '/portal', '/portal/confirmation/SEO-FICTIONAL', '/admin', '/admin/pricing', '/admin/customers', '/admin/orders', '/studio', '/studio/structure']) {
     await page.goto(`${base}${path}`, { waitUntil: 'networkidle' });
     assert.match(await page.locator('meta[name="robots"]').getAttribute('content'), /noindex/);
+    assert.equal(await page.locator('.mobile-actions').count(), 0);
     if (!['/login', '/setup-account', '/reset-password', '/forgot-password'].includes(path)) {
       assert.equal(new URL(page.url()).pathname, '/login');
     }
