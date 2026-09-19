@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState } from "react";
 import { submitContactForm } from "@/app/contact/actions";
 import {
   contactSubjects,
@@ -15,15 +15,8 @@ const ContactForm = () => {
     submitContactForm,
     initialContactFormState,
   );
-  const formRef = useRef<HTMLFormElement>(null);
-
-  useEffect(() => {
-    if (state.status === "success") formRef.current?.reset();
-  }, [state.status, state.submittedAt]);
-
   return (
     <form
-      ref={formRef}
       action={formAction}
       className="rounded-[7px] border border-[#d5d5d0] bg-white p-6 sm:p-8 lg:p-10"
     >
@@ -49,6 +42,7 @@ const ContactForm = () => {
             minLength={2}
             maxLength={100}
             autoComplete="name"
+            defaultValue={state.values?.name ?? ""}
             className={fieldClasses}
             aria-invalid={Boolean(state.fieldErrors?.name)}
             aria-describedby={state.fieldErrors?.name ? "contact-name-error" : undefined}
@@ -72,6 +66,7 @@ const ContactForm = () => {
             maxLength={254}
             autoComplete="email"
             inputMode="email"
+            defaultValue={state.values?.email ?? ""}
             className={fieldClasses}
             aria-invalid={Boolean(state.fieldErrors?.email)}
             aria-describedby={state.fieldErrors?.email ? "contact-email-error" : undefined}
@@ -94,6 +89,7 @@ const ContactForm = () => {
             maxLength={30}
             autoComplete="tel"
             inputMode="tel"
+            defaultValue={state.values?.phone ?? ""}
             className={fieldClasses}
             aria-invalid={Boolean(state.fieldErrors?.phone)}
             aria-describedby={state.fieldErrors?.phone ? "contact-phone-error" : undefined}
@@ -110,10 +106,11 @@ const ContactForm = () => {
             Inquiry type <span className="text-(--red)" aria-hidden="true">*</span>
           </label>
           <select
+            key={state.values?.subject ?? ""}
             id="contact-subject"
             name="subject"
             required
-            defaultValue=""
+            defaultValue={state.values?.subject ?? ""}
             className={fieldClasses}
             aria-invalid={Boolean(state.fieldErrors?.subject)}
             aria-describedby={state.fieldErrors?.subject ? "contact-subject-error" : undefined}
@@ -142,6 +139,7 @@ const ContactForm = () => {
           minLength={10}
           maxLength={3000}
           rows={8}
+          defaultValue={state.values?.message ?? ""}
           className={`${fieldClasses} resize-y`}
           aria-invalid={Boolean(state.fieldErrors?.message)}
           aria-describedby={state.fieldErrors?.message ? "contact-message-error" : undefined}

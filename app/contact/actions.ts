@@ -55,11 +55,23 @@ export async function submitContactForm(
     fieldErrors.message = "Enter a message using 10 to 3,000 characters.";
   }
 
+  // React resets uncontrolled fields after a resolved action, including errors.
+  // Return only bounded, normalized visitor fields as their next defaults.
+  // Validate the original values above; never echo the honeypot or extra fields.
+  const values = {
+    name: name.slice(0, 100),
+    email: email.slice(0, 254),
+    phone: phone.slice(0, 30),
+    subject: selectedSubject?.value ?? "",
+    message: message.slice(0, 3000),
+  };
+
   if (Object.keys(fieldErrors).length > 0) {
     return {
       status: "error",
       message: "Please correct the highlighted fields and try again.",
       fieldErrors,
+      values,
     };
   }
 
@@ -72,6 +84,7 @@ export async function submitContactForm(
     return {
       status: "error",
       message: `Online messaging is temporarily unavailable. Please call the store at ${siteConfig.contact.phone}.`,
+      values,
     };
   }
 
@@ -80,6 +93,7 @@ export async function submitContactForm(
       return {
         status: "error",
         message: "Too many messages have been submitted. Please wait and try again, or call the store.",
+        values,
       };
     }
   } catch {
@@ -87,6 +101,7 @@ export async function submitContactForm(
     return {
       status: "error",
       message: `Online messaging is temporarily unavailable. Please call the store at ${siteConfig.contact.phone}.`,
+      values,
     };
   }
 
@@ -128,6 +143,7 @@ export async function submitContactForm(
       return {
         status: "error",
         message: "We could not send your message right now. Please try again or call the store.",
+        values,
       };
     }
   } catch {
@@ -135,6 +151,7 @@ export async function submitContactForm(
     return {
       status: "error",
       message: "We could not send your message right now. Please try again or call the store.",
+      values,
     };
   }
 

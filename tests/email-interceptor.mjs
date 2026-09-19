@@ -24,6 +24,16 @@ const originalFetch = globalThis.fetch;
 globalThis.fetch = async (input, init) => {
   const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
   if (new URL(url).hostname === "api.resend.com") {
+    let stall = false;
+    try { await access(join(process.env.TEST_ACCOUNT_MAIL_DIR, "timeout")); stall = true; } catch { /* No timeout fixture. */ }
+    if (stall) {
+      // Exercise the application's actual timeout without contacting the provider.
+      return new Promise((_resolve, reject) => {
+        if (!init.signal) return reject(new Error("Missing isolated provider timeout signal."));
+        if (init.signal.aborted) return reject(init.signal.reason);
+        init.signal.addEventListener("abort", () => reject(init.signal.reason), { once: true });
+      });
+    }
     try {
       await access(join(process.env.TEST_ACCOUNT_MAIL_DIR, "fail"));
       return new Response("{}", { status: 503 });

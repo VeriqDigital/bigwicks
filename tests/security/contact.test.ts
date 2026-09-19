@@ -9,10 +9,11 @@ const idle = { status: "idle" as const, message: "" };
 const failure = "We could not send your message right now. Please try again or call the store.";
 const limited = "Too many messages have been submitted. Please wait and try again, or call the store.";
 const sensitive = "fictional-provider-secret customer message database detail";
+const draft = { name: "Fictional Visitor", email: "visitor@example.test", phone: "5551234567", subject: "general", message: "Fictional security test message." };
 const key = (identity: string) => createHmac("sha256", process.env.AUTH_SECRET!).update(identity).digest("hex");
 function form(values: Record<string, string> = {}) {
   const data = new FormData();
-  for (const [name, value] of Object.entries({ name: "Fictional Visitor", email: "visitor@example.test", phone: "", subject: "general", message: "Fictional security test message.", company: "", ...values })) data.set(name, value);
+  for (const [name, value] of Object.entries({ ...draft, company: "", ...values })) data.set(name, value);
   return data;
 }
 const submit = (values?: Record<string, string>) => submitContactForm(idle, form(values));
@@ -25,7 +26,10 @@ afterEach(() => { vi.restoreAllMocks(); vi.unstubAllEnvs(); });
 afterAll(async () => { await db.loginRateLimit.deleteMany(); await db.$disconnect(); });
 
 it("sends plain text to fixed recipients with validated reply_to and a unique key for legitimate followups", async () => {
-  for (let i = 0; i < 2; i++) expect((await submit({ email: "  Visitor@Example.test  ", to: "forged@example.test", from: "forged@example.test", reply_to: "forged@example.test" })).status).toBe("success");
+  for (let i = 0; i < 2; i++) {
+    const result = await submit({ email: "  Visitor@Example.test  ", to: "forged@example.test", from: "forged@example.test", reply_to: "forged@example.test" });
+    expect(result.status).toBe("success"); expect(result).not.toHaveProperty("values");
+  }
   const calls = vi.mocked(fetch).mock.calls;
   expect(calls).toHaveLength(2);
   for (const [url, options] of calls) {
@@ -39,7 +43,8 @@ it("sends plain text to fixed recipients with validated reply_to and a unique ke
 });
 it("normalizes case and whitespace into one HMAC email identity", async () => {
   for (const email of [" visitor@example.test ", "VISITOR@EXAMPLE.TEST", "Visitor@Example.Test"]) expect((await submit({ email })).status).toBe("success");
-  expect((await submit()).message).toBe(limited);
+  const rejected = await submit();
+  expect(rejected.message).toBe(limited); expect(rejected.values).toEqual(draft);
   expect(fetch).toHaveBeenCalledTimes(CONTACT_EMAIL_LIMIT);
   const rows = await db.loginRateLimit.findMany();
   expect(rows).toHaveLength(2);
@@ -71,7 +76,8 @@ it.each([false, true])("simultaneous submissions cannot exceed the atomic allowa
 });
 it("honeypot succeeds without database or transport work", async () => {
   const query = vi.spyOn(db, "$queryRaw"); const cleanup = vi.spyOn(db, "$executeRaw");
-  expect((await submit({ company: "bot", email: "invalid" })).status).toBe("success");
+  const result = await submit({ company: "bot", email: "invalid" });
+  expect(result.status).toBe("success"); expect(result).not.toHaveProperty("values");
   expect(query).not.toHaveBeenCalled(); expect(cleanup).not.toHaveBeenCalled(); expect(fetch).not.toHaveBeenCalled();
 });
 it.each([
@@ -82,7 +88,27 @@ it.each([
   const query = vi.spyOn(db, "$queryRaw"); const cleanup = vi.spyOn(db, "$executeRaw");
   const result = await submit({ [field]: value });
   expect(result.status).toBe("error"); expect(result.fieldErrors).toHaveProperty(field);
+  expect(result.values).toMatchObject(Object.fromEntries(Object.entries(draft).filter(([key]) => key !== field)));
   expect(query).not.toHaveBeenCalled(); expect(cleanup).not.toHaveBeenCalled(); expect(fetch).not.toHaveBeenCalled();
+});
+it("returns only normalized visitor values on validation errors, never extra form fields", async () => {
+  const result = await submit({ name: "  Fictional Visitor  ", email: "  Visitor@Example.test  ", phone: "  not-a-phone  ", subject: " visit ", message: '  Literal <b>markup</b> & "quotes".\nSecond line.  ', internal: sensitive, to: "forged@example.test" });
+  expect(result.status).toBe("error");
+  expect(result.values).toEqual({ name: "Fictional Visitor", email: "Visitor@Example.test", phone: "not-a-phone", subject: "visit", message: 'Literal <b>markup</b> & "quotes".\nSecond line.' });
+  expect(JSON.stringify(result)).not.toContain(sensitive);
+  expect(fetch).not.toHaveBeenCalled();
+});
+it("bounds malformed returned values without accepting invalid input or echoing files", async () => {
+  const data = form({ name: "n".repeat(101), email: "e".repeat(255), phone: "p".repeat(31), subject: "forged", message: "m".repeat(3001) });
+  const result = await submitContactForm(idle, data);
+  expect(Object.keys(result.fieldErrors!).sort()).toEqual(["email", "message", "name", "phone", "subject"]);
+  expect(result.values).toEqual({ name: "n".repeat(100), email: "e".repeat(254), phone: "p".repeat(30), subject: "", message: "m".repeat(3000) });
+  for (const field of ["name", "email", "phone", "subject", "message"]) data.set(field, new File([sensitive], "fictional.txt"));
+  const files = await submitContactForm(idle, data);
+  expect(files.status).toBe("error");
+  expect(files.values).toEqual({ name: "", email: "", phone: "", subject: "", message: "" });
+  expect(JSON.stringify(files)).not.toContain(sensitive);
+  expect(fetch).not.toHaveBeenCalled();
 });
 it.each(["global", "email", "cleanup", "secret"])("fails closed when %s evaluation fails", async stage => {
   if (stage === "secret") vi.stubEnv("AUTH_SECRET", "");
@@ -96,19 +122,25 @@ it.each(["global", "email", "cleanup", "secret"])("fails closed when %s evaluati
   }
   const result = await submit();
   expect(result.message).toContain("Online messaging is temporarily unavailable");
+  expect(result.values).toEqual(draft);
   expect(fetch).not.toHaveBeenCalled();
   expect(console.error).toHaveBeenCalledExactlyOnceWith("Contact form abuse protection is unavailable.");
   expect(JSON.stringify(result)).not.toContain(sensitive);
 });
 it("missing mail configuration returns unavailable before consuming buckets", async () => {
   vi.stubEnv("RESEND_API_KEY", "");
-  expect((await submit()).message).toContain("Online messaging is temporarily unavailable");
+  const result = await submit();
+  expect(result.message).toContain("Online messaging is temporarily unavailable");
+  expect(result.values).toEqual(draft);
   expect(await db.loginRateLimit.count()).toBe(0); expect(fetch).not.toHaveBeenCalled();
 });
 it.each(["http", "network"])("provider %s failure returns and logs only safe details; failures still spend allowance", async mode => {
   if (mode === "http") vi.mocked(fetch).mockResolvedValue(new Response(sensitive, { status: 503 }));
   else vi.mocked(fetch).mockRejectedValue(Error(sensitive));
-  for (let i = 0; i < CONTACT_EMAIL_LIMIT; i++) expect((await submit()).message).toBe(failure);
+  for (let i = 0; i < CONTACT_EMAIL_LIMIT; i++) {
+    const result = await submit();
+    expect(result.message).toBe(failure); expect(result.values).toEqual(draft);
+  }
   expect((await submit()).message).toBe(limited);
   expect(fetch).toHaveBeenCalledTimes(CONTACT_EMAIL_LIMIT);
   expect(vi.mocked(console.error).mock.calls).toEqual(Array.from({ length: CONTACT_EMAIL_LIMIT }, () => [mode === "http" ? "Contact form email delivery failed with status 503." : "Contact form email delivery failed."]));
@@ -120,7 +152,8 @@ it("a stalled provider is aborted by the actual ten-second signal and fails safe
     started = performance.now();
     return new Promise<Response>((_resolve, reject) => options!.signal!.addEventListener("abort", () => reject(Error(sensitive)), { once: true }));
   });
-  expect((await submit()).message).toBe(failure);
+  const result = await submit();
+  expect(result.message).toBe(failure); expect(result.values).toEqual(draft);
   const elapsed = performance.now() - started;
   expect(timeout).toHaveBeenCalledExactlyOnceWith(CONTACT_EMAIL_TIMEOUT_MS);
   expect(elapsed).toBeGreaterThanOrEqual(CONTACT_EMAIL_TIMEOUT_MS - 100);
