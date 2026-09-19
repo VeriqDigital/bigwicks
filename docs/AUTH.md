@@ -230,8 +230,17 @@ verified with Node 24.20.0. On PowerShell with script execution disabled, use
 | tier2@example.test | CUSTOMER | Development Customer 2 / Tier 2 |
 
 These are clearly fictional test records, not client facts. Seed requires explicit
-opt-in, rejects production mode and non-local database hosts, and never prints
-passwords. Repeated seeds preserve existing passwords, status, role and tiers.
+opt-in, rejects production mode, and validates the local target before password
+hashing or database creation/connection. Use an explicit PostgreSQL URL with user,
+password and database, host `localhost` (case-insensitive), `127.0.0.1` or `[::1]`,
+and an optional authority port (1–65535; default 5432). IPv6 loopback is normalized
+to `::1` for the driver. Trailing-dot hosts, other IP spellings, sockets and routing
+query overrides (including encoded/duplicate `host` or `port`) are refused. The
+only query option is one `sslmode=disable`, `require` or `verify-full`; TLS uses
+certificate verification. Validated fields are passed directly to the driver,
+without the original URI or `PGHOST`/`PGPORT`/`PGDATABASE` fallback. Errors never
+print credentials or the URL. Repeated seeds preserve existing passwords, status,
+role and tiers.
 Turn off the seed opt-in after use. Never seed a production database through a tunnel.
 Real production provisioning remains a separately authorized release task.
 
