@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type Request } from "@playwright/test";
 import { PrismaClient } from "../../generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
@@ -13,30 +13,50 @@ async function login(page: Page, email: string, password: string) {
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
 }
 
-test("public Wholesale Portal navigation fits desktop/mobile and does not fetch auth before a click", async ({ page }) => {
+function observePrivateRequests(page: Page) {
   const authRequests: string[] = [];
-  page.on("request", (request) => {
+  const listener = (request: Request) => {
     const path = new URL(request.url()).pathname;
-    if (path === "/account" || path.startsWith("/api/auth/")) authRequests.push(path);
-  });
+    if (["/account", "/api/auth", "/portal", "/admin", "/studio", "/login", "/setup-account", "/reset-password", "/forgot-password"]
+      .some(root => path === root || path.startsWith(`${root}/`))) authRequests.push(path);
+  };
+  page.on("request", listener);
+  return { requests: authRequests, stop: () => page.off("request", listener) };
+}
+
+async function inspectWholesaleSignIn(page: Page, requests: string[]) {
+  await expect(page).toHaveURL(/\/wholesale$/);
+  const links = page.getByRole("link", { name: "Existing Customer Sign In", exact: true });
+  await expect(links).toHaveCount(2);
+  for (const link of await links.all()) {
+    await expect(link).toHaveAttribute("href", "/account");
+    await link.hover();
+  }
+  // Give viewport/hover prefetch work time to settle before asserting its absence.
+  await page.waitForLoadState("networkidle");
+  expect(requests).toEqual([]);
+}
+
+test("public Wholesale navigation fits desktop/mobile and requires explicit sign-in before auth requests", async ({ page }) => {
+  const observed = observePrivateRequests(page);
   await page.goto("/");
   const header = page.locator("header").first();
-  for (const width of [320, 390, 768, 1024, 1279, 1280, 1440]) {
+  for (const width of [320, 390, 768, 1023, 1024, 1279, 1280, 1440]) {
     await page.setViewportSize({ width, height: 600 });
-    if (width < 1280) await page.getByRole("button", { name: "Open navigation menu" }).click();
-    const portal = header.getByRole("link", { name: "Wholesale Portal", exact: true }).filter({ visible: true });
-    await expect(portal).toHaveCount(1);
-    await expect(portal).toHaveAttribute("href", "/account");
-    await portal.hover();
-    await expect(header.locator('a[href="/admin"], a[href="/studio"]')).toHaveCount(0);
+    if (width < 1024) await page.getByRole("button", { name: "Open navigation menu" }).click();
+    const wholesale = header.getByRole("link", { name: "Wholesale", exact: true }).filter({ visible: true });
+    await expect(wholesale).toHaveCount(1);
+    await expect(wholesale).toHaveAttribute("href", "/wholesale");
+    await wholesale.hover();
+    await expect(header.locator('a[href="/account"], a[href="/portal"], a[href="/admin"], a[href="/studio"]')).toHaveCount(0);
     const directions = header.getByRole("link", { name: "Get Directions", exact: true }).filter({ visible: true });
     await directions.scrollIntoViewIfNeeded();
     await expect(directions).toBeInViewport();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    if (width >= 1280) {
+    if (width >= 1024) {
       const nav = page.getByRole("navigation", { name: "Main navigation" });
       const logo = await nav.getByRole("link", { name: "Big Wicks Fireworks home" }).boundingBox();
-      const firstLink = await nav.getByRole("link", { name: "Home", exact: true }).boundingBox();
+      const firstLink = await nav.getByRole("link", { name: "Fireworks", exact: true }).boundingBox();
       expect(firstLink!.x).toBeGreaterThanOrEqual(logo!.x + logo!.width);
       for (const link of await nav.locator("a").filter({ visible: true }).all()) {
         const box = await link.boundingBox();
@@ -44,26 +64,37 @@ test("public Wholesale Portal navigation fits desktop/mobile and does not fetch 
       }
     }
     await header.screenshot({ path: `test-results/wholesale-navigation-${width}.png` });
-    if (width < 1280) await page.keyboard.press("Escape");
+    if (width < 1024) await page.keyboard.press("Escape");
   }
-  expect(authRequests).toEqual([]);
-  await header.getByRole("link", { name: "Wholesale Portal", exact: true }).click();
+  expect(observed.requests).toEqual([]);
+  await header.getByRole("link", { name: "Wholesale", exact: true }).click();
+  await inspectWholesaleSignIn(page, observed.requests);
+  await page.locator(".landing-hero").getByRole("link", { name: "Existing Customer Sign In", exact: true }).click();
   await expect(page).toHaveURL(/\/login$/);
+  expect(observed.requests).toContain("/account");
+  observed.stop();
 });
 
-test("public Wholesale Portal link uses the existing account dispatcher for customer and admin", async ({ page }) => {
+test("public wholesale sign-in uses the existing account dispatcher for customer and admin", async ({ page }) => {
   for (const [email, password, destination] of [
     ["tier1@example.test", process.env.SEED_TIER1_PASSWORD!, "/portal"],
     ["admin@example.test", process.env.SEED_ADMIN_PASSWORD!, "/admin"],
   ]) {
     await login(page, email, password);
     await expect(page).toHaveURL(new RegExp(destination + "$"));
+    await page.waitForLoadState("networkidle");
     await page.setViewportSize({ width: 390, height: 844 });
+    const observed = observePrivateRequests(page);
     await page.goto("/");
     await page.getByRole("button", { name: "Open navigation menu" }).click();
-    await page.locator("#mobile-navigation-menu").getByRole("link", { name: "Wholesale Portal", exact: true }).click();
-    await expect(page).toHaveURL(new RegExp(destination + "$"));
+    await page.locator("#mobile-navigation-menu").getByRole("link", { name: "Wholesale", exact: true }).click();
+    await inspectWholesaleSignIn(page, observed.requests);
     await expect(page.getByRole("button", { name: "Open navigation menu" })).toBeVisible();
+    await expect(page.locator("#mobile-navigation-menu")).toHaveCount(0);
+    await page.locator(".landing-hero").getByRole("link", { name: "Existing Customer Sign In", exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(destination + "$"));
+    expect(observed.requests).toContain("/account");
+    observed.stop();
     await page.getByRole("button", { name: "Sign out", exact: true }).click();
     await expect(page).toHaveURL(/\/login$/);
   }
