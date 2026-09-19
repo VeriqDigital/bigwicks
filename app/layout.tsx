@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Barlow, Roboto_Condensed } from "next/font/google";
 import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
-import ScrollToTop from "@/components/layout/ScrollToTop";
 import { siteConfig } from "@/config/site";
 import { getSiteUrl } from "@/config/seo";
 import JsonLd from "@/components/seo/JsonLd";
@@ -53,10 +52,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${barlow.variable} ${robotoCondensed.variable} h-full antialiased`}>
+    <html lang="en" data-scroll-behavior="smooth" className={`${barlow.variable} ${robotoCondensed.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
         <JsonLd data={storeJsonLd()} />
-        <ScrollToTop />
         <Navbar />
         <main className="flex-1">{children}</main>
         <Footer />

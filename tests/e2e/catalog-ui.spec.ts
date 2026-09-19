@@ -60,7 +60,10 @@ test("customer catalog renders authorized products and supports search/category/
   page.on("request", (request) => {
     // Existing public navigation prefetches its links as they enter the viewport.
     // Exclude only Next's explicit prefetch requests to known public pages.
-    const publicPrefetch = request.headers()["next-router-prefetch"] === "1" && ["/", "/contact"].includes(new URL(request.url()).pathname);
+    const url = new URL(request.url());
+    const publicPrefetch = request.headers()["next-router-prefetch"] === "1"
+      && url.origin === new URL(page.url()).origin
+      && ["/", "/contact", "/wholesale", "/fireworks-near-new-buffalo-mi"].includes(url.pathname);
     if (!publicPrefetch && (request.resourceType() === "fetch" || request.resourceType() === "xhr")) requests.push(request.url());
   });
   for (const query of [" ALPHA ", "fic-a-001", "CAKES"]) {
