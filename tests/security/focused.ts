@@ -13,7 +13,7 @@ const port = await new Promise<number>(done => { const s = createServer(); s.lis
 const password = randomBytes(24).toString("hex");
 const env = { ...process.env, DATABASE_URL: `postgresql://postgres:${password}@localhost:${port}/audit_focused`,
   ALLOW_DEVELOPMENT_SEED: "true", SEED_ADMIN_PASSWORD: randomBytes(24).toString("hex"), SEED_TIER1_PASSWORD: randomBytes(24).toString("hex"), SEED_TIER2_PASSWORD: randomBytes(24).toString("hex"),
-  NEXT_PUBLIC_SANITY_PROJECT_ID: "testonly", NEXT_PUBLIC_SANITY_DATASET: "test", TEST_ACCOUNT_MAIL_DIR: resolve(directory, "mail"), TEST_CATALOG_CONTENT_FILE: resolve(directory, "catalog.json") };
+  NEXT_PUBLIC_SANITY_PROJECT_ID: "testonly", NEXT_PUBLIC_SANITY_DATASET: "test", TEST_ACCOUNT_MAIL_DIR: resolve(directory, "mail"), TEST_CATALOG_CONTENT_FILE: resolve(directory, "catalog.json"), CONTACT_FROM_EMAIL: process.env.CONTACT_FROM_EMAIL ?? "" };
 await mkdir(env.TEST_ACCOUNT_MAIL_DIR); await writeFile(env.TEST_CATALOG_CONTENT_FILE, JSON.stringify({ products: [] }));
 const postgres = new EmbeddedPostgres({ databaseDir: databaseDirectory, port, user: "postgres", password, authMethod: "scram-sha-256", persistent: true, postgresFlags: ["-h", "127.0.0.1"], onLog: () => {}, onError: () => {} });
 let app: ChildProcess | undefined; let started = false;
@@ -38,13 +38,25 @@ try {
   if (!ordersOnly && !browserOnly) await run(["node_modules/vitest/vitest.mjs", "run", "--config", revocation ? "tests/security/revocation.config.ts" : invitations ? "tests/security/invitations.config.ts" : contactOnly ? "tests/security/integration.config.ts" : "tests/security/focused.config.ts"]);
   if (invitations && process.argv.includes("--database")) return;
   if (contactOnly || (invitations && !browserOnly)) await run(["node_modules/next/dist/bin/next", "build"], true);
-  app = start(["--import", "./tests/email-interceptor.mjs", "--import", "./tests/catalog-interceptor.mjs", "node_modules/next/dist/bin/next", "start", "--port", "3107", "--hostname", "localhost"], true);
-  let ready = false;
-  for (let count = 0; count < 60; count++) { try { if ((await fetch("http://localhost:3107/login")).ok) { ready = true; break; } } catch { /* Starting. */ } await new Promise(done => setTimeout(done, 250)); }
-  if (!ready) throw Error("Isolated app did not start.");
+  async function startApp() {
+    app = start(["--import", "./tests/email-interceptor.mjs", "--import", "./tests/catalog-interceptor.mjs", "node_modules/next/dist/bin/next", "start", "--port", "3107", "--hostname", "localhost"], true);
+    for (let count = 0; count < 60; count++) {
+      try { if ((await fetch("http://localhost:3107/login")).ok) return; } catch { /* Starting. */ }
+      await new Promise(done => setTimeout(done, 250));
+    }
+    throw Error("Isolated app did not start.");
+  }
+  await startApp();
   if (ordersOnly) await run(["node_modules/@playwright/test/cli.js", "test", "orders.spec.ts"]);
   if (invitations) await run(["node_modules/@playwright/test/cli.js", "test", "account-tokens.spec.ts", "customer-batch.spec.ts", ...(revocation ? ["customers.spec.ts", "--config", "tests/security/playwright.config.ts"] : [])]);
   else await run(["node_modules/@playwright/test/cli.js", "test", "--config", "tests/security/http.config.ts", ...(contactOnly ? ["--grep", "contact"] : [])]);
+  if (contactOnly) {
+    // Reuse the isolated build/database with incomplete runtime mail config.
+    if (app && app.exitCode === null) { const closed = new Promise(done => app!.once("exit", done)); app.kill(); await closed; }
+    env.CONTACT_FROM_EMAIL = "";
+    await startApp();
+    await run(["node_modules/@playwright/test/cli.js", "test", "--config", "tests/security/http.config.ts", "--grep", "contact retains its draft when mail configuration is missing"]);
+  }
 } finally {
   if (app && app.exitCode === null) { const closed = new Promise(done => app!.once("exit", done)); app.kill(); await closed; }
   if (started) await postgres.stop();
