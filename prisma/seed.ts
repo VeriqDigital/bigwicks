@@ -2,15 +2,13 @@ import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client";
 import { hashPassword } from "../lib/auth/password";
+import { developmentSeedConnection, SeedTargetError } from "./seed-target";
 
 async function main() {
-  const connectionString = process.env.DATABASE_URL;
   if (process.env.NODE_ENV === "production" || process.env.ALLOW_DEVELOPMENT_SEED !== "true") {
     throw new Error("Seed refused: explicitly enable ALLOW_DEVELOPMENT_SEED on a development database.");
   }
-  if (!connectionString || !["localhost", "127.0.0.1", "[::1]"].includes(new URL(connectionString).hostname)) {
-    throw new Error("Development seeding is restricted to a local PostgreSQL database.");
-  }
+  const connection = developmentSeedConnection(process.env.DATABASE_URL);
   const fixtures = [
     { email: "admin@example.test", password: process.env.SEED_ADMIN_PASSWORD, role: "ADMIN" as const },
     { email: "tier1@example.test", password: process.env.SEED_TIER1_PASSWORD, role: "CUSTOMER" as const },
@@ -18,7 +16,7 @@ async function main() {
   ];
   // Validate and hash before writing anything; never print plaintext passwords.
   const hashes = await Promise.all(fixtures.map(({ password }) => hashPassword(password ?? "")));
-  const db = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+  const db = new PrismaClient({ adapter: new PrismaPg(connection) });
   try {
     await db.$transaction(async (tx) => {
       const tiers = await Promise.all(["Tier 1", "Tier 2"].map((name, index) =>
@@ -46,7 +44,9 @@ async function main() {
   }
 }
 
-main().catch(() => {
-  console.error("Development seed failed. Check local database access, opt-in and password requirements in docs/AUTH.md.");
+main().catch((error: unknown) => {
+  console.error(error instanceof SeedTargetError
+    ? `Development seed failed. ${error.message}`
+    : "Development seed failed. Check local database access, opt-in and password requirements in docs/AUTH.md.");
   process.exitCode = 1;
 });
