@@ -1,5 +1,121 @@
 # Milestone 7A — Production readiness
 
+## Launch handoff — 2026-09-20
+
+**Source review only; no live configuration or launch readiness verified.** GitHub
+repository/branch metadata confirms default branch `main` at
+`70a3cb39615f10280d49f410f5583f694b8bbb03` (merged PR #29), matching the clean
+starting checkout on `Launch-Handoff`. This summary reuses the existing readiness
+checklist; the dated assessments below and the independent audit remain history.
+
+### Evidence and scope
+
+- **Current source:** [catalog service](../lib/catalog/service.ts) filters by manual
+  availability and the signed-in customer's independently supplied tier price.
+  [Order submission](../lib/orders/service.ts) saves requests before attempting mail;
+  [ORDERING.md](ORDERING.md#privacy-and-routes) distinguishes staff list/detail views
+  and individual customer confirmations from customer order history. Website Ordering
+  and whole cases are already confirmed. Payment, stock reservation, invoicing and
+  fulfillment remain outside the website. No tier percentages or assignments may be inferred.
+- **Historical verification:** the [2026-09-19 independent audit / PR #26](audits/2026-09-19-independent-audit.md)
+  is followed by merged [#27](https://github.com/VeriqDigital/bigwicks/pull/27)
+  (UX-01; seven contact browser checks reported),
+  [#28](https://github.com/VeriqDigital/bigwicks/pull/28) (UX-02/TEST-01; ten navigation
+  checks and both Chromium integration phases reported passing), and
+  [#29](https://github.com/VeriqDigital/bigwicks/pull/29) (OPS-SEED-01; 388 unit,
+  624 combined database-suite and 98 bootstrap checks reported passing).
+  Their source changes are present: retained contact defaults, removed scroll override,
+  updated browser contracts, explicit validated seed connection fields. These are
+  isolated historical results, not tests rerun here or production approval. Firefox,
+  live delivery, real Studio editing and deployed platform behavior remain unverified.
+- **Prior user reports:** [onboarding status](ONBOARDING.md#current-status) records
+  nonproduction catalog/price counts, missing prices/content, unavailable products,
+  and no production/customer imports or invitations at that time. Those counts and
+  the earlier Spam/environment observations were **not refreshed**. Current live
+  data, provisioning and configuration remain unknown; provider PR badges do not close gates.
+
+### Client decisions and inputs
+
+Missing input is not a software defect. Mick records approvals privately; do not
+put customer lists, prices, account identities or operational identifiers in Git.
+
+| Needed input / owner | Evidence to close | Why it matters / blocks | Authority |
+| --- | --- | --- | --- |
+| Launch products, independent tier prices and currency; content standard — **client** | Approved product/tier/availability matrix and price sources, including Tier 1 and disposition of outstanding Tier 2 gaps; explicit exclusions or narrower cohort; approve images/descriptions supplied or deferred | Prevents incorrect prices/empty assortments; blocks affected availability and customer access, not unrelated infrastructure planning | [Onboarding](ONBOARDING.md#current-status), [pricing](CATALOG.md#postgresql-prices), [runbook phase 6](LAUNCH-RUNBOOK.md#phase-6--verify-full-catalog-and-launch-assortment) |
+| Customers and staff access — **client** | Approved company name, customer number, login email, exact tier and active flag for each customer via an approved secure channel; named admins, recovery custodian and staff-owned smoke account | Prevents wrong access/tier assignment; blocks account provisioning/import and internal account tests | [Customer contract](ONBOARDING.md#customer-onboarding--milestone-5b), [auth](AUTH.md#customer-routes-and-reset-policy) |
+| Mail identities, wording and rollout coverage — **client** | Approved account/contact senders, contact/order recipients, setup/request wording, order/inquiry owner and invitation cohort/window; accept existing quantity limits or identify a real need | Correct routing and manual handling of saved requests when mail fails; blocks mail smoke and customer invitations | [Content gaps](CONTENT.md#12-content-gaps), [order recovery](ORDERING.md#notification-and-recovery), [readiness decisions](#4-client-decisions-still-needed) |
+| Public facts and final domain — **client** | Sign-off on displayed contact/address/hours (including seasonal changes), proximity, social links, slogan, promotions/brand availability; owned domain and preferred www/apex address; required privacy/legal copy if applicable | Avoids inaccurate public claims and wrong links; blocks public opening/domain-dependent steps | [Content](CONTENT.md), [SEO sign-off](SEO.md#client-facts-and-manual-post-deploy-checklist), [domain ledger](PRODUCTION-CONFIGURATION.md#domaindns) |
+
+### Production configuration and operational gates
+
+Owners below are responsibilities to assign, not evidence that anyone has approved execution.
+
+| Needed verification / owner | Evidence to close | Why it matters / blocks | Authority |
+| --- | --- | --- | --- |
+| Permanent catalog mapping custody — **Mick**, with client data custodian | Recoverable approved mapping/checksum, unchanged permanent keys, reviewed exclusions and original disputed-SKU resolution | Prevents identity/price mismatches; blocks catalog import | [Runbook phase 0](LAUNCH-RUNBOOK.md#phase-0--approvals-code-closure-and-rehearsal), OPS-04 below |
+| Targets, roles, origins, mail and environment isolation — **authorized provider/operator** | Named, timestamped private evidence for configuration ledger V/D/R/A/S/M/N/O checks; distinguish intended targets from actual settings, including operator-secret absence and Preview protection | Prevents cross-environment access/mail and wrong builds; blocks each dependent write, exposure or mail step | [Configuration ledger](PRODUCTION-CONFIGURATION.md#unverified-live-items) |
+| Recovery and production initialization — **authorized provider/operator** | Tested restore/retention and recovery owners, approved pre-write backups; separately authorized migration/bootstrap and catalog/price/customer reconciliation records | Tools/rehearsals do not prove initialized production; blocks writes without recovery, then dependent runtime/data use | [Backup gate](PRODUCTION-CONFIGURATION.md#backuprestore), [runbook](LAUNCH-RUNBOOK.md) phases 2–7 |
+| Release candidate and editor acceptance — **Mick**, with authorized operator/editor | Exact candidate/lockfile/platform build and applicable checks; launch-date bounded advisory review; real editing evidence before Studio staff handoff | Closes platform/editor gaps left by isolated tests; blocks candidate acceptance or affected editor handoff | [Audit action classification](audits/2026-09-19-independent-audit.md#action-classification), runbook phases 0/4/8 |
+| Live smoke, staff recovery and final sign-off — **Mick** coordinates **client + authorized operator** | Approved real-domain auth/isolation, inbox/Spam and saved-order smoke; phone/tablet/desktop/public SEO evidence; named monitoring/rollback coverage and signed go/no-go | Provider acceptance is not delivery; staff must recover saved requests without duplicates; blocks opening/invitations | [Runbook phases 8–11](LAUNCH-RUNBOOK.md#phase-8--real-domain-internal-smoke-before-customer-campaign), [final checklist](LAUNCH-RUNBOOK.md#final-gono-go-checklist) |
+
+### Next actions and source reconciliation
+
+1. Mick collects the client approvals above at the agreed follow-up window and
+   locates the permanent mapping. No follow-up date is established by these sources.
+2. Authorized owners complete the [configuration ledger](PRODUCTION-CONFIGURATION.md#unverified-live-items)
+   and recovery evidence. Planning may proceed alongside pricing collection;
+   dependent gates stay closed. Keep exact evidence private and secrets in the secret manager.
+3. Once each prerequisite and specific authorization exists, follow the **existing
+   [runbook](LAUNCH-RUNBOOK.md)**: protected infrastructure/data preparation, domain,
+   pricing and customers, internal smoke, approved availability, signed opening,
+   separate invitation cohorts and monitoring. This handoff authorizes none of those actions.
+
+**Remaining documentation drift:** older readiness/runbook text specifies two public
+pages; [current SEO scope](SEO.md#public-routes-and-intent),
+[route allowlist](../config/seo.ts) and [sitemap](../app/sitemap.ts) specify four.
+Use all four for release acceptance. Older proposal/conditional ordering language
+is superseded by the [4A authorization](DECISIONS.md#2026-09-06--milestone-4a-managed-website-ordering).
+The configuration matrix's customer-import “phase 6” reference means runbook **phase 7**.
+These stale passages remain in their original records; they do not reopen scope decisions.
+No new concrete code concern was established by this bounded review.
+
+Optional images/descriptions depend on the client's launch standard. Customer
+history, Excel ordering, payments, stock sync, retry UI, analytics and broad
+dependency/browser expansion are not new launch blockers without new evidence.
+
+### Unsent client-input request
+
+*Draft for Mick to use when the agreed follow-up window arrives. Not sent or scheduled.*
+
+Hi — following up on the Big Wicks launch details we still need:
+
+- **Products and prices:** Please approve the products customers should see at launch,
+  provide the Tier 1 case prices and resolve any remaining Tier 2 blanks, and confirm
+  the currency. If you prefer a smaller starting selection, we can document that.
+  Please also confirm whether product photos/descriptions are needed for launch or can follow.
+- **Customer and staff access:** We need the approved customer list with company name,
+  customer number, login email, pricing group and whether access should be enabled,
+  plus which staff need admin access and who should be the recovery contact.
+  We'll arrange an approved secure transfer for the list and price files.
+- **Messages and rollout:** Please confirm the addresses customers should see as the
+  senders, the inboxes for inquiries and order requests, and who will monitor them.
+  Please review the account-setup and order-request wording and confirm the first
+  invitation group and timing. We'll also need a staff-owned account for the final checks.
+- **Public website:** Please approve the displayed store/contact details, hours,
+  directions wording, social links, slogan and current promotions/brands, and confirm
+  the domain you own and preferred website address. Let me know about any required
+  privacy/legal wording.
+
+No passwords or access keys are needed in your reply. I'll coordinate provider
+access separately. Once these inputs are approved, we can complete the production
+checks and agree the launch window.
+
+— Mick
+
+---
+
+## Historical readiness record — original dates retained
+
 Audit date: **2026-09-08**. Source baseline: `1129cbf` (merged PR #18 / Milestone
 6E), on clean `Milestone-7A`. `git fetch origin main` confirmed that remote main
 still matched this commit. This is a repository audit, not a live-service audit.
