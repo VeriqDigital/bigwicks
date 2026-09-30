@@ -351,3 +351,56 @@ submission, failed generation/email, interrupted claims and retry without mail.
 Source compatibility checks above used the real supplied workbook in memory;
 automated regression data and captured attachments were fictional. No live data,
 production configuration, remote migration, real email or deployment was changed.
+
+## Focused correction verification (2026-09-30)
+
+These are new runs for the PR #31 correction pass, separate from the historical
+record above. All new fixtures, database records, captured mail and screenshots
+were fictional. The actual wholesale source was not reread or changed in this pass.
+
+- `npm.cmd run lint`: passed.
+- `node tests/security/run.mjs typecheck`: Prisma generation, Next route types and
+  TypeScript passed with private environment loading blocked.
+- `npm.cmd test`: **411 tests in 19 files passed**, including 11 new correction
+  tests. Original regression assertions were preserved.
+- `node tests/security/run.mjs integration`: all seven migrations applied to its
+  disposable local database; **681 unit/integration/security tests in 33 files
+  passed**. Both production builds passed. Browser phases passed **29 and 27
+  tests**, respectively: 51 Chromium and 5 Firefox executions in total. The first
+  phase intentionally skipped 23 tests requiring configured catalog content.
+  The harness ran outside the Windows sandbox for browser compatibility, retaining
+  mail/catalog interception, private-env exclusion and outbound guards.
+- `node tests/bootstrap/run.mjs`: **98 tests in 3 files passed**, together with its
+  lint and typecheck. No remote database was involved.
+- The final missing-price marker wrapping/row-height adjustment followed the full
+  integration source snapshot. It passed the focused command
+  `npm.cmd exec vitest run tests/unit/order-sheet-corrections.test.ts tests/unit/order-sheets.test.ts`
+  (**23 tests**) and an independent rendered-workbook check. It adds no new
+  formula or persistence behavior.
+- The generated XLSX formulas and initial cached values were checked separately.
+  An additional local experiment imported fictional generated workbooks into the
+  bundled Artifact Tool calculation engine, edited cells and explicitly called
+  `recalculate()`. Adding two cases at 2.34 produced 4.68 and subtotal 64.75;
+  changing the existing line to four cases produced 79.96 and subtotal 84.74.
+  Missing/formula-derived prices propagated `#N/A` until a numeric price was
+  supplied; blank quantities and explicit zero prices behaved distinctly. The
+  Submitted order total remained 60.07. Monetary comparisons used two-decimal
+  precision. This was actual independent recalculation, not a cached-value reopen,
+  and was **not a native Microsoft Excel test**. Working and missing-price cell
+  renders were inspected. The experiment/artifacts remain ignored local files;
+  no application dependency was added.
+- Production traces for the template admin, order detail and ordering routes
+  include the worker, diagnostic module, ExcelJS and saxes; every referenced file
+  exists. Production-path browser tests exercised subprocess generation and
+  attachment/download equality. The new permanent-failure flow passed without
+  resending mail; its 390, 768 and 1,440 px screenshots were visually inspected,
+  and browser assertions found no horizontal overflow.
+- `git diff --check` passed. The correction changes workbook validation/generation,
+  safe recovery diagnostics, lightweight metadata imports, tests and this document;
+  it adds no schema, dependency, authentication or public-site changes.
+
+Native client Excel verification and the explicitly authorized isolated-preview
+smoke test described above remain outstanding. The seven migrations must precede
+serving this feature. No deployment, remote migration, live-data change or real
+email was performed. The genuine source duplicate remains blocked pending the
+client's correction; no replacement production identifier was invented.
