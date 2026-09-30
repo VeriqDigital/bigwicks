@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 import "exceljs";
 import "saxes";
 import { LIMITS } from "./runtime/limits.mjs";
+import { failureCode } from "./runtime/diagnostics.mjs";
 import type {
   Configuration,
   Generation,
@@ -12,7 +13,13 @@ import type {
   SavedSheetOrder,
 } from "./types";
 
-export class OrderSheetError extends Error {}
+export class OrderSheetError extends Error {
+  readonly code: string;
+  constructor(message: string, code: unknown = "GENERATION_FAILED") {
+    super(message);
+    this.code = failureCode(code);
+  }
+}
 let runningWorkers = 0;
 export function sheetMessage(error: unknown) {
   return error instanceof OrderSheetError
@@ -23,6 +30,7 @@ async function run<T>(input: object): Promise<T> {
   if (runningWorkers >= LIMITS.concurrentWorkers)
     throw new OrderSheetError(
       "Workbook processing is busy. Retry in a moment.",
+      "WORKER_BUSY",
     );
   runningWorkers++;
   try {
@@ -60,11 +68,12 @@ async function run<T>(input: object): Promise<T> {
         finish(
           new OrderSheetError(
             "Workbook processing exceeded its time limit. Simplify the source or retry the saved export.",
+            "WORKER_TIMEOUT",
           ),
         );
       }, LIMITS.milliseconds);
       child.once("error", () =>
-        finish(new OrderSheetError("Workbook processor could not start.")),
+        finish(new OrderSheetError("Workbook processor could not start.", "WORKER_UNAVAILABLE")),
       );
       child.stdin.on("error", () => {
         /* Exit handler reports one safe error. */
@@ -73,7 +82,7 @@ async function run<T>(input: object): Promise<T> {
         size += chunk.length;
         if (size > LIMITS.output * 2) {
           child.kill();
-          finish(new OrderSheetError("Workbook output exceeded its limit."));
+          finish(new OrderSheetError("Workbook output exceeded its limit.", "OUTPUT_LIMIT"));
         } else chunks.push(chunk);
       });
       child.once("close", (code) => {
@@ -83,6 +92,7 @@ async function run<T>(input: object): Promise<T> {
             finish(
               new OrderSheetError(
                 output.error || "Workbook processing failed.",
+                output.code,
               ),
             );
           else finish(undefined, output.result as T);

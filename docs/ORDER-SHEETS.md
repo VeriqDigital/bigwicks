@@ -41,7 +41,8 @@ no-store and noindex headers. There are no public file URLs or customer download
 
 ## Supported template contract (order-sheets-v1)
 
-One visible worksheet, not named `Submitted order`, with one unique header row in
+One visible worksheet, not named `Submitted order` (case-insensitive, matching
+ExcelJS's duplicate-name rule), with one unique header row in
 the first 30 rows. Headers use NFKC, uppercase, trimmed/collapsed whitespace and
 replace `.`, `_`, `:` with spaces. Required columns and aliases:
 
@@ -61,6 +62,12 @@ blank ID or merge the ID/name into a single heading. Product cells must be unmer
 and product rows/required columns visible. Up to 2,000 products are supported.
 Reordered columns/rows, inserted categories, blank rows and trailing formatting
 are accepted. ID/name limits are 100/200 characters.
+The actual controlled subtotal/case-count formulas must also fit Excel's
+8,192-character limit. Upload validation uses the same formula builder as generation.
+Excessively fragmented product rows are rejected with instructions to group them
+into fewer contiguous blocks. For example, 2,000 products on alternating rows
+5 through 4,003 exceed this limit; the row/product limits alone do not guarantee
+acceptance. Invalid replacements leave the active version untouched.
 
 After the final product, include one `SUBTOTAL` or `MERCHANDISE SUBTOTAL` label,
 with its value in the immediately adjacent cell to the right. Optional `TOTAL` or
@@ -114,6 +121,30 @@ integer cents, checked against saved totals and verified after XLSX serializatio
 Controlled quantity and money cells use integer and two-decimal formats so an
 inherited source format cannot hide or mislabel the saved figures.
 
+The first worksheet is an **offline working sheet**. Every product row receives a
+controlled line formula, including initially unselected rows. Empty quantities give
+blank line results; numeric quantities/prices calculate rounded two-decimal line
+amounts. Adding or changing quantities therefore changes the working subtotal when
+the spreadsheet application recalculates. Initially submitted prices/counts/totals
+still come from saved snapshots and have verified cached values.
+
+For an unselected row, only a readable literal price in the staff-confirmed tier
+column is used as its offline reference. Another tier's price and formula-derived
+cached values are never substituted. Missing/unreadable prices show **Enter case
+price** in a wrapped yellow cell. If cases are entered before a valid numeric price,
+the line produces `#N/A`, which propagates to the working subtotal so an incomplete
+price is never silently counted as free. A literal numeric zero is distinguishable
+from a missing price. Staff can replace the marker with a confirmed offline price.
+The source's other tier columns remain staff-only reference content.
+
+These local edits never change the separate Submitted order sheet, PostgreSQL
+snapshots, website pricing or persisted READY export bytes. Downloading again
+returns the original saved artifact. For the exact-text money fallback, monetary
+formulas remain disabled and the first sheet explicitly instructs staff to finalize
+manually; values are never coerced into rounded spreadsheet numbers. New artifacts
+record generator version `order-sheets-v2`; existing ready artifacts and immutable
+template configurations are not rewritten.
+
 Automatic shipping/tax/card-fee amounts are cleared. The working total is merchandise
 only, excluding unentered adjustments. No source rate, minimum or threshold becomes
 a website rule. Every output includes a `Submitted order` sheet with reference,
@@ -156,6 +187,15 @@ overwrites a ready fallback or resends email. Failed notification delivery remai
 manual staff follow-up. There is no queue, unattended retry or unawaited durable
 background-work claim. Hosting must allow the bounded subprocess plus database and
 provider time; interrupted requests can be recovered using the saved admin order.
+
+Failure diagnostics are allowlisted: `PINNED_CONFIG_INVALID`, `SAVED_TOTAL_INVALID`,
+`OUTPUT_LIMIT`, `WORKER_BUSY`, `WORKER_TIMEOUT`, `WORKER_UNAVAILABLE` and
+`GENERATION_FAILED`. Unknown codes/exceptions become the generic code. Raw exception
+messages, cell contents, prices, stack traces and provider responses are not stored
+as diagnostics. Retry and the admin detail give cause-specific guidance. Only a
+currently active generation claim gives the two-minute lease-wait message. Permanent
+pinned-template/configuration or output-limit problems require maintainer correction;
+activating a new template does not repair an older order's pinned inputs.
 
 Every page/action/admin service/download has a fresh `requireAdmin` check. Admin
 draft writes, activation/deactivation and recovery claims call `lockAdminActor`
@@ -212,6 +252,22 @@ and the notification attachment flag. Existing order data is not backfilled or
 repriced. Build generates Prisma types but does not apply migrations.
 The initial-bootstrap guard now expects seven reviewed migrations instead of six;
 its exact migration names/checksums and target/confirmation safeguards remain intact.
+
+**Deployment order:** the seven existing migrations, including
+`20260929090000_order_sheets`, must be applied to the explicitly authorized target
+and verified **before serving the new order code**. The order creation transaction
+now requires the new tables and notification column. This focused correction pass
+adds no further migration. A successful build or Vercel **Ready** status does not
+prove the database was migrated, worker files were deployed, subprocesses can start,
+or a deployed order export succeeded. No remote migration was run for this work.
+
+The remaining preview smoke test needs an explicitly authorized isolated preview
+target and safe mail routing: upload/activate a fictional template, submit a
+fictional order, compare the captured attachment with the protected stored-file
+download, then verify a controlled export failure and manual retry without duplicate
+mail or snapshot/READY-file changes. Also open a disposable copy in the client's
+Excel application and change an unselected quantity, an existing quantity and a
+missing price. Do not use the genuine wholesale file until its duplicate is corrected.
 
 For an explicitly selected disposable/local database only: set `DATABASE_URL` to
 that local target, run `npm run db:generate`, then `npm run db:deploy`. Never point

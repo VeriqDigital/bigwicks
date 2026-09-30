@@ -29,7 +29,7 @@ export async function readTemplateBytes(id: string) {
     row.original.length > LIMITS.upload ||
     checksum(row.original) !== row.checksum
   )
-    throw new OrderSheetError("TEMPLATE_CHECKSUM");
+    throw new OrderSheetError("TEMPLATE_CHECKSUM", "PINNED_CONFIG_INVALID");
   return row;
 }
 export async function readExportBytes(orderId: string) {

@@ -44,6 +44,7 @@ import { getAdminOrder, getCustomerConfirmation } from "@/lib/orders/reads";
 import { fictionalProduct } from "../fixtures/catalog";
 import {
   fictionalSheet,
+  sparseSheet,
   sheetKey,
   compositeKey,
 } from "../fixtures/order-sheets";
@@ -136,6 +137,71 @@ beforeEach(async () => {
 afterAll(async () => {
   await cleanup();
   await db.$disconnect();
+});
+
+it("invalid reserved-name and oversized-formula replacements preserve the active template", async () => {
+  const active = await activate();
+  for (const bytes of [
+    await fictionalSheet({ worksheetName: "submitted order" }),
+    await fictionalSheet({ worksheetName: "SUBMITTED ORDER" }),
+    await sparseSheet(),
+  ]) {
+    const r = await uploadOrderSheet(new File([new Uint8Array(bytes)], "fictional-replacement.xlsx"), tier2);
+    expect(r.status).toBe("invalid");
+    expect(await db.orderSheetDraft.count({ where: { uploadedById: admin.id } })).toBe(0);
+    expect((await db.orderSheetActive.findUniqueOrThrow({ where: { tierId: tier2 } })).versionId).toBe(active.id);
+    expect(Buffer.from(await (await downloadOriginalTemplate(active.id)).arrayBuffer())).toEqual(active.bytes);
+  }
+});
+
+it.each(["PINNED_CONFIG_INVALID", "OUTPUT_LIMIT", "WORKER_BUSY", "WORKER_TIMEOUT", "WORKER_UNAVAILABLE", "SAVED_TOTAL_INVALID", "not-an-allowed-code"])("persists only safe failure code %s and gives cause-specific retry feedback", async (code) => {
+  await activate();
+  mock.generate.mockRejectedValue(new actualWorker.OrderSheetError("PRIVATE_CELL_PRICE_PROVIDER_STACK", code));
+  const { reference } = await submit();
+  const original = await db.order.findUniqueOrThrow({ where: { reference }, include: { items: true } });
+  const expected = code === "not-an-allowed-code" ? "GENERATION_FAILED" : code;
+  const failed = await db.orderExport.findUniqueOrThrow({ where: { orderId: original.id } });
+  expect(failed).toMatchObject({ state: "FAILED", diagnostic: expected, bytes: null });
+  mock.auth.mockResolvedValue({ user: admin });
+  const result = await retryOrderExport(reference);
+  expect(result.message).toContain(expected);
+  expect(result.message).not.toMatch(/PRIVATE_CELL|two minutes/);
+  expect(mock.email).toHaveBeenCalledTimes(1);
+  expect(await db.order.findUniqueOrThrow({ where: { reference }, include: { items: true } })).toEqual(original);
+});
+
+it("reports a lease wait only while the generation claim is active", async () => {
+  mock.generate.mockRejectedValueOnce(Error("private unknown failure"));
+  const { reference } = await submit();
+  const row = await db.orderExport.findFirstOrThrow();
+  expect(row.diagnostic).toBe("GENERATION_FAILED");
+  await db.orderExport.update({ where: { orderId: row.orderId }, data: { state: "GENERATING", claimId: "11111111-1111-4111-8111-111111111111", claimedAt: new Date() } });
+  mock.auth.mockResolvedValue({ user: admin });
+  expect((await retryOrderExport(reference)).message).toContain("two minutes");
+  expect(mock.generate).toHaveBeenCalledTimes(1);
+  await db.orderExport.update({ where: { orderId: row.orderId }, data: { claimedAt: new Date(Date.now() - 180000) } });
+  expect((await retryOrderExport(reference)).message).toContain("ready");
+  expect(mock.email).toHaveBeenCalledTimes(1);
+});
+
+it("offline edits to a downloaded working sheet leave all saved inputs and ready bytes unchanged", async () => {
+  await activate();
+  const { reference } = await submit();
+  mock.auth.mockResolvedValue({ user: admin });
+  const original = await db.order.findUniqueOrThrow({ where: { reference }, include: { items: true, excelExport: true } });
+  const prices = await db.productPrice.findMany({ where: { pricingTierId: tier2 }, orderBy: { catalogKey: "asc" } });
+  const bytes = Buffer.from(await (await downloadOrderExport(reference)).arrayBuffer());
+  const w = new ExcelJS.Workbook();
+  await w.xlsx.load(new Uint8Array(bytes).buffer);
+  w.getWorksheet("Wholesale")!.getCell("A7").value = 2;
+  w.getWorksheet("Wholesale")!.getCell("G7").value = 2.34;
+  w.getWorksheet("Wholesale")!.getCell("A5").value = 4;
+  expect(w.getWorksheet("Wholesale")!.getCell("H7").formula).toContain("ROUND(A7*G7,2)");
+  expect(w.getWorksheet("Submitted order")!.lastRow!.getCell(7).value).toBe(60.07);
+  expect(Buffer.from(await w.xlsx.writeBuffer())).not.toEqual(bytes);
+  expect(Buffer.from(await (await downloadOrderExport(reference)).arrayBuffer())).toEqual(bytes);
+  expect(await db.order.findUniqueOrThrow({ where: { reference }, include: { items: true, excelExport: true } })).toEqual(original);
+  expect(await db.productPrice.findMany({ where: { pricingTierId: tier2 }, orderBy: { catalogKey: "asc" } })).toEqual(prices);
 });
 async function stage(
   tier = tier2,

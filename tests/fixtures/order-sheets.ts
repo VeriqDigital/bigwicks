@@ -39,10 +39,11 @@ export async function fictionalSheet(
     reordered?: boolean;
     formulaPrice?: boolean;
     unsafe?: boolean;
+    worksheetName?: string;
   } = {},
 ) {
   const w = new ExcelJS.Workbook(),
-    s = w.addWorksheet("Wholesale");
+    s = w.addWorksheet(options.worksheetName ?? "Wholesale");
   const headers = options.reordered
     ? [
         "PRODUCT NAME",
@@ -139,5 +140,16 @@ export async function fictionalSheet(
       formula: 'WEBSERVICE("https://example.test/private")',
       result: 1,
     };
+  return Buffer.from(await w.xlsx.writeBuffer());
+}
+
+// A real XLSX within the upload/archive/cell bounds, with deliberately fragmented rows.
+export async function sparseSheet(count = 2000) {
+  const w = new ExcelJS.Workbook(), s = w.addWorksheet("Sparse fictional products");
+  s.getRow(2).values = ["QTY", "PRODUCT ID", "PRODUCT NAME", "PACKING", "TIER BLUE", "", "", "TOTAL"];
+  for (let i = 0; i < count; i++) {
+    s.getRow(5 + 2 * i).values = [null, `SPARSE-${i}`, `Fictional product ${i}`, "1/1", 2.34];
+  }
+  s.getCell(7 + 2 * count, 7).value = "SUBTOTAL";
   return Buffer.from(await w.xlsx.writeBuffer());
 }

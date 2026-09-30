@@ -6,17 +6,8 @@ import { getDb } from "@/lib/db";
 import { checksum, readExportBytes, readTemplateBytes } from "./storage";
 import { generateOrderSheet, OrderSheetError, sheetMessage } from "./worker";
 import type { Configuration, SavedSheetOrder } from "./types";
-
-export const exportMetadata = {
-  state: true,
-  kind: true,
-  diagnostic: true,
-  templateId: true,
-  claimedAt: true,
-  generatedAt: true,
-} as const;
-export const referenceValid = (value: unknown): value is string =>
-  typeof value === "string" && /^BW-[A-F0-9]{20}$/.test(value);
+import { exportMetadata, referenceValid, CLAIM_LEASE_MS, exportRecoveryMessage } from "./metadata";
+import { failureCode } from "./runtime/diagnostics.mjs";
 
 // Called only after an authorized order creation commits, or an ADMIN recovery claim.
 // No catalog, ProductPrice or current customer/tier dependency is permitted here.
@@ -51,7 +42,7 @@ export async function generateCommittedExport(
             { state: { in: ["PENDING", "FAILED"] } },
             {
               state: "GENERATING",
-              claimedAt: { lt: new Date(Date.now() - 120000) },
+              claimedAt: { lt: new Date(Date.now() - CLAIM_LEASE_MS) },
             },
           ],
         },
@@ -115,14 +106,14 @@ export async function generateCommittedExport(
     });
     if (result.count !== 1) return null;
     return await readExportBytes(orderId);
-  } catch {
+  } catch (error) {
     if (claimed)
       try {
         await getDb().orderExport.updateMany({
           where: { orderId, state: "GENERATING", claimId },
           data: {
             state: "FAILED",
-            diagnostic: "GENERATION_FAILED",
+            diagnostic: failureCode(error instanceof OrderSheetError ? error.code : null),
             claimId: null,
           },
         });
@@ -143,10 +134,11 @@ export async function retryOrderExport(reference: unknown) {
     });
     if (!order) throw new OrderSheetError("Order not found.");
     const file = await generateCommittedExport(order.id, admin);
+    const record = file ? null : await getDb().orderExport.findUnique({ where: { orderId: order.id }, select: exportMetadata });
     return {
       message: file
         ? `Excel export ready (${file.kind === "TEMPLATE" ? "populated template" : "snapshot fallback"}). Notification email was not resent.`
-        : "Export is not ready. Another attempt may be running; wait two minutes and retry. The saved order is unchanged.",
+        : exportRecoveryMessage(record),
     };
   } catch (error) {
     return { message: sheetMessage(error) };

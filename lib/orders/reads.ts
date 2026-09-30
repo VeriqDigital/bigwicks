@@ -4,7 +4,7 @@ import { getDb } from "@/lib/db";
 import { notFound } from "next/navigation";
 import type { Prisma } from "@/generated/prisma/client";
 import type { OrderReceipt } from "./types";
-import { exportMetadata } from "@/lib/order-sheets/exports";
+import { exportMetadata } from "@/lib/order-sheets/metadata";
 
 const referencePattern = /^BW-[A-F0-9]{20}$/;
 const withItems = { items: { orderBy: { catalogKey: "asc" as const } } };

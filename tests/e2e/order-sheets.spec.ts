@@ -10,6 +10,9 @@ import {
   compositeKey,
 } from "../fixtures/order-sheets";
 import { fictionalProduct } from "../fixtures/catalog";
+import { inspectWorkbook } from "../../lib/order-sheets/runtime/workbook.mjs";
+import { createHash } from "node:crypto";
+import type { Prisma } from "../../generated/prisma/client";
 
 test.skip(
   !process.env.TEST_CATALOG_CONTENT_FILE,
@@ -260,4 +263,40 @@ test("duplicate source reports locations and leaves active state unchanged", asy
     page.getByText(/rows 5, 540: duplicate normalized PRODUCT ID/),
   ).toBeVisible();
   expect(await db.orderSheetVersion.count()).toBe(0);
+});
+
+test("a permanently incompatible pinned export gives safe staff recovery guidance without resending mail", async ({ page, browser }, info) => {
+  // Simulate a previously accepted immutable version, without weakening current upload validation.
+  const original = await fictionalSheet(), inspection = await inspectWorkbook(original);
+  const version = await db.orderSheetVersion.create({ data: {
+    tierId, uploadedById: adminId, uploadedAt: new Date(), filename: "fictional-legacy.xlsx",
+    original: new Uint8Array(original), checksum: createHash("sha256").update(original).digest("hex"),
+    parserVersion: "legacy-unsupported",
+    configuration: { ...inspection, version: "legacy-unsupported", priceColumn: 7, mapping: { [sheetKey]: 5, [compositeKey]: 631 } } as unknown as Prisma.InputJsonValue,
+  } });
+  await db.orderSheetActive.create({ data: { tierId, versionId: version.id, revision: 1 } });
+  const customerContext = await browser.newContext(), customer = await customerContext.newPage();
+  await login(customer, "tier2");
+  await customer.getByLabel("Cases for Sheet fictional first", { exact: true }).fill("3");
+  await customer.getByRole("button", { name: "Review order", exact: true }).click();
+  await customer.getByRole("button", { name: "Submit order request", exact: true }).click();
+  await expect(customer).toHaveURL(/\/portal\/confirmation\/BW-/);
+  const reference = customer.url().split("/").pop()!;
+  await login(page, "admin");
+  await page.goto(`/admin/orders/${reference}`);
+  await expect(page.getByText(/another identical retry will not correct it/)).toBeVisible();
+  await expect(page.getByText(/accepted notification had no Excel attachment/)).toBeVisible();
+  expect((await page.request.get(`/admin/orders/${reference}/excel`)).status()).toBe(404);
+  const mail = (await readdir(process.env.TEST_ACCOUNT_MAIL_DIR!)).sort();
+  await page.getByRole("button", { name: "Generate/retry Excel", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("PINNED_CONFIG_INVALID");
+  await expect(page.getByRole("status")).not.toContainText("two minutes");
+  expect((await readdir(process.env.TEST_ACCOUNT_MAIL_DIR!)).sort()).toEqual(mail);
+  for (const width of [390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 950 });
+    await page.evaluate(() => window.scrollTo(0, 0));
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: info.outputPath(`sheet-failure-${width}.png`), fullPage: true });
+  }
+  await customerContext.close();
 });

@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth/authorization";
 import { getAdminOrder } from "@/lib/orders/reads";
 import OrderSnapshot from "@/components/orders/OrderSnapshot";
 import ExportForm from "./export-form";
+import { exportRecoveryMessage } from "@/lib/order-sheets/metadata";
 
 export const metadata: Metadata = { title: "Order submission", description: "Submitted wholesale order snapshot.", robots: { index: false, follow: false } };
 export default async function OrderPage({ params }: { params: Promise<{ reference: string }> }) {
@@ -20,7 +21,7 @@ export default async function OrderPage({ params }: { params: Promise<{ referenc
     <section className="my-6 border border-(--border) bg-white p-5" aria-labelledby="excel-title"><h2 id="excel-title" className="font-heading text-2xl font-bold">Staff Excel export</h2>
       <p className="mt-3">{order.excelExport?.state === "READY" ? order.excelExport.kind === "TEMPLATE" ? "Ready: populated template and submitted snapshot." : `Ready: complete snapshot fallback (${order.excelExport.diagnostic}).` : order.excelExport ? `Export ${order.excelExport.state.toLowerCase()}. ${order.excelExport.diagnostic ?? ""}` : "Historical order: no template was pinned. Generate a complete snapshot fallback."}</p>
       {order.excelExport?.templateId && <a className="mt-2 flex min-h-11 w-fit items-center text-sm underline" href={`/admin/order-sheets/${order.excelExport.templateId}/original`}>Download the original template pinned to this order</a>}
-      {order.excelExport?.state === "READY" ? <a className="mt-3 inline-flex min-h-12 items-center rounded-sm border border-current px-5 font-semibold" href={`/admin/orders/${order.reference}/excel`}>Download saved Excel</a> : <><p className="mt-2 text-sm">An interrupted attempt can be retried after two minutes. Generating does not resend email.</p><ExportForm reference={order.reference}/></>}
+      {order.excelExport?.state === "READY" ? <a className="mt-3 inline-flex min-h-12 items-center rounded-sm border border-current px-5 font-semibold" href={`/admin/orders/${order.reference}/excel`}>Download saved Excel</a> : <><p className="mt-2 text-sm">{exportRecoveryMessage(order.excelExport)} Generating does not resend email.</p><ExportForm reference={order.reference}/></>}
     </section>
     <h2 className="mt-7 font-heading text-2xl font-bold">Submitted products</h2>
     <OrderSnapshot items={order.items} total={order.total} />

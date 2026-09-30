@@ -1,6 +1,7 @@
 "use server";
 import { requireAdmin } from "@/lib/auth/authorization";
-import { retryOrderExport, referenceValid } from "@/lib/order-sheets/exports";
+import { retryOrderExport } from "@/lib/order-sheets/exports";
+import { referenceValid } from "@/lib/order-sheets/metadata";
 import { revalidatePath } from "next/cache";
 export async function retry(_state: { message: string }, form: FormData) {
   await requireAdmin();

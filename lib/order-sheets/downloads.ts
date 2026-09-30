@@ -3,7 +3,7 @@ import { requireAdmin } from "@/lib/auth/authorization";
 import { getDb } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { readExportBytes, readTemplateBytes } from "./storage";
-import { referenceValid } from "./exports";
+import { referenceValid } from "./metadata";
 
 export function xlsxResponse(bytes: Uint8Array, filename: string) {
   return new Response(new Uint8Array(bytes), {
