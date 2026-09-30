@@ -1,5 +1,17 @@
 # Managed online ordering — Milestone 4A
 
+## Staff Excel export extension
+
+Staff can now manage versioned export templates at `/admin/order-sheets`. New orders
+pin their tier's active template or explicit absence when created. After commit,
+the website stores one immutable populated workbook or complete snapshot fallback,
+attaches it to the existing staff notification and serves those same bytes from
+the protected admin detail. Failed/interrupted generation has an ADMIN-only retry
+that never resends email. Customer ordering/review/navigation and historical order
+snapshots are unchanged. See [Order sheets](ORDER-SHEETS.md) for the layout contract,
+limits, migration, fallback and recovery instructions. Earlier milestone records
+below describe their original implementation scope.
+
 The user authorized the Website Ordering option for this milestone. Milestones
 1, 2A, 2B, 3A, 3B and 3C are complete and merged per the user. This implementation
 is local only: no remote migration, real order/email, content write or deployment.

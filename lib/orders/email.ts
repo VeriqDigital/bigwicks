@@ -2,7 +2,7 @@ import "server-only";
 import { z } from "zod";
 import type { OrderReceipt } from "./types";
 
-export type StaffOrderEmail = OrderReceipt & { email: string; customerNumber: string | null };
+export type StaffOrderEmail = OrderReceipt & { email: string; customerNumber: string | null; exportNote?: string; attachment?: { filename: string; content: string } };
 // Plain text prevents HTML injection. Collapse embedded controls/newlines in
 // individual content fields so text cannot impersonate additional order lines.
 const field = (value: string) => value.replace(/[\u0000-\u001f\u007f]/g, " ");
@@ -12,6 +12,7 @@ export function orderEmailText(order: StaffOrderEmail) {
     `Login email: ${field(order.email)}`, `Submitted (UTC): ${order.createdAt}`, "",
     ...order.items.map((item) => `${field(item.sku)} | ${field(item.name)} ${item.brand ? ` | Brand: ${field(item.brand)}` : ""}${item.packing ? ` | Packing: ${field(item.packing)}` : ""} | Cases: ${item.quantity} | Case price: ${item.unitPrice} | Line total: ${item.lineTotal}`),
     "", `Submitted total: ${order.total}`, "",
+    ...(order.exportNote ? [field(order.exportNote), ""] : []),
     "Order request for staff review. Availability and finalization are handled by Big Wicks; payment is handled separately.",
   ].join("\n");
 }
@@ -23,7 +24,7 @@ export async function sendOrderEmail(order: StaffOrderEmail) {
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST", cache: "no-store", signal: AbortSignal.timeout(10000),
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json", "Idempotency-Key": `big-wicks-order-${order.reference}` },
-    body: JSON.stringify({ from, to: [to], subject: `Wholesale order request ${order.reference}`, text: orderEmailText(order) }),
+    body: JSON.stringify({ from, to: [to], subject: `Wholesale order request ${order.reference}`, text: orderEmailText(order), ...(order.attachment ? { attachments: [order.attachment] } : {}) }),
   });
   if (!response.ok) throw new Error("Order notification was not accepted.");
 }

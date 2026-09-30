@@ -20,6 +20,7 @@ Object.assign(env, {
 });
 const commands = {
   lint: ['node_modules/eslint/bin/eslint.js'],
+  build: ['node_modules/next/dist/bin/next', 'build'],
   typecheck: ['node_modules/typescript/bin/tsc', '--noEmit', '--incremental', 'false'],
   integration: ['--import', 'tsx', 'tests/run-integration.ts'],
   browsers: ['--import', 'tsx', 'tests/run-integration.ts', '--resume-isolated-browser-checks'],
@@ -36,7 +37,7 @@ if (!command) throw new Error('Choose lint, typecheck, integration, unit, contac
 // Native build tools also see a source directory with NO private env files.
 mkdirSync('.test-runtime', { recursive: true });
 const stage = mkdtempSync(resolve('.test-runtime/security-source-'));
-const tracked = execFileSync('git', ['-c', `safe.directory=${sourceRoot.replaceAll('\\', '/')}`, 'ls-files', '-z'], { encoding: 'utf8', env, windowsHide: true }).split('\0').filter(Boolean);
+const tracked = execFileSync('git', ['-c', `safe.directory=${sourceRoot.replaceAll('\\', '/')}`, 'ls-files', '--cached', '--others', '--exclude-standard', '-z'], { encoding: 'utf8', env, windowsHide: true }).split('\0').filter(Boolean);
 const securityFiles = readdirSync('tests/security').map(name => `tests/security/${name}`);
 for (const file of new Set([...tracked, ...securityFiles, "lib/auth/admin-transaction.ts"])) {
   if (/(^|\/)\.env(?:\.|$)/.test(file) || file.startsWith('public/')) continue;
@@ -63,10 +64,11 @@ if (reuseBuild) {
 console.log(`Audit source copy: ${stage}`);
 const steps = process.argv[2] === 'typecheck'
   ? [['node_modules/prisma/build/index.js', 'generate'], ['node_modules/next/dist/bin/next', 'typegen'], command]
+  : process.argv[2] === 'build' ? [['node_modules/prisma/build/index.js', 'generate'], command]
   : [[...command, ...(reuseBuild ? [] : process.argv.slice(3))]];
 for (const step of steps) {
   const code = await new Promise(resolve => {
-    const child = spawn(process.execPath, step, { cwd: stage, env, stdio: 'inherit', windowsHide: true });
+    const child = spawn(process.execPath, step, { cwd: stage, env: { ...env, NODE_ENV: process.argv[2] === 'build' ? 'production' : env.NODE_ENV }, stdio: 'inherit', windowsHide: true });
     child.once('error', () => { console.error('Audit child could not start.'); resolve(1); });
     child.once('exit', code => resolve(code ?? 1));
   });

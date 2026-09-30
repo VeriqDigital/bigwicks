@@ -19,6 +19,7 @@ let admin: { id: string; sessionVersion: number };
 let tierId: string;
 const where = { email: { startsWith: "security-audit-" } };
 async function cleanup() {
+  await db.orderExport.deleteMany({ where: { order: { submittedByUser: where } } });
   await db.orderItem.deleteMany({ where: { order: { submittedByUser: where } } });
   await db.order.deleteMany({ where: { submittedByUser: where } });
   await db.accountToken.deleteMany({ where: { user: where } });

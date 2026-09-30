@@ -18,6 +18,7 @@ async function login(page: Page, who: "tier1" | "tier2" | "admin" = "tier1") {
   await page.getByRole("button", { name: "Sign in", exact: true }).click(); await expect(page).toHaveURL(who === "admin" ? /\/admin$/ : /\/portal$/);
 }
 async function cleanup() {
+  await db.orderExport.deleteMany({ where: { order: { customerId } } });
   await db.orderItem.deleteMany({ where: { order: { customerId } } }); await db.order.deleteMany({ where: { customerId } });
 }
 test.beforeEach(async () => {

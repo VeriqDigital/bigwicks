@@ -4,6 +4,12 @@ Website and customer-ordering project for Big Wicks Fireworks LLC in La Porte, I
 
 ## Current status
 
+Staff Excel exports are implemented at `/admin/order-sheets`: reviewed tier-specific
+template versions, snapshot-pinned order exports, existing staff email attachments,
+protected downloads and manual generation recovery. See [Order sheets](docs/ORDER-SHEETS.md)
+for supported layouts, the additive local migration and source corrections. No live
+migration, email, configuration change or deployment is included.
+
 Milestone 8A / PR #24 is merged. Milestone 8B expands the public search surface
 with `/fireworks-near-new-buffalo-mi` and `/wholesale`, preserves the approved
 homepage/contact design, and keeps operational wholesale data private.

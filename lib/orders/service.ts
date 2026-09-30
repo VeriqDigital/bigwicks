@@ -1,4 +1,5 @@
 import "server-only";
+import { generateCommittedExport } from "@/lib/order-sheets/exports";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { Prisma } from "@/generated/prisma/client";
 import { getDb } from "@/lib/db";
@@ -94,11 +95,13 @@ export async function submitOrder(token: unknown): Promise<OrderState> {
       if (snapshot.hash !== payload.hash) return { kind: "changed" as const, snapshot };
       const counts = await tx.$queryRaw<{ count: bigint }[]>`SELECT COUNT(*)::bigint AS count FROM "Order" WHERE "customerId" = ${user.customer.id} AND "createdAt" > NOW() - INTERVAL '1 hour'`;
       if (counts[0].count >= BigInt(10)) throw new OrderError("You have reached the limit of 10 order requests per hour. Please try again later.");
+      const activeSheet = await tx.orderSheetActive.findUnique({ where: { tierId: snapshot.tierId }, select: { versionId: true } });
       const order = await tx.order.create({ data: {
         reference: `BW-${randomBytes(10).toString("hex").toUpperCase()}`, submissionId: payload.submissionId, reviewHash: payload.hash,
         customerId: snapshot.customerId, submittedByUserId: snapshot.userId, companyNameSnapshot: snapshot.companyName,
         customerNumberSnapshot: snapshot.customerNumber, emailSnapshot: snapshot.email,
         pricingTierIdSnapshot: snapshot.tierId, pricingTierNameSnapshot: snapshot.tierName, total: snapshot.total,
+        excelExport: { create: { templateId: activeSheet?.versionId ?? null, templateAbsence: activeSheet?.versionId ? null : "NO_TEMPLATE", diagnostic: activeSheet?.versionId ? null : "NO_TEMPLATE" } },
         items: { createMany: { data: snapshot.items.map((item) => ({ catalogKey: item.catalogKey, skuSnapshot: item.sku, productNameSnapshot: item.name,
           brandSnapshot: item.brand, packingSnapshot: item.packing, unitPriceSnapshot: item.unitPrice, quantity: item.quantity, lineTotalSnapshot: item.lineTotal })) } },
       } });
@@ -109,13 +112,18 @@ export async function submitOrder(token: unknown): Promise<OrderState> {
     // Persistence is complete before notification. Neither provider nor status
     // storage failure can turn an authoritative stored order into a failed order.
     let accepted = false;
+    let hasAttachment = false;
     try {
+      const file = await generateCommittedExport(result.order.id);
+      hasAttachment = Boolean(file);
       await sendOrderEmail({ reference: result.order.reference, createdAt: result.order.createdAt.toISOString(), companyName: result.snapshot.companyName,
-        customerNumber: result.snapshot.customerNumber, email: result.snapshot.email, items: result.snapshot.items, total: result.snapshot.total });
+        customerNumber: result.snapshot.customerNumber, email: result.snapshot.email, items: result.snapshot.items, total: result.snapshot.total,
+        exportNote: file ? file.kind === "TEMPLATE" ? "Populated order sheet attached, including the immutable Submitted order sheet." : `Complete snapshot fallback attached (${file.diagnostic}).` : "Excel generation is not ready. Staff: use Generate/retry Excel on the saved admin order; do not ask the customer to resubmit.",
+        ...(file ? { attachment: { filename: `${result.order.reference}-${file.kind === "TEMPLATE" ? "order-sheet" : "snapshot-fallback"}.xlsx`, content: file.bytes.toString("base64") } } : {}) });
       accepted = true;
     } catch { /* Safe FAILED/PENDING status is visible to staff; never log payloads. */ }
     try {
-      await db().order.update({ where: { id: result.order.id }, data: { notificationStatus: accepted ? "ACCEPTED" : "FAILED", notificationAcceptedAt: accepted ? new Date() : null } });
+      await db().order.update({ where: { id: result.order.id }, data: { notificationStatus: accepted ? "ACCEPTED" : "FAILED", notificationAcceptedAt: accepted ? new Date() : null, notificationHasAttachment: accepted && hasAttachment } });
     } catch { /* PENDING signals an interrupted/uncertain attempt for staff follow-up. */ }
     return { status: "submitted", reference: result.order.reference };
   } catch (error) {

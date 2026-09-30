@@ -30,7 +30,7 @@ async function snapshot() {
 }
 beforeEach(async () => {
   await db.$executeRawUnsafe('DROP TRIGGER IF EXISTS add_admin_test_failure ON public."User"');
-  await db.$executeRawUnsafe('TRUNCATE public."AccountToken", public."OrderItem", public."Order", public."ProductPrice", public."Customer", public."User", public."PricingTier", public."LoginRateLimit"');
+  await db.$executeRawUnsafe('TRUNCATE public."OrderExport", public."OrderSheetActive", public."OrderSheetDraft", public."OrderSheetVersion", public."AccountToken", public."OrderItem", public."Order", public."ProductPrice", public."Customer", public."User", public."PricingTier", public."LoginRateLimit"');
   const initial = { ...parseRequest(args, connection.target), email: "initial.owner@example.test" };
   const plan = await inspectBootstrap(db, initial);
   await applyBootstrap(db, { ...initial, applyHash: plan.planHash! }, "Fictional-initial-admin-7E");
