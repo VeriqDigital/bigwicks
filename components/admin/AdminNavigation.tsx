@@ -8,6 +8,7 @@ export default function AdminNavigation() {
     <Link href="/admin/customers" className="inline-flex min-h-11 items-center underline underline-offset-4">Customers</Link>
     <Link href="/admin/pricing" className="inline-flex min-h-11 items-center underline underline-offset-4">Pricing</Link>
     <Link href="/admin/orders" className="inline-flex min-h-11 items-center underline underline-offset-4">Orders</Link>
+    <Link href="/admin/order-sheets" className="inline-flex min-h-11 items-center underline underline-offset-4">Order sheets</Link>
     <Link href="/studio" prefetch={false} className="inline-flex min-h-11 items-center underline underline-offset-4">Catalog Studio</Link>
     <Link href="/" className="inline-flex min-h-11 items-center underline underline-offset-4">Public website</Link>
     <form action={logout}><button className="min-h-11 rounded-sm border border-(--border) px-4">Sign out</button></form>

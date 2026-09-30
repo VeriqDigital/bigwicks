@@ -18,6 +18,7 @@ let other: typeof customer; let admin: { id: string; sessionVersion: number }; l
 const items = [{ catalogKey: key, quantity: 3 }];
 const products = () => [fictionalProduct({ _id: "order-one", catalogKey: key, name: "Fictional order product", sku: "ORDER-TEST" })];
 async function cleanup() {
+  await db.orderExport.deleteMany({ where: { order: { submittedByUser: { email: { startsWith: "test-order-" } } } } });
   await db.orderItem.deleteMany({ where: { order: { submittedByUser: { email: { startsWith: "test-order-" } } } } });
   await db.order.deleteMany({ where: { submittedByUser: { email: { startsWith: "test-order-" } } } });
   await db.productPrice.deleteMany({ where: { catalogKey: { in: [key, second] } } });

@@ -23,6 +23,8 @@ model User {
   customer       Customer?
   accountTokens  AccountToken[]
   submittedOrders Order[]
+  orderSheetVersions OrderSheetVersion[]
+  orderSheetDrafts OrderSheetDraft[]
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 }
@@ -49,6 +51,9 @@ model PricingTier {
   rank      Int        @unique
   customers Customer[]
   productPrices ProductPrice[]
+  orderSheetVersions OrderSheetVersion[]
+  orderSheetDrafts OrderSheetDraft[]
+  orderSheetActive OrderSheetActive?
 }
 
 model ProductPrice {
@@ -100,7 +105,9 @@ model Order {
   createdAt              DateTime @default(now())
   notificationStatus     OrderNotificationStatus @default(PENDING)
   notificationAcceptedAt DateTime?
+  notificationHasAttachment Boolean @default(false)
   items                  OrderItem[]
+  excelExport            OrderExport?
 
   @@unique([customerId, submissionId])
   @@index([createdAt, id])
@@ -142,4 +149,83 @@ model AccountToken {
 
   @@index([userId, purpose, consumedAt])
   @@index([expiresAt])
+}
+
+// Files never appear in ordinary tier/order projections. Versions are append-only.
+model OrderSheetVersion {
+  id String @id @default(cuid())
+  tierId String
+  tier PricingTier @relation(fields: [tierId], references: [id], onDelete: Restrict)
+  original Bytes
+  checksum String @db.VarChar(64)
+  filename String @db.VarChar(120)
+  parserVersion String @db.VarChar(40)
+  configuration Json
+  uploadedById String
+  uploadedBy User @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  uploadedAt DateTime
+  activatedAt DateTime @default(now())
+  active OrderSheetActive?
+  exports OrderExport[]
+  @@unique([id, tierId])
+  @@index([tierId, activatedAt])
+}
+
+model OrderSheetActive {
+  tierId String @id
+  tier PricingTier @relation(fields: [tierId], references: [id], onDelete: Restrict)
+  versionId String? @unique
+  version OrderSheetVersion? @relation(fields: [versionId, tierId], references: [id, tierId], onDelete: Restrict)
+  revision Int @default(0)
+  updatedAt DateTime @updatedAt
+  @@unique([versionId, tierId])
+}
+
+model OrderSheetDraft {
+  id String @id @default(cuid())
+  tierId String
+  tier PricingTier @relation(fields: [tierId], references: [id], onDelete: Restrict)
+  original Bytes
+  checksum String @db.VarChar(64)
+  filename String @db.VarChar(120)
+  inspection Json
+  stateHash String @db.VarChar(64)
+  expectedRevision Int
+  uploadedById String
+  uploadedBy User @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  sessionVersion Int
+  uploadedAt DateTime @default(now())
+  expiresAt DateTime
+  @@index([expiresAt])
+}
+
+enum OrderExportState {
+  PENDING
+  GENERATING
+  READY
+  FAILED
+}
+
+enum OrderExportKind {
+  TEMPLATE
+  SNAPSHOT
+}
+
+model OrderExport {
+  orderId String @id
+  order Order @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  templateId String?
+  templateAbsence String? @db.VarChar(40)
+  template OrderSheetVersion? @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  state OrderExportState @default(PENDING)
+  kind OrderExportKind?
+  diagnostic String? @db.VarChar(40)
+  bytes Bytes?
+  checksum String? @db.VarChar(64)
+  generatorVersion String? @db.VarChar(40)
+  claimId String? @db.Uuid
+  claimedAt DateTime?
+  createdAt DateTime @default(now())
+  generatedAt DateTime?
+  @@index([state, claimedAt])
 }

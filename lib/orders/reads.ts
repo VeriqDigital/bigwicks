@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { notFound } from "next/navigation";
 import type { Prisma } from "@/generated/prisma/client";
 import type { OrderReceipt } from "./types";
+import { exportMetadata } from "@/lib/order-sheets/exports";
 
 const referencePattern = /^BW-[A-F0-9]{20}$/;
 const withItems = { items: { orderBy: { catalogKey: "asc" as const } } };
@@ -24,10 +25,11 @@ export async function getCustomerConfirmation(reference: unknown) {
 export async function getAdminOrder(reference: unknown) {
   await requireAdmin();
   if (typeof reference !== "string" || !referencePattern.test(reference)) notFound();
-  const order = await getDb().order.findUnique({ where: { reference }, include: withItems });
+  const order = await getDb().order.findUnique({ where: { reference }, include: { ...withItems, excelExport: { select: exportMetadata } } });
   if (!order) notFound();
   return { ...receipt(order), email: order.emailSnapshot, customerNumber: order.customerNumberSnapshot, tierName: order.pricingTierNameSnapshot,
-    notificationStatus: order.notificationStatus, notificationAcceptedAt: order.notificationAcceptedAt?.toISOString() ?? null };
+    notificationStatus: order.notificationStatus, notificationAcceptedAt: order.notificationAcceptedAt?.toISOString() ?? null, notificationHasAttachment: order.notificationHasAttachment,
+    excelExport: order.excelExport ? { ...order.excelExport, claimedAt: order.excelExport.claimedAt?.toISOString() ?? null, generatedAt: order.excelExport.generatedAt?.toISOString() ?? null } : null };
 }
 export async function getAdminOrders(cursor: unknown) {
   await requireAdmin();

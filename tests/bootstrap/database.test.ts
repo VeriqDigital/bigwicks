@@ -28,7 +28,7 @@ async function planned(): Promise<Request> {
 }
 beforeEach(async () => {
   await db.$executeRawUnsafe('DROP TRIGGER IF EXISTS bootstrap_test_failure ON public."User"');
-  await db.$executeRawUnsafe('TRUNCATE public."AccountToken", public."OrderItem", public."Order", public."ProductPrice", public."Customer", public."User", public."PricingTier", public."LoginRateLimit"');
+  await db.$executeRawUnsafe('TRUNCATE public."OrderExport", public."OrderSheetActive", public."OrderSheetDraft", public."OrderSheetVersion", public."AccountToken", public."OrderItem", public."Order", public."ProductPrice", public."Customer", public."User", public."PricingTier", public."LoginRateLimit"');
 });
 afterEach(() => { expect(fetchSpy).not.toHaveBeenCalled(); });
 afterAll(async () => { await db.$disconnect(); await getDb().$disconnect(); vi.unstubAllGlobals(); });

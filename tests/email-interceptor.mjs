@@ -39,7 +39,13 @@ globalThis.fetch = async (input, init) => {
       return new Response("{}", { status: 503 });
     } catch { /* Normal test delivery. */ }
     const body = JSON.parse(init.body);
-    await writeFile(join(process.env.TEST_ACCOUNT_MAIL_DIR, `${randomUUID()}.json`), JSON.stringify(body));
+    const captureId = randomUUID();
+    for (const [index, attachment] of (body.attachments ?? []).entries()) {
+      const bytes = Buffer.from(attachment.content, 'base64');
+      if (!/^BW-[A-F0-9]{20}-(?:order-sheet|snapshot-fallback)\.xlsx$/.test(attachment.filename) || bytes.length > 4 * 1024 * 1024 || bytes.readUInt32LE(0) !== 0x04034b50) throw new Error('Invalid isolated order attachment.');
+      await writeFile(join(process.env.TEST_ACCOUNT_MAIL_DIR, `${captureId}-${index}.xlsx`), bytes);
+    }
+    await writeFile(join(process.env.TEST_ACCOUNT_MAIL_DIR, `${captureId}.json`), JSON.stringify(body));
     await providerBarrier();
     return Response.json({ id: randomUUID() });
   }

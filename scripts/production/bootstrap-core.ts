@@ -34,9 +34,9 @@ async function readState(tx: Prisma.TransactionClient, request: Request) {
       rolled_back_at IS NOT NULL AS rolled_back, applied_steps_count
     FROM public."_prisma_migrations" ORDER BY migration_name`;
   const expected = expectedMigrations();
-  if (expected.length !== 6 || migrations.length !== expected.length || migrations.some((row, i) =>
+  if (expected.length !== 7 || migrations.length !== expected.length || migrations.some((row, i) =>
     row.migration_name !== expected[i].name || !row.finished || row.rolled_back || row.applied_steps_count < 1 || !expected[i].accepted.includes(row.checksum))) {
-    throw new BootstrapError("Migration history is incomplete or differs from the reviewed six migrations. Run the documented migration phase separately; investigate drift/failed migrations.");
+    throw new BootstrapError("Migration history is incomplete or differs from the reviewed seven migrations. Run the documented migration phase separately; investigate drift/failed migrations.");
   }
   const counts = {
     users: await tx.user.count(), admins: await tx.user.count({ where: { role: "ADMIN" } }),
