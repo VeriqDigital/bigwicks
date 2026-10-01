@@ -71,8 +71,13 @@ Runs use existing sanitized isolated runners, fictional Sanity fixtures, disposa
 - `node tests/security/run.mjs unit`: **453 passed**.
 - `node tests/security/run.mjs lint`: **passed**.
 - `node tests/security/run.mjs typecheck`: **passed**, including Prisma generation, Next route generation and `tsc --noEmit --incremental false`.
-- `node tests/security/run.mjs integration`: results recorded after completion. Includes unit/database/security suites, unconfigured/configured Sanity production builds and public catalog/pricing/order/order-sheet browser suites.
+- `node tests/security/run.mjs integration`: **729 unit/database/security tests passed across 34 files** (includes the 453 unit tests above). Both unconfigured and fictional-Sanity-configured production builds passed. Unconfigured browser phase: **29 passed, 32 skipped** because catalog fixtures were not enabled in that phase. Configured browser phase: **31 Chromium passed, 5 Firefox setup failures**; the overall command exited **1** for those Firefox failures.
+- All **9 public catalog browser tests passed**, including anonymous HTML/Flight, Tier 1/Tier 2 isolation and tampering, all four visibility combinations, hidden/invalid/duplicate slug rejection, curated homepage links, safe video embeds and responsive layouts. Existing Chromium pricing, orders and order-sheet suites all passed.
+- All five Firefox order checks failed before loading the application with `browserContext.newPage: Cannot read properties of undefined (reading '_page')`. This matches the previously isolated local Firefox runtime failure, reproduced on a blank page with and without the test proxy. Firefox order behavior remains unverified; no dependency/browser changes were made as part of these catalog corrections.
+- Visually reviewed the corrected catalog and detail screenshots at **390, 768 and 1440 px**. Layouts, missing-image fallback, filters, links and anonymous packing/price absence were sound. Videos use intercepted placeholders in the isolated run; actual third-party playback still needs the deployment smoke check.
 - `git diff --check`: passed.
+
+Full corrected-run log: `.test-runtime/pr32-corrections-integration.log`. Screenshots: `.test-runtime/security-source-usZkhI/test-results/public-catalog-public-cata-ccabe-e-tablet-and-desktop-widths-chromium/`. These ignored local artifacts are not included in the patch. The isolated builds emitted workspace-root warnings due to staged lockfiles; the browser runner also emitted a non-failing Gzip listener warning.
 
 New tests cover all four flag combinations, legacy defaults, malformed visibility, packing absence from public DTO/HTML/Flight, authorized packing, canonical portal links, hidden/invalid public link suppression, curated images and explicit category mappings. Existing tier isolation, tampering, video safety and order/Excel regressions remain active.
 
