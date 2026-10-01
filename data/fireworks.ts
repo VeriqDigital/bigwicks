@@ -1,6 +1,7 @@
 export const fireworksCategories = [
-  // Marketing fallback only when the live catalog has no visible categories.
+  // Curated merchandising cards; Sanity categories select these stable IDs.
   {
+    id: "500-gram-cakes",
     title: "500 Gram Cakes",
     href: "/products",
     description: "Big-impact options for building the centerpiece of your show.",
@@ -9,6 +10,7 @@ export const fireworksCategories = [
     position: "center 46%",
   },
   {
+    id: "200-gram-cakes",
     title: "200 Gram Cakes",
     href: "/products",
     description: "Versatile favorites for adding variety, color, and pace.",
@@ -17,6 +19,7 @@ export const fireworksCategories = [
     position: "center 52%",
   },
   {
+    id: "artillery-shells",
     title: "Artillery Shells",
     href: "/products",
     description: "Explore reloadable options with help from our knowledgeable team.",
@@ -25,6 +28,7 @@ export const fireworksCategories = [
     position: "center 45%",
   },
   {
+    id: "fountains",
     title: "Fountains",
     href: "/products",
     description: "Ground-based effects with plenty of color and sparkle.",
@@ -33,6 +37,7 @@ export const fireworksCategories = [
     position: "center 56%",
   },
   {
+    id: "firecrackers",
     title: "Firecrackers",
     href: "/products",
     description: "Classic choices in a wide range of pack sizes and styles.",
@@ -41,6 +46,7 @@ export const fireworksCategories = [
     position: "center 68%",
   },
   {
+    id: "roman-candles",
     title: "Roman Candles",
     href: "/products",
     description: "A broad selection of familiar multi-shot effects.",
@@ -49,6 +55,7 @@ export const fireworksCategories = [
     position: "center 52%",
   },
   {
+    id: "novelties",
     title: "Novelties",
     href: "/products",
     description: "Approachable picks for family celebrations and backyard fun.",
@@ -57,6 +64,7 @@ export const fireworksCategories = [
     position: "center 54%",
   },
   {
+    id: "assortments-kits",
     title: "Assortments & Kits",
     href: "/products",
     description: "Ready-made variety for celebrations of different sizes.",

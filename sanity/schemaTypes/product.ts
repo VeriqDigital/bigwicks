@@ -23,7 +23,7 @@ export async function validateCatalogKey(value: unknown, context: ValidationCont
 
 export const product = defineType({
   name: "product", title: "Product", type: "document", icon: PackageIcon,
-  initialValue: () => ({ catalogKey: crypto.randomUUID(), available: false }),
+  initialValue: () => ({ catalogKey: crypto.randomUUID(), available: false, publiclyVisible: false }),
   fields: [
     defineField({ name: "catalogKey", title: "Catalog key", type: "string", readOnly: true,
       description: "Permanent product identity. Keep it when changing the SKU or name. Prices are managed separately.",
@@ -46,8 +46,11 @@ export const product = defineType({
     defineField({ name: "videoUrl", title: "Product demonstration video", type: "url",
       description: "Optional HTTPS YouTube watch/share/shorts URL or public Vimeo video URL. No HTML or uploads. The video must permit embedding.",
       validation: (rule) => rule.uri({ scheme: ["https"] }).custom((value) => !value || Boolean(productVideo(value)) || "Enter a supported HTTPS YouTube or Vimeo video URL.") }),
-    defineField({ name: "available", title: "Visible in public and wholesale catalogs", type: "boolean",
-      description: "Publishes this product on the public website. Approved customers with a configured case price can also order it. Manual visibility only, not an inventory count or guarantee of stock.",
+    defineField({ name: "publiclyVisible", title: "Visible on public website", type: "boolean",
+      description: "Controls public catalog, product pages, homepage discovery and sitemap only. Existing products with no value are visible; new products start hidden. Does not change wholesale availability.",
+      validation: (rule) => rule.required() }),
+    defineField({ name: "available", title: "Visible in wholesale catalog", type: "boolean",
+      description: "Manual wholesale visibility only. This is not an inventory count or a guarantee of stock. Independent of public website visibility.",
       validation: (rule) => rule.required() }),
   ],
   preview: { select: { title: "name", subtitle: "sku", media: "image" } },

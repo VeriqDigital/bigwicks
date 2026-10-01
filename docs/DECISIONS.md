@@ -36,9 +36,14 @@ client/configuration/remaining operational gates still need separate authorizati
 
 User authorized public catalog/detail routes, video support and authenticated
 tier pricing on the same pages. Reuse Sanity content/identity and the existing
-`available` visibility flag; no automatic data changes. Optional slug/video fields
-extend the current product schema. Real category IDs power public filters and
-homepage cards. Public content and metadata never read SQL prices; authenticated
+`available` flag for wholesale only. PR #32 corrections add independent
+`publiclyVisible`: missing legacy values default visible; new Studio products
+start hidden; explicit false hides public content without changing orderability.
+Optional slug/video fields extend the current product schema. Curated homepage
+images remain in `data/fireworks.ts`; categories explicitly select a homepage card
+and links use actual category IDs. Packing is customer-only in website responses.
+One shared public resolver supplies canonical slugs to the wholesale DTO, with no
+extra content read. Public content and metadata never read SQL prices; authenticated
 pricing delegates to the existing zero-input authorization service. Orders and
 Excel templates/exports remain unchanged. Details: [PUBLIC-CATALOG.md](PUBLIC-CATALOG.md).
 

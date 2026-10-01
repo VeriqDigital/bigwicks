@@ -31,7 +31,8 @@ export async function generateMetadata({ params }: Props) {
 export default async function ProductPage({ params }: Props) {
   const product = await findProduct((await params).slug);
   const pricing = await getVisitorPricing();
-  const price = pricing?.products.find((item) => item.catalogKey === product.catalogKey)?.price;
+  const customerProduct = pricing?.products.find((item) => item.catalogKey === product.catalogKey);
+  const price = customerProduct?.price;
   return <>
     <nav aria-label="Breadcrumb" className="product-breadcrumb"><Link href="/products" prefetch={false}>All fireworks</Link>
       {product.category && <><span aria-hidden="true">/</span><Link href={categoryHref(product.category.id)} prefetch={false}>{product.category.name}</Link></>}
@@ -43,7 +44,7 @@ export default async function ProductPage({ params }: Props) {
           <p className="public-kicker">{product.category?.name ?? "Fireworks"}</p><h1>{product.name}</h1>
           <dl><div><dt>Item number</dt><dd>{product.sku}</dd></div>
             {product.brand && <div><dt>Brand</dt><dd>{product.brand}</dd></div>}
-            {product.packing && <div><dt>Case packing</dt><dd>{product.packing}</dd></div>}
+            {customerProduct?.packing && <div><dt>Case packing</dt><dd>{customerProduct.packing}</dd></div>}
           </dl>
           {product.description && <p className="product-description">{product.description}</p>}
           {!pricing && <Link className="product-visit" href="/#visit">Plan your store visit <span aria-hidden="true">→</span></Link>}

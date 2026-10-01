@@ -1,18 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
-import { fireworksCategories } from "@/data/fireworks";
-import { getPublicCatalog, publicCategories } from "@/lib/catalog/public";
-import { categoryHref } from "@/lib/catalog/urls";
-import ProductImage from "@/components/catalog/ProductImage";
+import { getPublicCatalog } from "@/lib/catalog/public";
+import { homepageCategoryCards } from "@/lib/catalog/homepage-categories";
 
 const CategorySection = async () => {
   const catalog = await getPublicCatalog();
-  const categories = publicCategories(catalog.products);
-  const cards = categories.length ? categories.map((category) => ({
-    id: category.id, title: category.name, href: categoryHref(category.id), description: "Explore products and see the details.",
-    image: "/images/store/big-wicks-interior-overview.jpg", alt: "Inside the Big Wicks Fireworks store", position: "center",
-    productImage: catalog.products.find((product) => product.category?.id === category.id && product.image)?.image ?? null,
-  })) : fireworksCategories.map((category) => ({ ...category, id: category.title, productImage: null }));
+  const cards = homepageCategoryCards(catalog.products);
   return (
   <>
     <div className="selection-heading">
@@ -34,13 +27,13 @@ const CategorySection = async () => {
       {cards.map((category) => (
         <article key={category.id} className="category-card">
           <div className="category-image">
-            {category.productImage ? <ProductImage image={category.productImage} /> : <Image
+            <Image
               src={category.image}
               alt={category.alt}
               fill
               style={{ objectPosition: category.position }}
               sizes="(max-width: 1023px) 50vw, (max-width: 1280px) 25vw, 290px"
-            />}
+            />
           </div>
           <div className="category-body">
             <h3>{category.title}</h3>
@@ -49,9 +42,9 @@ const CategorySection = async () => {
               href={category.href}
               className="category-action"
               prefetch={false}
-              aria-label={categories.length ? `Browse ${category.title}` : `Browse catalog — ${category.title}`}
+              aria-label={category.mapped ? `Browse ${category.title}` : `Browse catalog — ${category.title}`}
             >
-              {categories.length ? "Browse products" : "Browse catalog"} <span aria-hidden="true">↗</span>
+              {category.mapped ? "Browse products" : "Browse catalog"} <span aria-hidden="true">↗</span>
             </Link>
           </div>
         </article>

@@ -9,6 +9,8 @@ import { productVideo } from "@/lib/catalog/video";
 import { categoryHref } from "@/lib/catalog/urls";
 import { fictionalProduct, catalogKeys } from "../fixtures/catalog";
 import sitemap from "../../app/sitemap";
+import { homepageCategoryCards } from "@/lib/catalog/homepage-categories";
+import { fireworksCategories } from "@/data/fireworks";
 
 beforeEach(() => {
   mock.content.mockResolvedValue([fictionalProduct({ slug: "sample", price: "91827.31", tier1: "81726.42", tier2: "71625.53" })]);
@@ -19,6 +21,7 @@ it("serves a public allowlisted DTO without pricing or an auth/pricing call", as
   const result = await getPublicCatalog();
   expect(result.products[0]).toMatchObject({ name: "Fictional test product one", slug: "sample", video: null });
   expect(JSON.stringify(result)).not.toMatch(/91827\.31|81726\.42|71625\.53|tier1|tier2|price/);
+  expect(result.products[0]).not.toHaveProperty("packing");
   expect(mock.user).not.toHaveBeenCalled(); expect(mock.pricing).not.toHaveBeenCalled();
 });
 
@@ -32,16 +35,47 @@ it("preserves existing visibility, excludes drafts/releases and fails closed for
   expect((await getPublicCatalog()).products).toEqual([]);
 });
 
-it("uses stable keys for missing/invalid slugs and tolerates missing optional content", async () => {
-  mock.content.mockResolvedValue([fictionalProduct({ slug: "../private", image: null, description: null, videoUrl: "javascript:alert(1)" })]);
+it("uses stable keys for missing slugs and tolerates missing optional content", async () => {
+  mock.content.mockResolvedValue([fictionalProduct({ image: null, description: null, videoUrl: "javascript:alert(1)" })]);
   expect((await getPublicCatalog()).products[0]).toMatchObject({ slug: catalogKeys.one, image: null, description: null, video: null });
+});
+it.each(["../private", "", "UPPERCASE", "bad slug", 42])("fails closed for explicitly invalid slug %s", async (slug) => {
+  mock.content.mockResolvedValue([fictionalProduct({ slug })]);
+  expect((await getPublicCatalog()).products).toEqual([]);
 });
 it("prevents an API-written slug from hijacking another product's permanent key URL", async () => {
   mock.content.mockResolvedValue([
     fictionalProduct({ slug: catalogKeys.hidden }),
-    fictionalProduct({ _id: "hidden", catalogKey: catalogKeys.hidden, slug: "hidden", available: false }),
+    fictionalProduct({ _id: "hidden", catalogKey: catalogKeys.hidden, slug: "hidden", available: false, publiclyVisible: false }),
   ]);
   expect((await getPublicCatalog()).products).toEqual([]);
+});
+it.each([
+  [true, true], [true, false], [false, true], [false, false],
+])("public visibility %s is independent of wholesale availability %s", async (publiclyVisible, available) => {
+  mock.content.mockResolvedValue([fictionalProduct({ publiclyVisible, available, slug: "independent" })]);
+  expect((await getPublicCatalog()).products).toHaveLength(publiclyVisible ? 1 : 0);
+  expect((await sitemap()).some((entry) => entry.url.endsWith("/products/independent"))).toBe(publiclyVisible);
+});
+it.each([undefined, null])("keeps legacy missing public visibility %s visible even when wholesale unavailable", async (publiclyVisible) => {
+  mock.content.mockResolvedValue([fictionalProduct({ publiclyVisible, available: false })]);
+  expect((await getPublicCatalog()).products).toHaveLength(1);
+});
+it.each(["true", "false", 1, {}])("malformed public visibility fails closed: %j", async (publiclyVisible) => {
+  mock.content.mockResolvedValue([fictionalProduct({ publiclyVisible })]);
+  expect((await getPublicCatalog()).products).toEqual([]);
+});
+it("keeps curated card images and maps by explicit category identity, not names or product images", async () => {
+  mock.content.mockResolvedValue([fictionalProduct({ category: { _id: "real-id", name: "Renamed category", homepageCard: "fountains" } })]);
+  const cards = homepageCategoryCards((await getPublicCatalog()).products);
+  expect(cards.map((card) => card.image)).toEqual(fireworksCategories.map((card) => card.image));
+  expect(cards.find((card) => card.id === "fountains")).toMatchObject({ href: "/products?category=real-id", mapped: true });
+  expect(cards.find((card) => card.id === "500-gram-cakes")).toMatchObject({ href: "/products", mapped: false });
+  mock.content.mockResolvedValue([
+    fictionalProduct({ category: { _id: "one", name: "One", homepageCard: "fountains" } }),
+    fictionalProduct({ _id: "two", catalogKey: catalogKeys.two, category: { _id: "two", name: "Two", homepageCard: "fountains" } }),
+  ]);
+  expect(homepageCategoryCards((await getPublicCatalog()).products).find((card) => card.id === "fountains")).toMatchObject({ href: "/products", mapped: false });
 });
 
 it("builds category links from real identities, independent of category labels", async () => {

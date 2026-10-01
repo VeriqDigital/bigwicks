@@ -5,8 +5,9 @@ import { validTier } from "@/lib/pricing/tiers";
 import { readPublishedCatalogContent } from "./content";
 import { normalizeCatalogContent, type CatalogContent } from "./normalize";
 import { priceText } from "./money";
+import { publicCatalogProducts } from "./public-products";
 
-export type CustomerCatalogProduct = Omit<CatalogContent, "available"> & { price: string };
+export type CustomerCatalogProduct = Omit<CatalogContent, "available" | "publiclyVisible"> & { price: string };
 export type CustomerCatalogResult =
   | { status: "ready"; products: CustomerCatalogProduct[] }
   | { status: "unavailable"; products: []; message: string };
@@ -19,7 +20,9 @@ export async function getAvailableCatalogForCustomer(): Promise<CustomerCatalogR
     const db = getDb();
     const tier = await db.pricingTier.findUnique({ where: { id: customer.pricingTierId }, select: { name: true, rank: true } });
     if (!tier || !validTier(tier)) throw new Error("Invalid tier.");
-    const { products } = normalizeCatalogContent(await readPublishedCatalogContent());
+    const content = normalizeCatalogContent(await readPublishedCatalogContent());
+    const { products } = content;
+    const publicSlugs = new Map(publicCatalogProducts(content).map((product) => [product.catalogKey, product.slug]));
     const available = products.filter((product) => product.available);
     const prices = await db.productPrice.findMany({
       where: { pricingTierId: customer.pricingTierId, catalogKey: { in: available.map((product) => product.catalogKey) } },
@@ -31,7 +34,8 @@ export async function getAvailableCatalogForCustomer(): Promise<CustomerCatalogR
       const price = amounts.get(product.catalogKey);
       if (price === undefined || price === null) continue;
       result.push({ catalogKey: product.catalogKey, sku: product.sku, name: product.name, category: product.category,
-        description: product.description, brand: product.brand, packing: product.packing, image: product.image, price });
+        description: product.description, brand: product.brand, packing: product.packing, image: product.image, price,
+        slug: publicSlugs.get(product.catalogKey) ?? null });
     }
     result.sort((a, b) => a.name.localeCompare(b.name) || a.catalogKey.localeCompare(b.catalogKey));
     return { status: "ready", products: result };
