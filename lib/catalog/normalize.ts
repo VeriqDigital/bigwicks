@@ -1,11 +1,16 @@
 import "server-only";
 import { z } from "zod";
 import { isCatalogKey } from "@/sanity/catalog-key";
+import { productVideo } from "./video";
+import { isProductSlug } from "./urls";
+import { fireworksCategories } from "@/data/fireworks";
 
 export type CatalogIssue = { code: string; documentId?: string; catalogKey?: string; pricingTierId?: string };
 export type CatalogContent = {
   catalogKey: string; sku: string; name: string; available: boolean;
-  category: { id: string; name: string } | null;
+  publiclyVisible?: boolean;
+  slug?: string | null; video?: ReturnType<typeof productVideo>;
+  category: { id: string; name: string; homepageCard?: string } | null;
   description: string | null; brand: string | null; packing: string | null; image: { url: string; alt: string } | null;
 };
 const documentsSchema = z.array(z.object({ _id: z.string().min(1) }).catchall(z.unknown())).max(10000);
@@ -49,8 +54,15 @@ export function normalizeCatalogContent(raw: unknown) {
     if (!description) issues.push({ code: "missing_description", documentId, catalogKey });
     if (!image) issues.push({ code: "missing_image", documentId, catalogKey });
     const optionalText = (value: unknown) => typeof value === "string" && !/[\u0000-\u001f\u007f-\u009f]/u.test(value) ? text(value, 100) : null;
-    products.push({ catalogKey, sku, name, available: row.available, category: categoryId && categoryName ? { id: categoryId, name: categoryName } : null,
-      description, image, brand: optionalText(row.brand), packing: optionalText(row.packing) });
+    const homepageCard = fireworksCategories.some((card) => card.id === category.homepageCard) ? String(category.homepageCard) : undefined;
+    products.push({ catalogKey, sku, name, available: row.available,
+      // Legacy published content remains visible without a write/backfill. An
+      // explicit false or malformed value fails closed, independent of available.
+      publiclyVisible: row.publiclyVisible == null ? true : row.publiclyVisible === true,
+      category: categoryId && categoryName ? { id: categoryId, name: categoryName, ...(homepageCard ? { homepageCard } : {}) } : null,
+      description, image, brand: optionalText(row.brand), packing: optionalText(row.packing),
+      // Missing slugs get key URLs; explicitly invalid slugs must not get aliases.
+      slug: row.slug == null ? undefined : isProductSlug(row.slug) ? row.slug : null, video: productVideo(row.videoUrl) });
   }
   return { products, issues, knownKeys: new Set(keyCounts.keys()), documentCount: rows.length };
 }

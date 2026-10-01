@@ -1,8 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
-import { fireworksCategories } from "@/data/fireworks";
+import { getPublicCatalog } from "@/lib/catalog/public";
+import { homepageCategoryCards } from "@/lib/catalog/homepage-categories";
 
-const CategorySection = () => (
+const CategorySection = async () => {
+  const catalog = await getPublicCatalog();
+  const cards = homepageCategoryCards(catalog.products);
+  return (
   <>
     <div className="selection-heading">
       <div>
@@ -20,8 +24,8 @@ const CategorySection = () => (
       </p>
     </div>
     <div className="category-grid">
-      {fireworksCategories.map((category) => (
-        <article key={category.title} className="category-card">
+      {cards.map((category) => (
+        <article key={category.id} className="category-card">
           <div className="category-image">
             <Image
               src={category.image}
@@ -37,9 +41,10 @@ const CategorySection = () => (
             <Link
               href={category.href}
               className="category-action"
-              aria-label={`Browse ${category.title} in store`}
+              prefetch={false}
+              aria-label={category.mapped ? `Browse ${category.title}` : `Browse catalog — ${category.title}`}
             >
-              Browse in store <span aria-hidden="true">↗</span>
+              {category.mapped ? "Browse products" : "Browse catalog"} <span aria-hidden="true">↗</span>
             </Link>
           </div>
         </article>
@@ -49,5 +54,6 @@ const CategorySection = () => (
       <p>Selection varies. Call or stop in for current availability.</p>
     </div>
   </>
-);
+  );
+};
 export default CategorySection;

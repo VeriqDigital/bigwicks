@@ -145,7 +145,7 @@ try {
           await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
         }
       }
-      if (!baseline && path !== '/wholesale') {
+      if (!baseline && ['/', '/contact', '/fireworks-near-new-buffalo-mi'].includes(path)) {
         const quick = page.getByRole('navigation', { name: 'Quick store actions' });
         if (width < 768) {
           await quick.waitFor({ state: 'visible' });

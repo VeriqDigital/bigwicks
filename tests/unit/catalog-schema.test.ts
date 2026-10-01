@@ -12,7 +12,9 @@ it("generates fresh immutable keys, starts unavailable and has no pricing fields
   expect(product.fields.find((field) => field.name === "catalogKey")).toHaveProperty("readOnly", true);
   expect(product.fields.find((field) => field.name === "sku")).not.toHaveProperty("readOnly", true);
   expect(product.fields.some((field) => /price|tier/i.test(field.name))).toBe(false);
-  expect(category.fields.map((field) => field.name)).toEqual(["name"]);
+  expect(category.fields.map((field) => field.name)).toEqual(["name", "homepageCard"]);
+  expect(product.initialValue && (product.initialValue as () => object)()).toMatchObject({ available: false, publiclyVisible: false });
+  expect(product.fields.find((field) => field.name === "available")?.title).toBe("Visible in wholesale catalog");
 });
 it("validates uniqueness across other drafts/published docs and rejects identity changes", async () => {
   const fetch = vi.fn().mockResolvedValue({ duplicate: false, publishedKey: catalogKeys.one });

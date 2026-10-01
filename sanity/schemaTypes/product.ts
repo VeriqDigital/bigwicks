@@ -2,6 +2,8 @@ import { defineField, defineType, type ValidationContext } from "sanity";
 import { PackageIcon } from "@sanity/icons/Package";
 import { isCatalogKey } from "../catalog-key";
 import { sanityApiVersion } from "../environment";
+import { productVideo } from "../../lib/catalog/video";
+import { isProductSlug } from "../../lib/catalog/urls";
 
 export async function validateCatalogKey(value: unknown, context: ValidationContext) {
   if (!isCatalogKey(value)) return "A generated catalog key is required. Ask the developer to repair a missing key.";
@@ -21,7 +23,7 @@ export async function validateCatalogKey(value: unknown, context: ValidationCont
 
 export const product = defineType({
   name: "product", title: "Product", type: "document", icon: PackageIcon,
-  initialValue: () => ({ catalogKey: crypto.randomUUID(), available: false }),
+  initialValue: () => ({ catalogKey: crypto.randomUUID(), available: false, publiclyVisible: false }),
   fields: [
     defineField({ name: "catalogKey", title: "Catalog key", type: "string", readOnly: true,
       description: "Permanent product identity. Keep it when changing the SKU or name. Prices are managed separately.",
@@ -29,6 +31,9 @@ export const product = defineType({
     defineField({ name: "sku", title: "SKU / item number", type: "string",
       validation: (rule) => rule.required().max(100).custom((value) => !value || (value.trim() === value && !/[\r\n]/.test(value)) || "Remove leading/trailing spaces and line breaks.") }),
     defineField({ name: "name", title: "Product name", type: "string", validation: (rule) => rule.required().max(200) }),
+    defineField({ name: "slug", title: "Public page slug", type: "slug", options: { source: "name", maxLength: 160 },
+      description: "Optional readable URL. Without one the permanent catalog key is used. Keep published slugs stable to preserve links.",
+      validation: (rule) => rule.custom((value) => !value?.current || (isProductSlug(value.current) && !isCatalogKey(value.current)) || "Use lowercase letters, numbers and single hyphens; catalog keys are reserved.") }),
     defineField({ name: "category", title: "Category", type: "reference", to: [{ type: "category" }],
       validation: (rule) => rule.required().warning("Choose a category to help customers browse.") }),
     defineField({ name: "description", title: "Description", type: "text", rows: 5, validation: (rule) => rule.max(10000) }),
@@ -38,8 +43,14 @@ export const product = defineType({
     defineField({ name: "image", title: "Product image", type: "image", options: { hotspot: true }, fields: [
       defineField({ name: "alt", title: "Image description", type: "string", validation: (rule) => rule.max(300) }),
     ] }),
+    defineField({ name: "videoUrl", title: "Product demonstration video", type: "url",
+      description: "Optional HTTPS YouTube watch/share/shorts URL or public Vimeo video URL. No HTML or uploads. The video must permit embedding.",
+      validation: (rule) => rule.uri({ scheme: ["https"] }).custom((value) => !value || Boolean(productVideo(value)) || "Enter a supported HTTPS YouTube or Vimeo video URL.") }),
+    defineField({ name: "publiclyVisible", title: "Visible on public website", type: "boolean",
+      description: "Controls public catalog, product pages, homepage discovery and sitemap only. Existing products with no value are visible; new products start hidden. Does not change wholesale availability.",
+      validation: (rule) => rule.required() }),
     defineField({ name: "available", title: "Visible in wholesale catalog", type: "boolean",
-      description: "Manual visibility only. This is not an inventory count or a guarantee of stock.",
+      description: "Manual wholesale visibility only. This is not an inventory count or a guarantee of stock. Independent of public website visibility.",
       validation: (rule) => rule.required() }),
   ],
   preview: { select: { title: "name", subtitle: "sku", media: "image" } },

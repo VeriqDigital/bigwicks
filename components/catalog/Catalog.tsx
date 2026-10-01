@@ -5,6 +5,7 @@ import { unstable_rethrow } from "next/navigation";
 import type { CustomerCatalogProduct } from "@/lib/catalog/service";
 import { browseCatalog, type CatalogSort } from "./browse";
 import ProductImage from "./ProductImage";
+import { productHref } from "@/lib/catalog/urls";
 import { quantityValue, lineTotal, sumAmounts, MAX_ORDER_LINES } from "@/lib/orders/input";
 import { reviewOrderAction, submitOrderAction } from "@/app/(wholesale)/portal/order-actions";
 import type { OrderReview as Review } from "@/lib/orders/types";
@@ -106,6 +107,7 @@ export default function Catalog({ products }: { products: CustomerCatalogProduct
           <div className="flex flex-1 flex-col p-5">
             <p className="mb-2 wrap-anywhere text-xs font-semibold uppercase tracking-wide text-(--muted)">{product.category?.name ?? "Uncategorized"}</p>
             <h2 className="wrap-anywhere font-heading text-xl leading-tight font-bold">{product.name}</h2>
+            {product.slug && <a href={productHref(product.slug)} target="_blank" rel="noopener noreferrer" className="mt-2 py-2 text-sm font-semibold underline underline-offset-4">Product details <span className="sr-only">for {product.name} (opens in a new tab)</span></a>}
             <p className="mt-2 wrap-anywhere text-xs text-(--muted)">Item: {product.sku}</p>
             {product.brand && <p className="mt-1 text-sm wrap-anywhere">Brand: {product.brand}</p>}
             {product.packing && <p className="mt-1 text-sm wrap-anywhere">Packing: {product.packing}</p>}

@@ -16,12 +16,13 @@ import nextConfig from "../../next.config";
 
 // Metadata imports must not initialize contact delivery or private services.
 vi.mock("@/components/contact/ContactForm", () => ({ default: () => null }));
+vi.mock("@/lib/catalog/public", () => ({ getPublicCatalog: async () => ({ status: "ready", products: [] }) }));
 
 afterEach(() => vi.unstubAllEnvs());
 
 it("declares four unique public titles, descriptions, canonicals and matching social metadata", () => {
   const pages = [home, contact, newBuffalo, wholesale];
-  expect(publicRoutes).toEqual(["/", "/contact", "/fireworks-near-new-buffalo-mi", "/wholesale"]);
+  expect(publicRoutes).toEqual(["/", "/contact", "/fireworks-near-new-buffalo-mi", "/wholesale", "/products"]);
   expect(new Set(pages.map(page => JSON.stringify(page.title))).size).toBe(4);
   expect(new Set(pages.map(page => page.description)).size).toBe(4);
   pages.forEach((page, index) => {
@@ -37,14 +38,15 @@ it("declares four unique public titles, descriptions, canonicals and matching so
 
 it.each(["https://www.example.test", "https://www.example.test/", "https://alternate.example.test"])(
   "uses the configured origin %s for exactly four URL-only public entries and robots",
-  (origin) => {
+  async (origin) => {
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", origin);
     expect(getSiteUrl().href).toBe(new URL(origin).href);
-    expect(sitemap()).toEqual([
+    expect(await sitemap()).toEqual([
       { url: new URL("/", origin).href },
       { url: new URL("/contact", origin).href },
       { url: new URL("/fireworks-near-new-buffalo-mi", origin).href },
       { url: new URL("/wholesale", origin).href },
+      { url: new URL("/products", origin).href },
     ]);
     expect(robots().sitemap).toBe(new URL("/sitemap.xml", origin).href);
     // Exact URL-only equality also excludes redirects, utility/API/product routes,
@@ -52,10 +54,10 @@ it.each(["https://www.example.test", "https://www.example.test/", "https://alter
   },
 );
 
-it("preserves the local fallback", () => {
+it("preserves the local fallback", async () => {
   vi.stubEnv("NEXT_PUBLIC_SITE_URL", undefined);
   expect(getSiteUrl().href).toBe("http://localhost:3000/");
-  expect(sitemap()).toEqual(publicRoutes.map(path => ({ url: new URL(path, "http://localhost:3000").href })));
+  expect(await sitemap()).toEqual(publicRoutes.map(path => ({ url: new URL(path, "http://localhost:3000").href })));
   expect(robots().sitemap).toBe("http://localhost:3000/sitemap.xml");
 });
 
@@ -110,10 +112,10 @@ it("keeps new public dependency trees config/static-only with no private operati
   expect(readFileSync("app/wholesale/page.tsx", "utf8")).toContain('href="/account" prefetch={false}');
 });
 
-it.each(["", "not a URL"])("fails clearly on malformed configuration %j", (origin) => {
+it.each(["", "not a URL"])("fails clearly on malformed configuration %j", async (origin) => {
   vi.stubEnv("NEXT_PUBLIC_SITE_URL", origin);
   expect(getSiteUrl).toThrow(TypeError);
-  expect(sitemap).toThrow(TypeError);
+  await expect(sitemap()).rejects.toThrow(TypeError);
   expect(robots).toThrow(TypeError);
 });
 

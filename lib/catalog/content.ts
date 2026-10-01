@@ -1,14 +1,15 @@
 import "server-only";
 import { createClient } from "@sanity/client";
+import { defineQuery } from "next-sanity";
 import { sanityApiVersion, sanityEnvironment } from "@/sanity/environment";
 
 // All published products, including unavailable ones, are needed to detect a
 // duplicate key before joining prices. Never spread arbitrary CMS document fields.
-export const catalogContentQuery = `*[_type == "product" && !(_id in path("drafts.**")) && !(_id in path("versions.**"))] {
-  _id, catalogKey, sku, name, available, description, brand, packing,
-  "category": category->{_id, name},
+export const catalogContentQuery = defineQuery(`*[_type == "product" && !(_id in path("drafts.**")) && !(_id in path("versions.**"))] {
+  _id, catalogKey, sku, name, available, publiclyVisible, description, brand, packing, "slug": slug.current, videoUrl,
+  "category": category->{_id, name, homepageCard},
   "image": image {alt, "url": asset->url}
-}`;
+}`);
 
 export async function readPublishedCatalogContent(): Promise<unknown> {
   const environment = sanityEnvironment();

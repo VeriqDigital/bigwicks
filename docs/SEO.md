@@ -1,5 +1,10 @@
 # Big Wicks Fireworks — SEO and public information architecture
 
+September 30 update: `/products` and `/products/[slug]` are now implemented with
+public metadata and visible product sitemap entries. The four-route lists and
+catalog deferral below describe the earlier 8B milestone. See
+[Public catalog](PUBLIC-CATALOG.md) for the current contract and validation.
+
 Milestone 8B starts from main at `5110fba` (merged Milestone 8A / PR #24).
 The approved 8A homepage/contact design remains the foundation. This milestone
 adds two individually authored public pages, not a generated location-page system.
