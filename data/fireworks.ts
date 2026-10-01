@@ -1,9 +1,8 @@
 export const fireworksCategories = [
-  // Keep destinations with each category so public listing links can be added
-  // when those pages exist. Today's cards lead to the store visit information.
+  // Marketing fallback only when the live catalog has no visible categories.
   {
     title: "500 Gram Cakes",
-    href: "/#visit",
+    href: "/products",
     description: "Big-impact options for building the centerpiece of your show.",
     image: "/images/categories/500-gram-cakes.jpg",
     alt: "Colorful large-format fireworks cakes displayed inside Big Wicks",
@@ -11,7 +10,7 @@ export const fireworksCategories = [
   },
   {
     title: "200 Gram Cakes",
-    href: "/#visit",
+    href: "/products",
     description: "Versatile favorites for adding variety, color, and pace.",
     image: "/images/categories/200-gram-cakes.jpg",
     alt: "Shelves of 200 gram fireworks cakes displayed inside Big Wicks",
@@ -19,7 +18,7 @@ export const fireworksCategories = [
   },
   {
     title: "Artillery Shells",
-    href: "/#visit",
+    href: "/products",
     description: "Explore reloadable options with help from our knowledgeable team.",
     image: "/images/categories/artillery-shells.jpg",
     alt: "Canister artillery shell packages arranged on a store shelf",
@@ -27,7 +26,7 @@ export const fireworksCategories = [
   },
   {
     title: "Fountains",
-    href: "/#visit",
+    href: "/products",
     description: "Ground-based effects with plenty of color and sparkle.",
     image: "/images/categories/fountains.jpg",
     alt: "Shelves of colorful fountain fireworks inside Big Wicks",
@@ -35,7 +34,7 @@ export const fireworksCategories = [
   },
   {
     title: "Firecrackers",
-    href: "/#visit",
+    href: "/products",
     description: "Classic choices in a wide range of pack sizes and styles.",
     image: "/images/categories/firecrackers.jpg",
     alt: "Stacks of red firecracker packs displayed inside Big Wicks",
@@ -43,7 +42,7 @@ export const fireworksCategories = [
   },
   {
     title: "Roman Candles",
-    href: "/#visit",
+    href: "/products",
     description: "A broad selection of familiar multi-shot effects.",
     image: "/images/categories/roman-candles-and-novelties.jpg",
     alt: "Long colorful Roman candles displayed along a Big Wicks store aisle",
@@ -51,7 +50,7 @@ export const fireworksCategories = [
   },
   {
     title: "Novelties",
-    href: "/#visit",
+    href: "/products",
     description: "Approachable picks for family celebrations and backyard fun.",
     image: "/images/categories/novelties.jpg",
     alt: "Colorful novelty fireworks and family-friendly items on Big Wicks shelves",
@@ -59,7 +58,7 @@ export const fireworksCategories = [
   },
   {
     title: "Assortments & Kits",
-    href: "/#visit",
+    href: "/products",
     description: "Ready-made variety for celebrations of different sizes.",
     image: "/images/categories/fireworks-assortments.jpg",
     alt: "Large fireworks assortment packages displayed together at Big Wicks",

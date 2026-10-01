@@ -7,10 +7,10 @@ export function getSiteUrl(): URL {
   return new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000");
 }
 
-export const publicRoutes = ["/", "/contact", "/fireworks-near-new-buffalo-mi", "/wholesale"] as const;
+export const publicRoutes = ["/", "/contact", "/fireworks-near-new-buffalo-mi", "/wholesale", "/products"] as const;
 export const storefrontImage = "/images/store/big-wicks-storefront-front.jpg";
 
-export function publicMetadata(path: typeof publicRoutes[number], title: string, description: string): Metadata {
+export function publicMetadata(path: typeof publicRoutes[number] | `/products/${string}`, title: string, description: string): Metadata {
   return {
     title: { absolute: title },
     description,

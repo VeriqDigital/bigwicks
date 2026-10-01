@@ -15,6 +15,7 @@ import MobileActions from "@/components/layout/MobileActions";
 import "./public.css";
 
 export const metadata = publicMetadata("/", "Big Wicks Fireworks | La Porte, Indiana Fireworks Store", siteConfig.description);
+export const dynamic = "force-dynamic";
 
 export default function Home() {
   return (

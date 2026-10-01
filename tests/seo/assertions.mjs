@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 
 // Deliberately independent of the implementation's sitemap list.
-export const publicPaths = ['/', '/contact', '/fireworks-near-new-buffalo-mi', '/wholesale'];
+export const publicPaths = ['/', '/contact', '/fireworks-near-new-buffalo-mi', '/wholesale', '/products'];
 
 export async function assertPublicPage(page, path, origin, seen) {
   const canonical = new URL(path, origin).href;

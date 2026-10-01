@@ -6,6 +6,7 @@ vi.mock("next/navigation", () => ({ redirect: (url: string) => { throw new Error
 import { getDb } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { getAvailableCatalogForCustomer } from "@/lib/catalog/service";
+import { getVisitorPricing } from "@/lib/catalog/visitor";
 import { auditCatalog } from "@/lib/catalog/audit";
 import { catalogKeys, fictionalProduct } from "../fixtures/catalog";
 
@@ -51,6 +52,21 @@ it("each customer receives only their current tier, with no browser-selected con
   expect(first.products).toHaveLength(1); expect(first.products[0]).not.toHaveProperty("pricingTierId"); expect(first.products[0]).not.toHaveProperty("customerId");
   mock.auth.mockResolvedValue({ user: { ...user2, pricingTierId: tier1, customerId: user1.id } });
   expect((await getAvailableCatalogForCustomer()).products[0].price).toBe("17.13");
+});
+it("public discovery skips anonymous price reads and reuses current tier/revocation authorization", async () => {
+  const readPrices = vi.spyOn(db.productPrice, "findMany");
+  mock.auth.mockResolvedValue(null);
+  expect(await getVisitorPricing()).toBeNull();
+  expect(readPrices).not.toHaveBeenCalled();
+  mock.auth.mockResolvedValue({ user: user1 });
+  expect((await getVisitorPricing())?.products[0].price).toBe("19.95");
+  await db.customer.update({ where: { userId: user1.id }, data: { pricingTierId: tier2 } });
+  expect((await getVisitorPricing())?.products[0].price).toBe("17.13");
+  await db.user.update({ where: { id: user1.id }, data: { sessionVersion: { increment: 1 } } });
+  readPrices.mockClear();
+  expect(await getVisitorPricing()).toBeNull();
+  expect(readPrices).not.toHaveBeenCalled();
+  readPrices.mockRestore();
 });
 it("tier and price/availability edits affect the next call without a new login or shared cache", async () => {
   expect((await getAvailableCatalogForCustomer()).products[0].price).toBe("19.95");

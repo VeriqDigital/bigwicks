@@ -1,10 +1,13 @@
 import "server-only";
 import { z } from "zod";
 import { isCatalogKey } from "@/sanity/catalog-key";
+import { productVideo } from "./video";
+import { isProductSlug } from "./urls";
 
 export type CatalogIssue = { code: string; documentId?: string; catalogKey?: string; pricingTierId?: string };
 export type CatalogContent = {
   catalogKey: string; sku: string; name: string; available: boolean;
+  slug?: string | null; video?: ReturnType<typeof productVideo>;
   category: { id: string; name: string } | null;
   description: string | null; brand: string | null; packing: string | null; image: { url: string; alt: string } | null;
 };
@@ -50,7 +53,8 @@ export function normalizeCatalogContent(raw: unknown) {
     if (!image) issues.push({ code: "missing_image", documentId, catalogKey });
     const optionalText = (value: unknown) => typeof value === "string" && !/[\u0000-\u001f\u007f-\u009f]/u.test(value) ? text(value, 100) : null;
     products.push({ catalogKey, sku, name, available: row.available, category: categoryId && categoryName ? { id: categoryId, name: categoryName } : null,
-      description, image, brand: optionalText(row.brand), packing: optionalText(row.packing) });
+      description, image, brand: optionalText(row.brand), packing: optionalText(row.packing),
+      slug: isProductSlug(row.slug) ? row.slug : null, video: productVideo(row.videoUrl) });
   }
   return { products, issues, knownKeys: new Set(keyCounts.keys()), documentCount: rows.length };
 }

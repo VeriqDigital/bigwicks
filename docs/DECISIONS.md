@@ -32,6 +32,21 @@ client/configuration/remaining operational gates still need separate authorizati
 
 ## Decision log
 
+### 2026-09-30 — Public catalog and product discovery
+
+User authorized public catalog/detail routes, video support and authenticated
+tier pricing on the same pages. Reuse Sanity content/identity and the existing
+`available` visibility flag; no automatic data changes. Optional slug/video fields
+extend the current product schema. Real category IDs power public filters and
+homepage cards. Public content and metadata never read SQL prices; authenticated
+pricing delegates to the existing zero-input authorization service. Orders and
+Excel templates/exports remain unchanged. Details: [PUBLIC-CATALOG.md](PUBLIC-CATALOG.md).
+
+This supersedes earlier deferral of public product pages, not production rollout
+authorization or outstanding client content/configuration verification.
+
+---
+
 ### 2026-09-08 — Milestone 7D Production configuration manifest
 
 **Source:** User's strict read-only infrastructure/configuration request; refreshed
