@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Barlow, Roboto_Condensed } from "next/font/google";
 import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
+import SiteShell from "@/components/layout/SiteShell";
 import { siteConfig } from "@/config/site";
 import { getSiteUrl } from "@/config/seo";
 import JsonLd from "@/components/seo/JsonLd";
@@ -55,9 +56,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en" data-scroll-behavior="smooth" className={`${barlow.variable} ${robotoCondensed.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
         <JsonLd data={storeJsonLd()} />
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        <SiteShell navbar={<Navbar />} footer={<Footer />}>
+          {children}
+        </SiteShell>
       </body>
     </html>
   );

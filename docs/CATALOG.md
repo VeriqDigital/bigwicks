@@ -35,6 +35,18 @@ catalog. The tradeoff is a larger dependency/build footprint and Studio upgrades
 requiring an application rebuild. A standalone Studio can be considered separately
 if those costs become significant.
 
+The root `SiteShell` selects a standalone viewport for the `studio` route segment,
+including nested tool URLs. It omits the public navbar/footer instead of placing
+a full-height Studio between them. Studio-only document styles match the mounted
+shell, constrain it to `100dvh`, and stop matching when navigation leaves Studio.
+Sanity owns editor/panel scrolling; no wheel handlers or internal panel overrides
+are added. The unconfigured notice can scroll inside the viewport on short screens.
+`tests/e2e/studio-layout.spec.ts` checks configured/unconfigured viewport dimensions
+and public scrolling after client navigation at phone, tablet and desktop sizes.
+Authenticated Sanity product-form scrolling, uploads and publishing still require
+a manual check with an authorized Sanity account; the isolated tests do not edit
+remote content.
+
 The page independently calls `requireAdmin()`. Staff also need their own Sanity
 account with appropriate project/dataset permissions; an Auth.js ADMIN session
 does not grant a Sanity role. Studio mutations go through Sanity's authorization,

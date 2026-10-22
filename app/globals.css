@@ -35,6 +35,20 @@ body {
   overflow-x: hidden;
 }
 
+/* Only the Studio shell owns the viewport. These rules stop matching on exit,
+   including client navigation; Sanity's internal scrolling is left untouched. */
+html:has(> body > .studio-viewport) {
+  overflow: hidden;
+  scroll-behavior: auto;
+  scroll-padding-top: 0;
+}
+
+body:has(> .studio-viewport) {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
 a, button { -webkit-tap-highlight-color: transparent; }
 
 :focus-visible {
