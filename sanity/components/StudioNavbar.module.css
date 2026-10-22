@@ -1,0 +1,30 @@
+.navbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  background: var(--card-bg-color);
+  color: var(--card-fg-color);
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  min-height: 44px;
+  margin-inline: 8px;
+  padding: 8px;
+  border-radius: 3px;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.backLink:hover { text-decoration: underline; }
+.backLink:focus-visible { outline: 2px solid currentColor; outline-offset: -2px; }
+
+.defaultNavbar {
+  flex: 1 1 32rem;
+  min-width: 0;
+}

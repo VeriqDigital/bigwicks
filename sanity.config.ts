@@ -5,6 +5,7 @@ import { structureTool } from "sanity/structure";
 import { sanityEnvironment } from "./sanity/environment";
 import { product } from "./sanity/schemaTypes/product";
 import { category } from "./sanity/schemaTypes/category";
+import StudioNavbar from "./sanity/components/StudioNavbar";
 
 const environment = sanityEnvironment();
 // An empty configuration lets the repository build without a remote project.
@@ -12,6 +13,7 @@ const environment = sanityEnvironment();
 export default defineConfig(environment ? {
   ...environment, name: "big-wicks", title: "Big Wicks catalog", basePath: "/studio",
   plugins: [structureTool()], schema: { types: [product, category] },
+  studio: { components: { navbar: StudioNavbar } },
   document: {
     // Sanity's standard duplicate action copies read-only fields. New products
     // must start with a fresh generated key; editing normal content preserves it.
